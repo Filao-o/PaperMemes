@@ -1,6 +1,3 @@
-// Background service worker for PaperMemes
-// Handles: FETCH_RUGCHECK, FETCH_PUMPFUN, RESOLVE_MINT, NOTIFY
-
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   const { type, payload } = message
 
@@ -61,10 +58,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return false
 })
 
-// Keep service worker alive with periodic alarm
 chrome.alarms.create('keepalive', { periodInMinutes: 0.4 })
-chrome.alarms.onAlarm.addListener(() => {
-  // keepalive
-})
+chrome.alarms.onAlarm.addListener(() => {})
 
 export {}

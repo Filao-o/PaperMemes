@@ -20,10 +20,8 @@ export default defineConfig({
           if (chunk.name === 'background') return 'background/service-worker.js'
           return '[name]/[name].js'
         },
-        // Chunk fixe sans hash — évite les fichiers orphelins entre builds
         chunkFileNames: 'chunks/[name].js',
         assetFileNames: 'assets/[name].[ext]',
-        // Inline les chunks partagés dans chaque entry — plus de dépendance externe
         manualChunks: undefined,
       },
     },
