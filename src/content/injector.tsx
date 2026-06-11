@@ -86,9 +86,11 @@ async function resolveMint(addr: string): Promise<string> {
   if (mintCache.has(addr)) return mintCache.get(addr)!
   if (/pump$/i.test(addr)) { mintCache.set(addr, addr); return addr }
   return new Promise(resolve => {
+    const fallback = setTimeout(() => { mintCache.set(addr, addr); resolve(addr) }, 3000)
     chrome.runtime.sendMessage({ type: 'RESOLVE_MINT', payload: { poolAddress: addr } }, res => {
+      clearTimeout(fallback)
       if (chrome.runtime.lastError || !res?.ok) { mintCache.set(addr, addr); resolve(addr); return }
-      const mint = res.mint ?? addr
+      const mint = res.data ?? addr
       mintCache.set(addr, mint)
       if (mint !== addr) console.log(`[PaperMemes] Pool → Mint : ${mint.slice(0, 12)}…`)
       resolve(mint)
