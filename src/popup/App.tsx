@@ -54,7 +54,7 @@ export function App() {
             boxShadow: `0 0 6px ${C.green}`, display: 'inline-block',
           }} />
           <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1, color: C.text }}>PAPERMEMES</span>
-          <span style={{ color: C.muted, fontSize: 10 }}>v1.1</span>
+          <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={resetBalance} title="Réinitialiser" style={iconBtnStyle}>↺</button>

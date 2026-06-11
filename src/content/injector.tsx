@@ -552,6 +552,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.green, boxShadow: `0 0 5px ${C.green}`, display: 'inline-block' }} />
           <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: 1 }}>PAPERMEMES</span>
+          <span style={{ color: C.muted, fontSize: 9 }}>v1.2</span>
         </div>
         <button onClick={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })} style={miniBtn}>
           {currency === 'SOL' ? '≋ SOL' : '$ USD'}
