@@ -5,9 +5,43 @@ import type { AppState, Trade, CloseEvent, TokenInfo, RiskInfo } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Tabs, Btn, Divider } from '../popup/components/ui'
 import { JournalPanel } from '../popup/components/JournalPanel'
 
+// ─── Solana SVG icon ──────────────────────────────────────────────────────────
+
+function SolIcon({ size = 13, style }: { size?: number; style?: React.CSSProperties }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 16" style={{ display: 'inline', verticalAlign: 'middle', ...style }}>
+      <defs>
+        <linearGradient id="solG" x1="0" y1="16" x2="20" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#9945FF" />
+          <stop offset="1" stopColor="#14F195" />
+        </linearGradient>
+      </defs>
+      <path fill="url(#solG)" d="M2.5 13H17l1.5-2H4L2.5 13zm0-4.5H17l1.5-2H4L2.5 8.5zM4 4h13l-1.5-2H2.5L4 4z" />
+    </svg>
+  )
+}
+
+// ─── Currency toggle ──────────────────────────────────────────────────────────
+
+function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: () => void }) {
+  const isUSD = value === 'USD'
+  return (
+    <div onClick={onChange} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', userSelect: 'none' }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: !isUSD ? C.green : C.muted }}>SOL</span>
+      <div style={{ width: 34, height: 18, borderRadius: 9, background: C.surface, border: `1px solid ${C.border}`, position: 'relative' }}>
+        <div style={{
+          position: 'absolute', top: 3, left: isUSD ? 16 : 3,
+          width: 10, height: 10, borderRadius: '50%', background: C.green,
+          transition: 'left 0.18s ease',
+        }} />
+      </div>
+      <span style={{ fontSize: 10, fontWeight: 700, color: isUSD ? C.green : C.muted }}>USD</span>
+    </div>
+  )
+}
+
 // ─── Parsing helpers ──────────────────────────────────────────────────────────
 
-// Parse "$1.2K", "0.000123", "1.5M" etc.
 function q(text: string | null | undefined): number | null {
   if (!text) return null
   const s = text.replace(/[$,\s]/g, '').trim()
@@ -21,7 +55,6 @@ function q(text: string | null | undefined): number | null {
   return isNaN(r) ? null : r
 }
 
-// TreeWalker: find first text node matching regex, return its parent element
 function dt(regex: RegExp, root: Element = document.body): HTMLElement | null {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
   let node: Node | null
@@ -31,7 +64,6 @@ function dt(regex: RegExp, root: Element = document.body): HTMLElement | null {
   return null
 }
 
-// Read from Next.js __NEXT_DATA__ (used by Photon)
 function It(path: string): string | null {
   try {
     const props = (window as any).__NEXT_DATA__?.props?.pageProps
@@ -40,8 +72,6 @@ function It(path: string): string | null {
   } catch { return null }
 }
 
-// Read token name + price from document.title (universal fallback)
-// Titles often look like: "BOE $0.0000123 • Photon"
 function fromTitle(): { name: string | null; price: number | null } {
   const title = document.title
   const priceMatch = title.match(/\$([\d.,]+[KMBkmb]?)/i)
@@ -135,7 +165,6 @@ function walkAge(): string | null {
   return null
 }
 
-// Photon (Next.js — data in __NEXT_DATA__)
 const photonAdapter: Adapter = {
   getPrice() {
     const v = It('token.price') ?? It('poolData.price') ?? It('priceUsd')
@@ -172,7 +201,6 @@ const photonAdapter: Adapter = {
   getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
 }
 
-// GMGN (has its own API)
 const GMGN_CACHE = { price: 0, marketCap: 0, name: null as string | null, ts: 0 }
 const GMGN_TTL = 8000
 
@@ -210,16 +238,13 @@ const gmgnAdapter: Adapter = {
     if (el) { const n = q(el.textContent); if (n && n > 0) return n }
     return null
   },
-  getTokenName() {
-    return GMGN_CACHE.name ?? fromTitle().name ?? null
-  },
+  getTokenName() { return GMGN_CACHE.name ?? fromTitle().name ?? null },
   getMintAddress(href = window.location.href) {
     return href.match(/gmgn\.ai\/sol\/token\/([A-Za-z0-9]{32,44})/)?.[1] ?? null
   },
   getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
 }
 
-// BullX
 const bullxAdapter: Adapter = {
   getPrice() {
     const title = fromTitle(); if (title.price) return title.price
@@ -251,7 +276,6 @@ const bullxAdapter: Adapter = {
   getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
 }
 
-// Axiom
 const axiomAdapter: Adapter = {
   getPrice() {
     const title = fromTitle(); if (title.price) return title.price
@@ -282,7 +306,6 @@ const axiomAdapter: Adapter = {
   getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
 }
 
-// Padre
 const MC_TEXT_RE = /(?:MC|Market\s*Cap)[:\s]*\$?([\d,.]+[KMBkmb]?)/i
 const LARGE_DOLLAR_RE = /^\$[\d,]{4,}(\.\d+)?$/
 
@@ -306,7 +329,6 @@ const padreAdapter: Adapter = {
         if (t.startsWith('$')) { const n = q(t); if (n && n > 0) return n }
       }
     }
-    // TreeWalker fallback for MC label
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
     let node: Node | null
     while ((node = walker.nextNode())) {
@@ -323,7 +345,6 @@ const padreAdapter: Adapter = {
   getMintAddress(href = window.location.href) {
     const m = href.match(/padre\.gg\/(?:trade\/solana\/|terminal\/)?([A-Za-z0-9]{32,44})/)
     if (m) return m[1]
-    // Fallback: scan DOM for pump address
     const re = /([1-9A-HJ-NP-Za-km-z]{32,43}pump)/i
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
     let node: Node | null
@@ -337,11 +358,7 @@ const padreAdapter: Adapter = {
 }
 
 const ADAPTERS: Record<string, Adapter> = {
-  photon: photonAdapter,
-  gmgn: gmgnAdapter,
-  bullx: bullxAdapter,
-  axiom: axiomAdapter,
-  padre: padreAdapter,
+  photon: photonAdapter, gmgn: gmgnAdapter, bullx: bullxAdapter, axiom: axiomAdapter, padre: padreAdapter,
 }
 
 // ─── Trade logic ──────────────────────────────────────────────────────────────
@@ -353,7 +370,23 @@ function getLivePnL(trade: Trade, price: number): { sol: number; percent: number
   return { sol, percent: (sol / trade.invested) * 100 }
 }
 
-// ─── Widget component ─────────────────────────────────────────────────────────
+function copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.style.position = 'fixed'
+    el.style.opacity = '0'
+    document.body.appendChild(el)
+    el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
+  })
+}
+
+// ─── Widget ───────────────────────────────────────────────────────────────────
+
+const FONT = "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif"
+const BASE = 14 // base font size (12 * 1.15 ≈ 14)
 
 function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [state, setState] = useState<AppState>({
@@ -365,22 +398,24 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [risk, setRisk] = useState<RiskInfo | null>(null)
   const [tab, setTab] = useState<'trade' | 'journal'>('trade')
   const [priceStale, setPriceStale] = useState(false)
+  const [priceDir, setPriceDir] = useState<'up' | 'down' | null>(null)
+  const [copied, setCopied] = useState(false)
   const [currentTerminal, setCurrentTerminal] = useState(initialTerminal)
   const [currentMint, setCurrentMint] = useState<string | null>(null)
   const observerRef = useRef<MutationObserver | null>(null)
   const intervalRef = useRef<number | null>(null)
   const staleRef = useRef<number | null>(null)
+  const dirRef = useRef<number | null>(null)
   const lastPriceRef = useRef<number | null>(null)
+  const prevPriceRef = useRef<number | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
 
-  // Load storage
   useEffect(() => {
     Storage.get().then(setState)
     Storage.onChanged(c => setState(prev => ({ ...prev, ...c })))
   }, [])
 
-  // On URL change (dispatched from outside)
   useEffect(() => {
     const onUrlChange = (e: Event) => {
       const { terminal, mintAddress } = (e as CustomEvent).detail
@@ -388,12 +423,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       setCurrentMint(mintAddress)
       setTokenInfo(null)
       lastPriceRef.current = null
+      prevPriceRef.current = null
+      setPriceDir(null)
     }
     window.addEventListener('papermemes:urlchange', onUrlChange)
     return () => window.removeEventListener('papermemes:urlchange', onUrlChange)
   }, [])
 
-  // Setup price polling when terminal/mint changes
   useEffect(() => {
     observerRef.current?.disconnect()
     if (intervalRef.current) clearInterval(intervalRef.current)
@@ -402,7 +438,6 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     const adapter = ADAPTERS[currentTerminal]
     if (!adapter) return
 
-    // Fetch GMGN API in background if needed
     if (currentTerminal === 'gmgn' && currentMint) {
       fetchGmgn(currentMint)
       const gmgnInterval = setInterval(() => fetchGmgn(currentMint!), 8000)
@@ -418,13 +453,21 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
       if (price && price > 0) {
         if (price !== lastPriceRef.current) {
+          // Detect direction
+          if (prevPriceRef.current !== null && price !== prevPriceRef.current) {
+            const dir = price > prevPriceRef.current ? 'up' : 'down'
+            setPriceDir(dir)
+            if (dirRef.current) clearTimeout(dirRef.current)
+            dirRef.current = window.setTimeout(() => setPriceDir(null), 1200)
+          }
+          prevPriceRef.current = price
           lastPriceRef.current = price
+
           setTokenInfo({ price, marketCap: mc, tokenName: name, mintAddress: mint ?? null, liquidity: null, holders: ext.holders, age: ext.age, timestamp: Date.now() })
           setPriceStale(false)
           if (staleRef.current) clearTimeout(staleRef.current)
           staleRef.current = window.setTimeout(() => setPriceStale(true), 10_000)
 
-          // Check TP/SL
           const trade = stateRef.current.activeTrade
           if (trade && mc !== null) checkTpSl(price, mc, trade)
         }
@@ -440,10 +483,10 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       observerRef.current?.disconnect()
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (staleRef.current) clearTimeout(staleRef.current)
+      if (dirRef.current) clearTimeout(dirRef.current)
     }
   }, [currentTerminal, currentMint])
 
-  // Fetch risk when mint changes
   useEffect(() => {
     if (!currentMint) return
     chrome.runtime.sendMessage({ type: 'FETCH_RUGCHECK', payload: { mintAddress: currentMint } }, res => {
@@ -455,7 +498,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   }, [currentMint])
 
   function checkTpSl(price: number, mc: number, trade: Trade) {
-    const { sol: _, percent: pnlPct } = getLivePnL(trade, price)
+    const { percent: pnlPct } = getLivePnL(trade, price)
     if (trade.tp && pnlPct >= trade.tp) {
       doSell(100, price, mc, trade, stateRef.current)
       chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: 'Take Profit !', body: `${trade.tokenName} +${pnlPct.toFixed(1)}%` } })
@@ -532,71 +575,109 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     }
   }
 
+  function handleCopyCA() {
+    if (!currentMint) return
+    copyToClipboard(currentMint)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
   const { balance, activeTrade, closedTrades, currency, solPrice, buyPresets, tpPresets, slPresets } = state
   const price = tokenInfo?.price ?? null
   const mc = tokenInfo?.marketCap ?? null
   const livePnL = activeTrade && price ? getLivePnL(activeTrade, price) : null
   const liveValue = activeTrade && price ? activeTrade.tokensHeld * price : null
 
-  function fmtCur(sol: number) {
-    return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)} ≋`
+  function fmtCurStr(sol: number) {
+    return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)}`
   }
+
+  // Animated background for price direction
+  const dirBg = priceDir === 'up'
+    ? `${C.green}18`
+    : priceDir === 'down'
+    ? `${C.red}18`
+    : 'transparent'
 
   return (
     <div style={{
-      position: 'fixed', top: 0, right: 0, width: 280, height: '100vh',
+      position: 'fixed', top: 0, right: 0, width: 290, height: '100vh',
       background: C.bg, borderLeft: `1px solid ${C.border}`,
-      fontFamily: "'JetBrains Mono', monospace", color: C.text,
-      display: 'flex', flexDirection: 'column', zIndex: 2147483647, fontSize: 12,
+      fontFamily: FONT, color: C.text,
+      display: 'flex', flexDirection: 'column', zIndex: 2147483647, fontSize: BASE,
     }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.green, boxShadow: `0 0 5px ${C.green}`, display: 'inline-block' }} />
-          <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: 1 }}>PAPERMEMES</span>
-          <span style={{ color: C.muted, fontSize: 9 }}>v1.2</span>
+      {/* 1 — Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 6px ${C.green}`, display: 'inline-block' }} />
+          <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
+          <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
-        <button onClick={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })} style={miniBtn}>
-          {currency === 'SOL' ? '≋ SOL' : '$ USD'}
-        </button>
+        <CurrencyToggle
+          value={currency}
+          onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
+        />
       </div>
 
-      {/* Balance */}
-      <div style={{ padding: '6px 10px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1 }}>Wallet Virtuel</div>
-        <div style={{ fontSize: 18, fontWeight: 700 }}>{fmtCur(balance)}</div>
+      {/* 2 — Wallet */}
+      <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+        <div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>Wallet Virtuel</div>
+        <div style={{ fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+          {currency === 'SOL' ? (
+            <><SolIcon size={18} style={{ marginRight: 2 }} />{fmtSOL(balance)}</>
+          ) : (
+            `$${(balance * solPrice).toFixed(2)}`
+          )}
+        </div>
+        <div style={{ color: C.muted, fontSize: 11, marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+          {currency === 'SOL' && solPrice > 0 ? (
+            `≈ $${(balance * solPrice).toFixed(2)}`
+          ) : (
+            <><SolIcon size={10} />{fmtSOL(balance)}</>
+          )}
+        </div>
       </div>
 
-      {/* Token info */}
+      {/* 3 — Live Token */}
       {tokenInfo && (
-        <div style={{ padding: '6px 10px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <span style={{ fontWeight: 700, fontSize: 13 }}>{tokenInfo.tokenName ?? '—'}</span>
-              <span style={{ color: C.muted, fontSize: 10, marginLeft: 6 }}>{currentTerminal}</span>
+        <div style={{
+          padding: '8px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0,
+          background: dirBg,
+          transition: 'background 0.4s ease',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span
+                style={{ fontWeight: 700, fontSize: 15, cursor: 'pointer', borderBottom: `1px dashed ${C.muted}` }}
+                onClick={handleCopyCA}
+                title="Copier l'adresse CA"
+              >
+                {tokenInfo.tokenName ?? '—'}
+              </span>
+              {copied && <span style={{ color: C.green, fontSize: 10 }}>✓ copié</span>}
+              <span style={{ color: C.muted, fontSize: 11 }}>{currentTerminal}</span>
             </div>
-            {tokenInfo.age && <span style={{ color: C.muted, fontSize: 10 }}>{tokenInfo.age}</span>}
+            {tokenInfo.age && <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.age}</span>}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
-            <div>
-              <span style={{ fontSize: 14, fontWeight: 700, color: priceStale ? C.yellow : C.text }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : priceStale ? C.yellow : C.text }}>
                 {price ? (price < 0.01 ? `$${price.toExponential(4)}` : `$${price.toFixed(price < 1 ? 6 : 2)}`) : '—'}
               </span>
-              {priceStale && <span style={{ fontSize: 9, color: C.yellow, marginLeft: 4 }}>⚠ non mis à jour</span>}
+              {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠ stale</span>}
             </div>
-            {tokenInfo.holders != null && <span style={{ color: C.muted, fontSize: 10 }}>{tokenInfo.holders} Hds</span>}
+            {mc && <div style={{ color: C.muted, fontSize: 12 }}>MC {fmtMC(mc)}</div>}
           </div>
-          {mc && <div style={{ color: C.muted, fontSize: 10 }}>MC {fmtMC(mc)}</div>}
         </div>
       )}
 
       {/* Tabs */}
-      <div style={{ flexShrink: 0, padding: '0 10px' }}>
+      <div style={{ flexShrink: 0, padding: '0 12px' }}>
         <Tabs tabs={['trade', 'journal']} active={tab} onChange={t => setTab(t as 'trade' | 'journal')} />
       </div>
 
-      {/* Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
+      {/* 4/5 — Content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '9px 12px' }}>
         {tab === 'trade' && (
           <TradeTab
             state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
@@ -605,7 +686,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
             onSetTp={v => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: v, tpMC: null } })}
             onSetSl={v => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: v } })}
-            fmtCur={fmtCur}
+            fmtCurStr={fmtCurStr}
+            currency={currency}
+            solPrice={solPrice}
           />
         )}
         {tab === 'journal' && (
@@ -613,13 +696,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         )}
       </div>
 
-      {/* Risk + warning footer */}
-      <div style={{ borderTop: `1px solid ${C.border}`, padding: '6px 10px', flexShrink: 0 }}>
-        {risk?.isHighRisk && <div style={{ color: C.red, fontSize: 10, marginBottom: 2 }}>■ Score risque élevé : {risk.score}/100</div>}
+      {/* 7 — Footer */}
+      <div style={{ borderTop: `1px solid ${C.border}`, padding: '7px 12px', flexShrink: 0 }}>
+        {risk?.isHighRisk && <div style={{ color: C.red, fontSize: 11, marginBottom: 2 }}>■ Score risque élevé : {risk.score}/100</div>}
         {risk?.topHolderPercent != null && risk.topHolderPercent > 20 && (
-          <div style={{ color: C.red, fontSize: 10, marginBottom: 2 }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
+          <div style={{ color: C.red, fontSize: 11, marginBottom: 2 }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
         )}
-        <div style={{ color: C.yellow, fontSize: 9 }}>⚠ TP/SL s'exécutent uniquement si cet onglet reste ouvert.</div>
+        <div style={{ color: C.yellow, fontSize: 10 }}>⚠ TP/SL s'exécutent uniquement si cet onglet reste ouvert.</div>
       </div>
     </div>
   )
@@ -627,25 +710,30 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
 // ─── Trade Tab ────────────────────────────────────────────────────────────────
 
-function fmtSOL(n: number): string { return n.toFixed(n < 0.01 ? 4 : 2) }
+function fmtSOLLocal(n: number): string { return n.toFixed(n < 0.01 ? 4 : 2) }
 
 interface TradeTabProps {
   state: AppState; activeTrade: Trade | null; livePnL: { sol: number; percent: number } | null
   liveValue: number | null; buyPresets: number[]; tpPresets: number[]; slPresets: number[]
   hasPrice: boolean; onBuy: (a: number) => void; onSell: (p: number) => void
   onSellInitials: () => void; onSetTp: (v: number | null) => void; onSetSl: (v: number | null) => void
-  fmtCur: (sol: number) => string
+  fmtCurStr: (sol: number) => string; currency: 'SOL' | 'USD'; solPrice: number
 }
 
-function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCur }: TradeTabProps) {
+function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCurStr, currency }: TradeTabProps) {
+  function AmountLabel({ sol }: { sol: number }) {
+    if (currency === 'USD') return <>{fmtCurStr(sol)}</>
+    return <><SolIcon size={11} style={{ marginRight: 2 }} />{fmtSOLLocal(sol)}</>
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
       <div>
-        <div style={sectionLabel}>Achat Rapide</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+        <div style={sL}>Achat Rapide</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
           {buyPresets.map(amt => (
             <Btn key={amt} variant="green" size="sm" disabled={!!activeTrade || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
-              {amt}≋
+              {amt}<SolIcon size={10} style={{ marginLeft: 2 }} />
             </Btn>
           ))}
         </div>
@@ -655,36 +743,38 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
 
       {activeTrade && livePnL != null && liveValue != null ? (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <span style={sectionLabel}>Position ouverte</span>
-            <span style={{ color: pnlColor(livePnL.percent), fontSize: 11, fontWeight: 700 }}>{fmtPct(livePnL.percent)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+            <span style={sL}>Position ouverte</span>
+            <span style={{ color: pnlColor(livePnL.percent), fontSize: 12, fontWeight: 700 }}>{fmtPct(livePnL.percent)}</span>
           </div>
-          <div style={{ color: C.muted, fontSize: 10, marginBottom: 6 }}>MC ENTRÉE {fmtMC(activeTrade.entryMC)}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, marginBottom: 8 }}>
+          <div style={{ color: C.muted, fontSize: 11, marginBottom: 7 }}>MC ENTRÉE {fmtMC(activeTrade.entryMC)}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
             {[
-              { label: 'INVESTI', value: fmtCur(activeTrade.invested) },
-              { label: 'VALEUR LIVE', value: fmtCur(liveValue) },
-              { label: 'PNL', value: fmtCur(livePnL.sol), color: pnlColor(livePnL.sol) },
-              { label: 'CASHOUT', value: activeTrade.closeEvents.length > 0 ? fmtCur(activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0)) : '—' },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ background: C.surface, borderRadius: 6, padding: '5px 4px', textAlign: 'center' }}>
-                <div style={{ color: C.muted, fontSize: 8, marginBottom: 2 }}>{label}</div>
-                <div style={{ color: color ?? C.text, fontSize: 10, fontWeight: 700 }}>{value}</div>
+              { label: 'INVESTI', sol: activeTrade.invested },
+              { label: 'VALEUR', sol: liveValue },
+              { label: 'PNL', sol: livePnL.sol, color: pnlColor(livePnL.sol) },
+              { label: 'CASHOUT', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
+            ].map(({ label, sol, color }) => (
+              <div key={label} style={{ background: C.surface, borderRadius: 6, padding: '6px 4px', textAlign: 'center' }}>
+                <div style={{ color: C.muted, fontSize: 9, marginBottom: 2 }}>{label}</div>
+                <div style={{ color: color ?? C.text, fontSize: 11, fontWeight: 700 }}>
+                  {sol !== null ? <AmountLabel sol={sol} /> : '—'}
+                </div>
               </div>
             ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, marginBottom: 6 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 7 }}>
             {[10, 25, 50, 100].map(pct => (
               <Btn key={pct} variant="red" size="sm" onClick={() => onSell(pct)}>{pct}%</Btn>
             ))}
           </div>
-          <Btn variant="yellow" style={{ width: '100%', padding: '7px 0' }} onClick={onSellInitials}>
-            ⟳ SELL INITIALS — {fmtCur(activeTrade.invested)}
+          <Btn variant="yellow" style={{ width: '100%', padding: '8px 0' }} onClick={onSellInitials}>
+            ⟳ SELL INITIALS — <AmountLabel sol={activeTrade.invested} />
           </Btn>
-          <div style={{ color: C.muted, fontSize: 9, textAlign: 'center', marginTop: 3 }}>Récupère votre mise · laisse les gains courir</div>
+          <div style={{ color: C.muted, fontSize: 10, textAlign: 'center', marginTop: 3 }}>Récupère votre mise · laisse les gains courir</div>
         </div>
       ) : (
-        <div style={{ textAlign: 'center', color: C.muted, fontSize: 11, padding: '12px 0' }}>
+        <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '14px 0' }}>
           {hasPrice ? 'Aucune position ouverte' : 'Chargement du prix…'}
         </div>
       )}
@@ -692,11 +782,11 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
       <Divider />
 
       <div>
-        <div style={sectionLabel}>TP / SL</div>
+        <div style={sL}>TP / SL</div>
         {activeTrade ? (
           <>
-            <div style={{ color: C.muted, fontSize: 9, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Take Profit</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4, marginBottom: 8 }}>
+            <div style={{ color: C.muted, fontSize: 10, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Take Profit</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
               {tpPresets.map(pct => (
                 <Btn key={pct} variant="green" size="sm"
                   style={{ border: activeTrade.tp === pct ? `2px solid ${C.green}` : undefined }}
@@ -705,8 +795,8 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
                 </Btn>
               ))}
             </div>
-            <div style={{ color: C.muted, fontSize: 9, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Stop Loss</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+            <div style={{ color: C.muted, fontSize: 10, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Stop Loss</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
               {slPresets.map(pct => (
                 <Btn key={pct} variant="red" size="sm"
                   style={{ border: activeTrade.sl === pct ? `2px solid ${C.red}` : undefined }}
@@ -717,15 +807,14 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
             </div>
           </>
         ) : (
-          <div style={{ textAlign: 'center', color: C.muted, fontSize: 11, padding: '8px 0' }}>Ouvrez une position d'abord</div>
+          <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '9px 0' }}>Ouvrez une position d'abord</div>
         )}
       </div>
     </div>
   )
 }
 
-const sectionLabel: React.CSSProperties = { color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6, display: 'block' }
-const miniBtn: React.CSSProperties = { background: C.surface, border: `1px solid ${C.border}`, color: C.text, borderRadius: 4, fontSize: 10, padding: '3px 7px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }
+const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
 
 // ─── Mount + URL watcher ──────────────────────────────────────────────────────
 
@@ -736,7 +825,6 @@ async function tryMount() {
   const { terminal, mintAddress: rawMint } = detectTerminal()
 
   if (!terminal || !rawMint) {
-    // Not a token page — unmount if present
     const el = document.getElementById('papermemes-root')
     if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
     lastMint = null
@@ -745,15 +833,12 @@ async function tryMount() {
 
   const mint = await resolveMint(rawMint)
 
-  // Same token page — nothing to do
   if (mint === lastMint && document.getElementById('papermemes-root')) return
   lastMint = mint
 
-  // Remount with new terminal context
   const existing = document.getElementById('papermemes-root')
   if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
 
-  // Notify GMGN adapter to prefetch
   if (terminal === 'gmgn') fetchGmgn(mint)
 
   const div = document.createElement('div')
@@ -762,13 +847,11 @@ async function tryMount() {
   widgetRoot = createRoot(div)
   widgetRoot.render(<Widget initialTerminal={terminal} />)
 
-  // Dispatch mint to widget after mount
   setTimeout(() => {
     window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
   }, 100)
 }
 
-// Initial mount
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => { tryMount(); setupUrlWatcher() })
 } else {
@@ -779,7 +862,6 @@ if (document.readyState === 'loading') {
 function setupUrlWatcher() {
   let lastHref = window.location.href
 
-  // Patch pushState / replaceState
   const patchHistory = (method: 'pushState' | 'replaceState') => {
     const original = history[method].bind(history)
     history[method] = (...args: Parameters<typeof history.pushState>) => {
@@ -800,7 +882,6 @@ function setupUrlWatcher() {
     }
   })
 
-  // Polling fallback (1s) — catches SPAs that don't use history API
   setInterval(() => {
     if (window.location.href !== lastHref) {
       lastHref = window.location.href
