@@ -629,15 +629,50 @@ const miniBtn: React.CSSProperties = {
 
 // ─── Mount ────────────────────────────────────────────────────────────────────
 
-const { terminal } = detectTerminal()
-if (terminal) {
+let root: ReturnType<typeof createRoot> | null = null
+
+function tryMount() {
+  const { terminal } = detectTerminal()
   const existing = document.getElementById('papermemes-root')
+
+  if (!terminal) {
+    // Pas sur une page token — démonte si présent
+    if (existing) {
+      root?.unmount()
+      root = null
+      existing.remove()
+    }
+    return
+  }
+
   if (!existing) {
     const div = document.createElement('div')
     div.id = 'papermemes-root'
     document.body.appendChild(div)
-    createRoot(div).render(<Widget />)
+    root = createRoot(div)
+    root.render(<Widget />)
   }
 }
+
+// Premier essai au chargement
+tryMount()
+
+// Surveille les changements d'URL (navigation SPA via pushState / replaceState)
+let lastHref = window.location.href
+
+const urlObserver = new MutationObserver(() => {
+  if (window.location.href !== lastHref) {
+    lastHref = window.location.href
+    tryMount()
+  }
+})
+urlObserver.observe(document.documentElement, { childList: true, subtree: true })
+
+// Fallback : patch pushState/replaceState pour les SPAs qui ne modifient pas le DOM
+const _push = history.pushState.bind(history)
+const _replace = history.replaceState.bind(history)
+history.pushState = (...args) => { _push(...args); tryMount() }
+history.replaceState = (...args) => { _replace(...args); tryMount() }
+window.addEventListener('popstate', tryMount)
 
 export {}
