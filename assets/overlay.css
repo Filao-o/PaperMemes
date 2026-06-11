@@ -1,0 +1,46 @@
+/* overlay.css — Styles injectés dans le DOM du terminal */
+/* Isolation complète via Shadow DOM ou namespace CSS */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
+
+#solsim-root {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 280px;
+  height: 100vh;
+  z-index: 2147483647;
+  font-family: 'JetBrains Mono', monospace;
+  pointer-events: none;
+}
+
+#solsim-root * {
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+
+/* Animations globales */
+@keyframes solsim-flash-green {
+  0%   { background: rgba(0, 255, 136, 0.25); }
+  100% { background: transparent; }
+}
+@keyframes solsim-flash-red {
+  0%   { background: rgba(255, 59, 92, 0.25); }
+  100% { background: transparent; }
+}
+@keyframes solsim-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+@keyframes solsim-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes solsim-fade-up {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+@keyframes solsim-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

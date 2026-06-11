@@ -1,0 +1,78 @@
+{
+  "manifest_version": 3,
+  "name": "PaperMemes – Paper Trading Simulator",
+  "version": "1.0.0",
+  "description": "PaperMemes — Simulez vos trades de meme coins Solana en paper trading sur Photon, GMGN, Bullx, Axiom & Padre.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "scripting",
+    "activeTab",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://photon-sol.tinyastro.io/*",
+    "https://gmgn.ai/*",
+    "https://bullx.io/*",
+    "https://neo.bullx.io/*",
+    "https://axiom.trade/*",
+    "https://padre.gg/*",
+    "https://trade.padre.gg/*",
+    "https://frontend-api.pump.fun/*",
+    "https://api.rugcheck.xyz/*",
+    "https://api.dexscreener.com/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://photon-sol.tinyastro.io/*",
+        "https://gmgn.ai/sol/token/*",
+        "https://bullx.io/terminal*",
+        "https://neo.bullx.io/terminal*",
+        "https://axiom.trade/meme/*",
+        "https://padre.gg/*",
+        "https://trade.padre.gg/*"
+      ],
+      "js": ["content/injector.js"],
+      "css": ["assets/overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": {
+      "16":  "assets/icons/icon16.png",
+      "48":  "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16":  "assets/icons/icon16.png",
+    "48":  "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/*",
+        "chunks/*"
+      ],
+      "matches": [
+        "https://photon-sol.tinyastro.io/*",
+        "https://gmgn.ai/*",
+        "https://bullx.io/*",
+        "https://neo.bullx.io/*",
+        "https://axiom.trade/*",
+        "https://padre.gg/*",
+        "https://trade.padre.gg/*"
+      ]
+    }
+  ]
+}
