@@ -1122,123 +1122,79 @@ const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: '
 
 let widgetRoot: ReturnType<typeof createRoot> | null = null
 let lastMint: string | null = null
-let unmountTimer: number | null = null
-let mountPending = false
+let lastTerminal: string | null = null
+let isMounting = false
 
-// Only call scheduleUnmount from the URL watcher (URL changed away from token page),
-// never from tryMount (DOM may be briefly unstable during SPA transitions / buy actions).
-function scheduleUnmount() {
-  if (unmountTimer) return
-  unmountTimer = window.setTimeout(() => {
-    unmountTimer = null
-    const { terminal, mintAddress } = detectTerminal()
-    if (terminal && mintAddress) return // token page again — abort
-    const el = document.getElementById('papermemes-root')
-    if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
-    lastMint = null
-  }, 3000)
+function doMount(terminal: string, mint: string) {
+  const existing = document.getElementById('papermemes-root')
+  if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
+  if (terminal === 'gmgn') fetchGmgn(mint)
+  const div = document.createElement('div')
+  div.id = 'papermemes-root'
+  document.body.appendChild(div)
+  widgetRoot = createRoot(div)
+  widgetRoot.render(<Widget initialTerminal={terminal} />)
+  lastMint = mint
+  lastTerminal = terminal
+  setTimeout(() => {
+    window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
+  }, 150)
 }
 
-function cancelUnmount() {
-  if (unmountTimer) { clearTimeout(unmountTimer); unmountTimer = null }
+function doUnmount() {
+  const el = document.getElementById('papermemes-root')
+  if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
+  lastMint = null
+  lastTerminal = null
 }
 
 async function tryMount() {
-  if (mountPending) return
-  mountPending = true
+  if (isMounting) return
+  isMounting = true
   try {
     const { terminal, mintAddress: rawMint } = detectTerminal()
-
-    // No token detected — do nothing. Unmount is ONLY triggered by URL changes.
     if (!terminal || !rawMint) return
 
-    cancelUnmount()
     const mint = await resolveMint(rawMint)
 
-    // Already mounted on this exact mint — do nothing
     if (mint === lastMint && document.getElementById('papermemes-root')) return
-
-    lastMint = mint
-
-    const existing = document.getElementById('papermemes-root')
-    if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
-
-    if (terminal === 'gmgn') fetchGmgn(mint)
-
-    const div = document.createElement('div')
-    div.id = 'papermemes-root'
-    document.body.appendChild(div)
-    widgetRoot = createRoot(div)
-    widgetRoot.render(<Widget initialTerminal={terminal} />)
-
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
-    }, 150)
+    doMount(terminal, mint)
   } finally {
-    mountPending = false
+    isMounting = false
   }
 }
 
-// Remount using the already-known mint (when SPA removes the widget div during buy/transition)
-async function tryMountWithKnownMint() {
-  if (mountPending) return
-  if (!lastMint) { tryMount(); return }
-  if (document.getElementById('papermemes-root')) return
-  mountPending = true
-  try {
-    const mint = lastMint
-    const { terminal } = detectTerminal()
-    if (!terminal) return // navigated away for real
-    cancelUnmount()
-    const div = document.createElement('div')
-    div.id = 'papermemes-root'
-    document.body.appendChild(div)
-    widgetRoot = createRoot(div)
-    widgetRoot.render(<Widget initialTerminal={terminal} />)
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
-    }, 150)
-  } finally {
-    mountPending = false
+// Heartbeat: every 500ms, ensure widget is present on token pages and absent elsewhere.
+// This recovers from any SPA teardown, buy action, or missed event.
+setInterval(() => {
+  const { terminal, mintAddress } = detectTerminal()
+  const el = document.getElementById('papermemes-root')
+
+  if (!terminal || !mintAddress) {
+    // Not on a token page — unmount if present
+    if (el) doUnmount()
+    return
   }
-}
 
-// Retry mount with backoff on initial load (SPA may not be ready immediately)
-function tryMountWithRetry() {
-  tryMount()
-  setTimeout(tryMount, 600)
-  setTimeout(tryMount, 1500)
-  setTimeout(tryMount, 3000)
-}
+  if (!el) {
+    // On a token page but widget missing — remount
+    if (!isMounting) tryMount()
+    return
+  }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => { tryMountWithRetry(); setupUrlWatcher() })
-} else {
-  tryMountWithRetry()
-  setupUrlWatcher()
-}
+  // Widget present on same mint — nothing to do
+}, 500)
 
-function setupUrlWatcher() {
+// History API patch for instant response on SPA navigation
+;(function setupUrlWatcher() {
   let lastHref = window.location.href
 
   const onUrlChange = () => {
     const href = window.location.href
     if (href === lastHref) return
-    const prev = lastHref
     lastHref = href
-
-    // If URL changed away from a token page, schedule unmount
-    const { terminal, mintAddress } = detectTerminal()
-    if (!terminal || !mintAddress) {
-      scheduleUnmount()
-    } else {
-      cancelUnmount()
-      // New token page — try mount with retries
-      setTimeout(tryMount, 300)
-      setTimeout(tryMount, 900)
-      setTimeout(tryMount, 2000)
-    }
-    void prev
+    setTimeout(tryMount, 200)
+    setTimeout(tryMount, 800)
   }
 
   const patchHistory = (method: 'pushState' | 'replaceState') => {
@@ -1250,25 +1206,7 @@ function setupUrlWatcher() {
   }
   patchHistory('pushState')
   patchHistory('replaceState')
-
   window.addEventListener('popstate', () => setTimeout(onUrlChange, 0))
-
-  // Polling fallback for SPAs that mutate URL without history API
-  setInterval(onUrlChange, 800)
-
-  // MutationObserver: remount widget if SPA tears down the DOM during buy/transition
-  const observer = new MutationObserver(() => {
-    if (document.getElementById('papermemes-root')) return
-    // Widget div was removed by the SPA — remount if we know the current mint
-    if (lastMint) {
-      setTimeout(tryMountWithKnownMint, 300)
-      setTimeout(tryMountWithKnownMint, 1200)
-    } else {
-      setTimeout(tryMount, 500)
-      setTimeout(tryMount, 1500)
-    }
-  })
-  observer.observe(document.body, { childList: true, subtree: false })
-}
+})()
 
 export {}
