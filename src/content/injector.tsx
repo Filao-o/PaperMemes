@@ -708,7 +708,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 6px ${C.green}`, display: 'inline-block' }} />
           <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
-          <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
+          <span style={{ color: C.muted, fontSize: 10 }}>v1.3</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <CurrencyToggle
