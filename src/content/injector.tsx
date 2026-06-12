@@ -1122,42 +1122,74 @@ const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: '
 
 let widgetRoot: ReturnType<typeof createRoot> | null = null
 let lastMint: string | null = null
+let unmountTimer: number | null = null
+let mountPending = false
 
-async function tryMount() {
-  const { terminal, mintAddress: rawMint } = detectTerminal()
-
-  if (!terminal || !rawMint) {
+function scheduleUnmount() {
+  if (unmountTimer) return
+  unmountTimer = window.setTimeout(() => {
+    unmountTimer = null
+    const { terminal, mintAddress } = detectTerminal()
+    if (terminal && mintAddress) return // page has a token again, abort unmount
     const el = document.getElementById('papermemes-root')
     if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
     lastMint = null
-    return
+  }, 2500)
+}
+
+function cancelUnmount() {
+  if (unmountTimer) { clearTimeout(unmountTimer); unmountTimer = null }
+}
+
+async function tryMount() {
+  if (mountPending) return
+  mountPending = true
+  try {
+    const { terminal, mintAddress: rawMint } = detectTerminal()
+
+    if (!terminal || !rawMint) {
+      scheduleUnmount()
+      return
+    }
+
+    cancelUnmount()
+    const mint = await resolveMint(rawMint)
+
+    // Already mounted on this exact mint — do nothing
+    if (mint === lastMint && document.getElementById('papermemes-root')) return
+
+    lastMint = mint
+
+    const existing = document.getElementById('papermemes-root')
+    if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
+
+    if (terminal === 'gmgn') fetchGmgn(mint)
+
+    const div = document.createElement('div')
+    div.id = 'papermemes-root'
+    document.body.appendChild(div)
+    widgetRoot = createRoot(div)
+    widgetRoot.render(<Widget initialTerminal={terminal} />)
+
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
+    }, 150)
+  } finally {
+    mountPending = false
   }
+}
 
-  const mint = await resolveMint(rawMint)
-
-  if (mint === lastMint && document.getElementById('papermemes-root')) return
-  lastMint = mint
-
-  const existing = document.getElementById('papermemes-root')
-  if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
-
-  if (terminal === 'gmgn') fetchGmgn(mint)
-
-  const div = document.createElement('div')
-  div.id = 'papermemes-root'
-  document.body.appendChild(div)
-  widgetRoot = createRoot(div)
-  widgetRoot.render(<Widget initialTerminal={terminal} />)
-
-  setTimeout(() => {
-    window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
-  }, 100)
+// Retry mount with backoff on initial load (SPA may not be ready immediately)
+function tryMountWithRetry() {
+  tryMount()
+  setTimeout(tryMount, 800)
+  setTimeout(tryMount, 2000)
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => { tryMount(); setupUrlWatcher() })
+  document.addEventListener('DOMContentLoaded', () => { tryMountWithRetry(); setupUrlWatcher() })
 } else {
-  tryMount()
+  tryMountWithRetry()
   setupUrlWatcher()
 }
 
@@ -1170,7 +1202,8 @@ function setupUrlWatcher() {
       original(...args)
       if (window.location.href !== lastHref) {
         lastHref = window.location.href
-        setTimeout(tryMount, 300)
+        setTimeout(tryMount, 400)
+        setTimeout(tryMount, 1200)
       }
     }
   }
@@ -1180,14 +1213,16 @@ function setupUrlWatcher() {
   window.addEventListener('popstate', () => {
     if (window.location.href !== lastHref) {
       lastHref = window.location.href
-      setTimeout(tryMount, 300)
+      setTimeout(tryMount, 400)
+      setTimeout(tryMount, 1200)
     }
   })
 
+  // Polling fallback — only triggers when URL actually changed
   setInterval(() => {
     if (window.location.href !== lastHref) {
       lastHref = window.location.href
-      setTimeout(tryMount, 300)
+      setTimeout(tryMount, 400)
     }
   }, 1000)
 }
