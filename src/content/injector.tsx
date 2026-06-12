@@ -775,11 +775,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               {priceStale && !mcDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {price != null && (
-                <span style={{ color: priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : C.muted, fontSize: 11, transition: 'color 0.3s' }}>
-                  ${fmtPrice(price)}
-                </span>
-              )}
+
               {tokenInfo.holders != null && (
                 <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>
               )}
