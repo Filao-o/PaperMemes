@@ -1179,6 +1179,30 @@ async function tryMount() {
   }
 }
 
+// Remount using the already-known mint (when SPA removes the widget div during buy/transition)
+async function tryMountWithKnownMint() {
+  if (mountPending) return
+  if (!lastMint) { tryMount(); return }
+  if (document.getElementById('papermemes-root')) return
+  mountPending = true
+  try {
+    const mint = lastMint
+    const { terminal } = detectTerminal()
+    if (!terminal) return // navigated away for real
+    cancelUnmount()
+    const div = document.createElement('div')
+    div.id = 'papermemes-root'
+    document.body.appendChild(div)
+    widgetRoot = createRoot(div)
+    widgetRoot.render(<Widget initialTerminal={terminal} />)
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
+    }, 150)
+  } finally {
+    mountPending = false
+  }
+}
+
 // Retry mount with backoff on initial load (SPA may not be ready immediately)
 function tryMountWithRetry() {
   tryMount()
@@ -1232,10 +1256,16 @@ function setupUrlWatcher() {
   // Polling fallback for SPAs that mutate URL without history API
   setInterval(onUrlChange, 800)
 
-  // MutationObserver: re-try mount when major DOM structure changes (SPA navigation)
+  // MutationObserver: remount widget if SPA tears down the DOM during buy/transition
   const observer = new MutationObserver(() => {
-    if (!document.getElementById('papermemes-root')) {
-      tryMount()
+    if (document.getElementById('papermemes-root')) return
+    // Widget div was removed by the SPA — remount if we know the current mint
+    if (lastMint) {
+      setTimeout(tryMountWithKnownMint, 300)
+      setTimeout(tryMountWithKnownMint, 1200)
+    } else {
+      setTimeout(tryMount, 500)
+      setTimeout(tryMount, 1500)
     }
   })
   observer.observe(document.body, { childList: true, subtree: false })
