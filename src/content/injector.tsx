@@ -356,23 +356,34 @@ const padreAdapter: Adapter = {
     return null
   },
   getMarketCap() {
-    // Target monospace3 elements that contain K/M/B formatted dollar amounts
+    // 1. monospace3 avec K/M/B ($43.7K) — format le plus fiable sur Padre
     for (const el of document.querySelectorAll<HTMLElement>('[class*="monospace3"]')) {
       const t = (el.textContent ?? '').trim()
       if (/^\$[\d.]+[KMB]$/i.test(t)) {
         const n = q(t); if (n && n >= 1e3) return n
       }
     }
+    // 2. css-1u0gsx2 — même classe, attrape aussi les montants bruts ($10000)
+    for (const el of document.querySelectorAll<HTMLElement>('.css-1u0gsx2')) {
+      const t = (el.textContent ?? '').trim()
+      if (/^\$[\d,.]+[KMB]?$/.test(t)) {
+        const n = q(t); if (n && n >= 1e3 && n <= 1e12) return n
+      }
+    }
     for (const sel of ['[class*="mcap"]', '[class*="marketCap"]', '[class*="market-cap"]', '[class*="MarketCap"]']) {
       const el = document.querySelector<HTMLElement>(sel)
       if (el) { const n = q(el.textContent); if (n && n >= 1e3) return n }
     }
+    // 3. TreeWalker : label MC + valeur, ou gros montant $ brut
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
     let node: Node | null
     while ((node = walker.nextNode())) {
       const t = (node.textContent ?? '').trim()
       const mLabel = t.match(MC_TEXT_RE)
       if (mLabel) { const n = q(mLabel[1]); if (n && n >= 1e3) return n }
+      if (/^\$[\d,]{4,}(\.\d+)?$/.test(t)) {
+        const n = q(t); if (n && n >= 1e3 && n <= 1e12) return n
+      }
     }
     return null
   },
