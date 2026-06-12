@@ -708,7 +708,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 6px ${C.green}`, display: 'inline-block' }} />
           <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
-          <span style={{ color: C.muted, fontSize: 10 }}>v1.3</span>
+          <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <CurrencyToggle
@@ -1122,91 +1122,74 @@ const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: '
 
 let widgetRoot: ReturnType<typeof createRoot> | null = null
 let lastMint: string | null = null
-let lastTerminal: string | null = null
-let isMounting = false
 
-function doMount(terminal: string, mint: string) {
+async function tryMount() {
+  const { terminal, mintAddress: rawMint } = detectTerminal()
+
+  if (!terminal || !rawMint) {
+    const el = document.getElementById('papermemes-root')
+    if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
+    lastMint = null
+    return
+  }
+
+  const mint = await resolveMint(rawMint)
+
+  if (mint === lastMint && document.getElementById('papermemes-root')) return
+  lastMint = mint
+
   const existing = document.getElementById('papermemes-root')
   if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
+
   if (terminal === 'gmgn') fetchGmgn(mint)
+
   const div = document.createElement('div')
   div.id = 'papermemes-root'
   document.body.appendChild(div)
   widgetRoot = createRoot(div)
   widgetRoot.render(<Widget initialTerminal={terminal} />)
-  lastMint = mint
-  lastTerminal = terminal
+
   setTimeout(() => {
     window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
-  }, 150)
+  }, 100)
 }
 
-function doUnmount() {
-  const el = document.getElementById('papermemes-root')
-  if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
-  lastMint = null
-  lastTerminal = null
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => { tryMount(); setupUrlWatcher() })
+} else {
+  tryMount()
+  setupUrlWatcher()
 }
 
-async function tryMount() {
-  if (isMounting) return
-  isMounting = true
-  try {
-    const { terminal, mintAddress: rawMint } = detectTerminal()
-    if (!terminal || !rawMint) return
-
-    const mint = await resolveMint(rawMint)
-
-    if (mint === lastMint && document.getElementById('papermemes-root')) return
-    doMount(terminal, mint)
-  } finally {
-    isMounting = false
-  }
-}
-
-// Heartbeat: every 500ms, ensure widget is present on token pages and absent elsewhere.
-// This recovers from any SPA teardown, buy action, or missed event.
-setInterval(() => {
-  const { terminal, mintAddress } = detectTerminal()
-  const el = document.getElementById('papermemes-root')
-
-  if (!terminal || !mintAddress) {
-    // Not on a token page — unmount if present
-    if (el) doUnmount()
-    return
-  }
-
-  if (!el) {
-    // On a token page but widget missing — remount
-    if (!isMounting) tryMount()
-    return
-  }
-
-  // Widget present on same mint — nothing to do
-}, 500)
-
-// History API patch for instant response on SPA navigation
-;(function setupUrlWatcher() {
+function setupUrlWatcher() {
   let lastHref = window.location.href
-
-  const onUrlChange = () => {
-    const href = window.location.href
-    if (href === lastHref) return
-    lastHref = href
-    setTimeout(tryMount, 200)
-    setTimeout(tryMount, 800)
-  }
 
   const patchHistory = (method: 'pushState' | 'replaceState') => {
     const original = history[method].bind(history)
     history[method] = (...args: Parameters<typeof history.pushState>) => {
       original(...args)
-      setTimeout(onUrlChange, 0)
+      if (window.location.href !== lastHref) {
+        lastHref = window.location.href
+        setTimeout(tryMount, 300)
+      }
     }
   }
   patchHistory('pushState')
   patchHistory('replaceState')
-  window.addEventListener('popstate', () => setTimeout(onUrlChange, 0))
-})()
+
+  window.addEventListener('popstate', () => {
+    if (window.location.href !== lastHref) {
+      lastHref = window.location.href
+      setTimeout(tryMount, 300)
+    }
+  })
+
+  setInterval(() => {
+    if (window.location.href !== lastHref) {
+      lastHref = window.location.href
+      setTimeout(tryMount, 300)
+    }
+  }, 1000)
+}
 
 export {}
