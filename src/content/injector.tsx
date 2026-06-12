@@ -590,14 +590,20 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     // Block if a different token is already open
     if (existing && existing.mintAddress !== currentMint) return
     if (existing && existing.mintAddress === currentMint) {
-      // DCA: add to existing position, recalculate weighted average entry
+      // DCA: add to existing position, recalculate weighted average entry price and MC
       const newTokensHeld = existing.tokensHeld + amount / tokenInfo.price
       const newInvested = existing.invested + amount
+      const prevEntries = existing.entries ?? [{ entryPrice: existing.entryPrice, entryMC: existing.entryMC, invested: existing.invested, tokensHeld: existing.tokensHeld, timestamp: existing.openedAt }]
+      const newEntry = { entryPrice: tokenInfo.price, entryMC: tokenInfo.marketCap ?? 0, invested: amount, tokensHeld: amount / tokenInfo.price, timestamp: Date.now() }
+      const allEntries = [...prevEntries, newEntry]
+      const avgEntryMC = allEntries.reduce((s, e) => s + e.entryMC * e.invested, 0) / newInvested
       const updated: Trade = {
         ...existing,
         tokensHeld: newTokensHeld,
         invested: newInvested,
         entryPrice: newInvested / newTokensHeld,
+        entryMC: avgEntryMC,
+        entries: allEntries,
       }
       Storage.dcaBuy(updated, state.balance - amount)
     } else {
@@ -610,6 +616,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         entryMC: tokenInfo.marketCap ?? 0,
         invested: amount,
         tokensHeld: amount / tokenInfo.price,
+        entries: [{ entryPrice: tokenInfo.price, entryMC: tokenInfo.marketCap ?? 0, invested: amount, tokensHeld: amount / tokenInfo.price, timestamp: Date.now() }],
         tp: null, tpMC: null, sl: null,
         status: 'active',
         openedAt: Date.now(),
@@ -1016,7 +1023,14 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
             <span style={sL}>Position ouverte</span>
             <span style={{ color: pnlColor(livePnL.percent), fontSize: 12, fontWeight: 700 }}>{fmtPct(livePnL.percent)}</span>
           </div>
-          <div style={{ color: C.muted, fontSize: 11, marginBottom: 7 }}>MC ENTRÉE {fmtMC(activeTrade.entryMC)}</div>
+          <div style={{ color: C.muted, fontSize: 11, marginBottom: 7, display: 'flex', justifyContent: 'space-between' }}>
+            <span>MC ENTRÉE {fmtMC(activeTrade.entryMC)}</span>
+            {(activeTrade.entries ?? []).length > 1 && (
+              <span style={{ color: C.text, fontSize: 10 }}>
+                Ave. Entry · {(activeTrade.entries ?? []).length} achats
+              </span>
+            )}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
             {[
               { label: 'INV.', sol: activeTrade.invested },
