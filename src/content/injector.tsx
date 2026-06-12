@@ -428,8 +428,9 @@ const BASE = 14 // base font size (12 * 1.15 ≈ 14)
 function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [state, setState] = useState<AppState>({
     balance: 50, activeTrade: null, closedTrades: [],
-    tpPresets: [25, 50, 100, 200], slPresets: [-10, -20, -30, -50],
+    tpPresets: [10, 20, 50, 100], slPresets: [-10, -20, -50, -100],
     buyPresets: [0.1, 0.5, 1, 5], currency: 'SOL', solPrice: 0,
+    slippage: 1, fees: 0.25,
   })
   const [solPriceLocal, setSolPriceLocal] = useState(0)
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
@@ -754,10 +755,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               </span>
               {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-              {mc && <span style={{ color: C.muted, fontSize: 11 }}>{fmtMC(mc)}</span>}
-              {tokenInfo.holders != null && <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>}
-            </div>
+            {tokenInfo.holders != null && (
+              <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>
+            )}
           </div>
         </div>
       )}
@@ -772,7 +772,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       {/* Contenu principal ou panneau config */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '9px 12px' }}>
         {showConfig ? (
-          <ConfigPanel buyPresets={buyPresets} />
+          <ConfigPanel
+            buyPresets={buyPresets}
+            tpPresets={tpPresets}
+            slPresets={slPresets}
+            slippage={state.slippage}
+            fees={state.fees}
+          />
         ) : tab === 'trade' ? (
           <TradeTab
             state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
@@ -804,69 +810,134 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
 // ─── Config Panel ─────────────────────────────────────────────────────────────
 
-function ConfigPanel({ buyPresets }: { buyPresets: number[] }) {
-  // 8 slots, pre-filled with existing presets
-  const [inputs, setInputs] = useState<string[]>(() => {
-    const filled = buyPresets.map(v => String(v))
+function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
+  buyPresets: number[]; tpPresets: number[]; slPresets: number[]
+  slippage: number; fees: number
+}) {
+  const pad8 = (arr: number[], sign = 1) => {
+    const filled = arr.map(v => String(Math.abs(v)))
     while (filled.length < 8) filled.push('')
     return filled.slice(0, 8)
-  })
+  }
+  const pad4 = (arr: number[]) => {
+    const filled = arr.map(v => String(Math.abs(v)))
+    while (filled.length < 4) filled.push('')
+    return filled.slice(0, 4)
+  }
 
-  function handleChange(i: number, val: string) {
-    // Allow only digits and dot
+  const [buyInputs, setBuyInputs] = useState<string[]>(() => pad8(buyPresets))
+  const [tpInputs, setTpInputs] = useState<string[]>(() => pad4(tpPresets))
+  const [slInputs, setSlInputs] = useState<string[]>(() => pad4(slPresets))
+  const [slip, setSlip] = useState(String(slippage))
+  const [fee, setFee] = useState(String(fees))
+  const [saved, setSaved] = useState(false)
+
+  function numInput(val: string, setter: (v: string) => void) {
+    if (val === '' || /^\d*\.?\d*$/.test(val)) setter(val)
+  }
+  function gridInput(i: number, val: string, setter: React.Dispatch<React.SetStateAction<string[]>>) {
     if (val !== '' && !/^\d*\.?\d*$/.test(val)) return
-    setInputs(prev => { const next = [...prev]; next[i] = val; return next })
+    setter(prev => { const n = [...prev]; n[i] = val; return n })
   }
 
   function handleSave() {
-    const presets = inputs
-      .map(v => parseFloat(v))
-      .filter(v => !isNaN(v) && v > 0)
-    Storage.set({ buyPresets: presets })
+    const buyP = buyInputs.map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0)
+    const tpP = tpInputs.map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0)
+    const slP = slInputs.map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0).map(v => -v)
+    const slipV = parseFloat(slip)
+    const feeV = parseFloat(fee)
+    Storage.set({
+      buyPresets: buyP,
+      tpPresets: tpP,
+      slPresets: slP,
+      ...(isNaN(slipV) ? {} : { slippage: slipV }),
+      ...(isNaN(feeV) ? {} : { fees: feeV }),
+    })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1500)
   }
 
+  const inputStyle = (filled: boolean): React.CSSProperties => ({
+    width: '100%', boxSizing: 'border-box',
+    background: C.surface, border: `1px solid ${filled ? C.green : C.border}`,
+    borderRadius: 6, color: C.text, fontSize: 12, fontWeight: 700,
+    padding: '7px 4px', textAlign: 'center', outline: 'none', fontFamily: 'inherit',
+  })
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+      {/* Boutons d'achat */}
       <div>
-        <div style={sL}>Boutons d'achat rapide</div>
-        <div style={{ color: C.muted, fontSize: 11, marginBottom: 10 }}>
-          Saisis tes montants en SOL (jusqu'à 8 boutons). Les cases vides sont ignorées.
-        </div>
+        <div style={sL}>Achat rapide (SOL)</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-          {inputs.map((val, i) => (
+          {buyInputs.map((val, i) => (
+            <input key={i} type="text" inputMode="decimal" value={val} placeholder="—"
+              onChange={e => gridInput(i, e.target.value, setBuyInputs)}
+              style={inputStyle(!!val)} />
+          ))}
+        </div>
+      </div>
+
+      {/* Take Profit */}
+      <div>
+        <div style={sL}>Take Profit (%)</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          {tpInputs.map((val, i) => (
             <div key={i} style={{ position: 'relative' }}>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={val}
-                placeholder="—"
-                onChange={e => handleChange(i, e.target.value)}
-                style={{
-                  width: '100%', boxSizing: 'border-box',
-                  background: C.surface, border: `1px solid ${val ? C.green : C.border}`,
-                  borderRadius: 6, color: C.text, fontSize: 12, fontWeight: 700,
-                  padding: '7px 4px', textAlign: 'center', outline: 'none',
-                  fontFamily: 'inherit',
-                }}
-              />
-              {val && (
-                <span style={{ position: 'absolute', bottom: 2, right: 4, fontSize: 8, color: C.muted }}>SOL</span>
-              )}
+              <input type="text" inputMode="decimal" value={val} placeholder="—"
+                onChange={e => gridInput(i, e.target.value, setTpInputs)}
+                style={inputStyle(!!val)} />
+              {val && <span style={{ position: 'absolute', top: 2, right: 4, fontSize: 8, color: C.green }}>%</span>}
             </div>
           ))}
         </div>
-        <button
-          onClick={handleSave}
-          style={{
-            marginTop: 12, width: '100%', padding: '9px 0',
-            background: C.green, border: 'none', borderRadius: 6,
-            color: '#000', fontWeight: 700, fontSize: 12, cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
-          Sauvegarder
-        </button>
       </div>
+
+      {/* Stop Loss */}
+      <div>
+        <div style={sL}>Stop Loss (%)</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          {slInputs.map((val, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <input type="text" inputMode="decimal" value={val} placeholder="—"
+                onChange={e => gridInput(i, e.target.value, setSlInputs)}
+                style={{ ...inputStyle(!!val), border: `1px solid ${val ? C.red : C.border}` }} />
+              {val && <span style={{ position: 'absolute', top: 2, right: 4, fontSize: 8, color: C.red }}>%</span>}
+            </div>
+          ))}
+        </div>
+        <div style={{ color: C.muted, fontSize: 10, marginTop: 4 }}>Les valeurs sont automatiquement négatives.</div>
+      </div>
+
+      {/* Slippage & Fees */}
+      <div>
+        <div style={sL}>Slippage & Fees</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div>
+            <div style={{ color: C.muted, fontSize: 10, marginBottom: 4 }}>SLIPPAGE (%)</div>
+            <input type="text" inputMode="decimal" value={slip} placeholder="1"
+              onChange={e => numInput(e.target.value, setSlip)}
+              style={inputStyle(!!slip)} />
+          </div>
+          <div>
+            <div style={{ color: C.muted, fontSize: 10, marginBottom: 4 }}>FEES (%)</div>
+            <input type="text" inputMode="decimal" value={fee} placeholder="0.25"
+              onChange={e => numInput(e.target.value, setFee)}
+              style={inputStyle(!!fee)} />
+          </div>
+        </div>
+      </div>
+
+      <button onClick={handleSave} style={{
+        width: '100%', padding: '9px 0',
+        background: saved ? C.green : C.surface,
+        border: `1px solid ${C.green}`, borderRadius: 6,
+        color: saved ? '#000' : C.green, fontWeight: 700, fontSize: 12,
+        cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
+      }}>
+        {saved ? '✓ Sauvegardé' : 'Sauvegarder'}
+      </button>
     </div>
   )
 }

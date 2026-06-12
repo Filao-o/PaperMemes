@@ -4,11 +4,13 @@ const DEFAULTS: AppState = {
   balance: 50,
   activeTrade: null,
   closedTrades: [],
-  tpPresets: [25, 50, 100, 200],
-  slPresets: [-10, -20, -30, -50],
+  tpPresets: [10, 20, 50, 100],
+  slPresets: [-10, -20, -50, -100],
   buyPresets: [0.1, 0.5, 1, 5],
   currency: 'SOL',
   solPrice: 0,
+  slippage: 1,
+  fees: 0.25,
 }
 
 export const Storage = {

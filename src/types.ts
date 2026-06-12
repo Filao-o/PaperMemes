@@ -36,6 +36,8 @@ export interface AppState {
   buyPresets: number[]
   currency: 'SOL' | 'USD'
   solPrice: number
+  slippage: number
+  fees: number
 }
 
 export interface TokenInfo {
