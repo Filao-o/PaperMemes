@@ -19,8 +19,9 @@ export function fmtSOL(n: number): string {
 }
 
 export function fmtMC(n: number): string {
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(1).replace(/\.0$/, '')}M`
-  if (n >= 1e3) return `$${(n / 1e3).toFixed(1).replace(/\.0$/, '')}K`
+  if (n >= 1e9) return `$${(Math.floor(n / 1e8) / 10).toFixed(1).replace(/\.0$/, '')}B`
+  if (n >= 1e6) return `$${(Math.floor(n / 1e5) / 10).toFixed(1).replace(/\.0$/, '')}M`
+  if (n >= 1e3) return `$${(Math.floor(n / 100) / 10).toFixed(1).replace(/\.0$/, '')}K`
   return `$${Math.round(n)}`
 }
 

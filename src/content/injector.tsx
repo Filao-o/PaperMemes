@@ -753,14 +753,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               <span style={{ fontSize: 16, fontWeight: 700, color: priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : priceStale ? C.yellow : C.text }}>
                 {price ? (price < 0.01 ? `$${price.toExponential(4)}` : `$${price.toFixed(price < 1 ? 6 : 2)}`) : '—'}
               </span>
+              {mc != null && <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{fmtMC(mc)}</span>}
               {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {mc != null && <span style={{ color: C.muted, fontSize: 11 }}>MC {fmtMC(mc)}</span>}
-              {tokenInfo.holders != null && (
-                <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>
-              )}
-            </div>
+            {tokenInfo.holders != null && (
+              <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>
+            )}
           </div>
         </div>
       )}
