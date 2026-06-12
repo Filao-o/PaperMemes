@@ -769,15 +769,15 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : priceStale ? C.yellow : C.text }}>
-                {price ? `$${fmtPrice(price)}` : '—'}
+              <span style={{ fontSize: 16, fontWeight: 700, color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : priceStale ? C.yellow : C.text, transition: 'color 0.3s' }}>
+                {mc != null ? fmtMC(mc) : '—'}
               </span>
-              {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
+              {priceStale && !mcDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {mc != null && (
-                <span style={{ color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : C.muted, fontSize: 11, transition: 'color 0.3s' }}>
-                  MC {fmtMC(mc)}
+              {price != null && (
+                <span style={{ color: priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : C.muted, fontSize: 11, transition: 'color 0.3s' }}>
+                  ${fmtPrice(price)}
                 </span>
               )}
               {tokenInfo.holders != null && (

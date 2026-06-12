@@ -1,4 +1,5 @@
-.claude/
+.claude/*.local.json
+.claude/todos/
 node_modules/
 package-lock.json
 
