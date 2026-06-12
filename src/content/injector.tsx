@@ -944,7 +944,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
 
 // ─── Trade Tab ────────────────────────────────────────────────────────────────
 
-function fmtSOLLocal(n: number): string { return n.toFixed(n < 0.01 ? 4 : 2) }
+function fmtSOLLocal(n: number): string { return n.toFixed(2) }
 
 interface TradeTabProps {
   state: AppState; activeTrade: Trade | null; livePnL: { sol: number; percent: number } | null
