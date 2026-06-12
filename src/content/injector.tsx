@@ -415,6 +415,14 @@ function copyToClipboard(text: string) {
 const FONT = "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif"
 const BASE = 14 // base font size (12 * 1.15 ≈ 14)
 
+function fmtPrice(p: number): string {
+  if (p >= 1) return p.toFixed(2)
+  if (p >= 0.01) return p.toFixed(4)
+  // Compter les zéros après la virgule pour afficher le bon nombre de décimales
+  const decimals = Math.max(2, Math.ceil(-Math.log10(p)) + 3)
+  return p.toFixed(Math.min(decimals, 10)).replace(/0+$/, '')
+}
+
 function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [state, setState] = useState<AppState>({
     balance: 50, activeTrade: null, closedTrades: [],
@@ -762,7 +770,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : priceStale ? C.yellow : C.text }}>
-                {price ? (price < 0.01 ? `$${price.toExponential(4)}` : `$${price.toFixed(price < 1 ? 6 : 2)}`) : '—'}
+                {price ? `$${fmtPrice(price)}` : '—'}
               </span>
               {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
             </div>
