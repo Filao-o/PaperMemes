@@ -309,6 +309,33 @@ const axiomAdapter: Adapter = {
 const MC_TEXT_RE = /(?:MC|Market\s*Cap)[:\s]*\$?([\d,.]+[KMBkmb]?)/i
 const LARGE_DOLLAR_RE = /^\$[\d,]{4,}(\.\d+)?$/
 
+function getPadreHolders(): number | null {
+  // MUI tab with "Holders" label + count in parentheses: (953)
+  const tabs = document.querySelectorAll<HTMLElement>('[role="tab"]')
+  for (const tab of tabs) {
+    const text = tab.textContent ?? ''
+    if (/holders/i.test(text)) {
+      const m = text.match(/\((\d[\d,]*)\)/)
+      if (m) return parseInt(m[1].replace(/,/g, ''), 10)
+    }
+  }
+  // Fallback: scan for "(NNN)" pattern near "Holders" text
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+  let node: Node | null
+  while ((node = walker.nextNode())) {
+    const t = (node.textContent ?? '').trim()
+    if (/^holders$/i.test(t)) {
+      // sibling or parent may have the count
+      const parent = node.parentElement?.parentElement
+      if (parent) {
+        const m = parent.textContent?.match(/\((\d[\d,]*)\)/)
+        if (m) return parseInt(m[1].replace(/,/g, ''), 10)
+      }
+    }
+  }
+  return null
+}
+
 const padreAdapter: Adapter = {
   getPrice() {
     const title = fromTitle(); if (title.price) return title.price
@@ -322,20 +349,22 @@ const padreAdapter: Adapter = {
     return null
   },
   getMarketCap() {
-    for (const sel of ['.css-1u0gsx2', '[class*="mcap"]', '[class*="marketCap"]', '[class*="market-cap"]']) {
+    // Try CSS selectors first
+    for (const sel of ['[class*="mcap"]', '[class*="marketCap"]', '[class*="market-cap"]', '[class*="MarketCap"]']) {
       const el = document.querySelector<HTMLElement>(sel)
-      if (el) {
-        const t = el.textContent?.trim() ?? ''
-        if (t.startsWith('$')) { const n = q(t); if (n && n > 0) return n }
-      }
+      if (el) { const n = q(el.textContent); if (n && n >= 1e3) return n }
     }
+    // TreeWalker: look for MC label then nearby value, or large dollar amounts
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
     let node: Node | null
     while ((node = walker.nextNode())) {
       const t = (node.textContent ?? '').trim()
-      const m = t.match(MC_TEXT_RE)
-      if (m) { const n = q(m[1]); if (n && n > 100) return n }
-      if (LARGE_DOLLAR_RE.test(t)) { const n = q(t); if (n && n >= 1e3 && n <= 1e9) return n }
+      const mLabel = t.match(MC_TEXT_RE)
+      if (mLabel) { const n = q(mLabel[1]); if (n && n >= 1e3) return n }
+      // Bare large numbers like "1,234,567" or "$1.2M"
+      if (/^\$?[\d,.]+[KMB]?$/.test(t)) {
+        const n = q(t); if (n && n >= 1e4 && n <= 1e12) return n
+      }
     }
     return null
   },
@@ -354,7 +383,7 @@ const padreAdapter: Adapter = {
     }
     return null
   },
-  getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
+  getExtended: () => ({ liquidity: null, holders: getPadreHolders(), age: walkAge() }),
 }
 
 const ADAPTERS: Record<string, Adapter> = {
@@ -394,6 +423,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     tpPresets: [25, 50, 100, 200], slPresets: [-10, -20, -30, -50],
     buyPresets: [0.1, 0.5, 1, 5], currency: 'SOL', solPrice: 0,
   })
+  const [solPriceLocal, setSolPriceLocal] = useState(0)
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [risk, setRisk] = useState<RiskInfo | null>(null)
   const [tab, setTab] = useState<'trade' | 'journal'>('trade')
@@ -414,6 +444,16 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   useEffect(() => {
     Storage.get().then(setState)
     Storage.onChanged(c => setState(prev => ({ ...prev, ...c })))
+  }, [])
+
+  // SOL price — fetch on mount then every 60s
+  useEffect(() => {
+    const fetch = () => chrome.runtime.sendMessage({ type: 'FETCH_SOL_PRICE' }, res => {
+      if (res?.ok && res.data > 0) setSolPriceLocal(res.data)
+    })
+    fetch()
+    const t = setInterval(fetch, 60_000)
+    return () => clearInterval(t)
   }, [])
 
   useEffect(() => {
@@ -512,26 +552,42 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   }
 
   function handleBuy(amount: number) {
-    if (!tokenInfo || !currentMint) return
-    if (state.activeTrade || state.balance < amount || !tokenInfo.price) return
-    const trade: Trade = {
-      id: `trade_${Date.now()}`,
-      mintAddress: currentMint,
-      tokenName: tokenInfo.tokenName ?? currentMint.slice(0, 6),
-      terminal: currentTerminal,
-      entryPrice: tokenInfo.price,
-      entryMC: tokenInfo.marketCap ?? 0,
-      invested: amount,
-      tokensHeld: amount / tokenInfo.price,
-      tp: null, tpMC: null, sl: null,
-      status: 'active',
-      openedAt: Date.now(),
-      closedAt: null,
-      closeEvents: [],
-      pnlSOL: null,
-      pnlPercent: null,
+    if (!tokenInfo || !currentMint || !tokenInfo.price) return
+    if (state.balance < amount) return
+    const existing = state.activeTrade
+    // Block if a different token is already open
+    if (existing && existing.mintAddress !== currentMint) return
+    if (existing && existing.mintAddress === currentMint) {
+      // DCA: add to existing position, recalculate weighted average entry
+      const newTokensHeld = existing.tokensHeld + amount / tokenInfo.price
+      const newInvested = existing.invested + amount
+      const updated: Trade = {
+        ...existing,
+        tokensHeld: newTokensHeld,
+        invested: newInvested,
+        entryPrice: newInvested / newTokensHeld,
+      }
+      Storage.dcaBuy(updated, state.balance - amount)
+    } else {
+      const trade: Trade = {
+        id: `trade_${Date.now()}`,
+        mintAddress: currentMint,
+        tokenName: tokenInfo.tokenName ?? currentMint.slice(0, 6),
+        terminal: currentTerminal,
+        entryPrice: tokenInfo.price,
+        entryMC: tokenInfo.marketCap ?? 0,
+        invested: amount,
+        tokensHeld: amount / tokenInfo.price,
+        tp: null, tpMC: null, sl: null,
+        status: 'active',
+        openedAt: Date.now(),
+        closedAt: null,
+        closeEvents: [],
+        pnlSOL: null,
+        pnlPercent: null,
+      }
+      Storage.openTrade(trade, state.balance - amount)
     }
-    Storage.openTrade(trade, state.balance - amount)
   }
 
   function handleSell(percent: number) {
@@ -582,22 +638,20 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     setTimeout(() => setCopied(false), 1500)
   }
 
-  const { balance, activeTrade, closedTrades, currency, solPrice, buyPresets, tpPresets, slPresets } = state
+  const { balance, activeTrade, closedTrades, currency, buyPresets, tpPresets, slPresets } = state
+  const solPrice = solPriceLocal
   const price = tokenInfo?.price ?? null
   const mc = tokenInfo?.marketCap ?? null
   const livePnL = activeTrade && price ? getLivePnL(activeTrade, price) : null
   const liveValue = activeTrade && price ? activeTrade.tokensHeld * price : null
+  // Buy buttons: disabled only if different token open
+  const buyBlocked = !!(activeTrade && activeTrade.mintAddress !== currentMint)
 
   function fmtCurStr(sol: number) {
     return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)}`
   }
 
-  // Animated background for price direction
-  const dirBg = priceDir === 'up'
-    ? `${C.green}18`
-    : priceDir === 'down'
-    ? `${C.red}18`
-    : 'transparent'
+  const dirBg = priceDir === 'up' ? `${C.green}18` : priceDir === 'down' ? `${C.red}18` : 'transparent'
 
   return (
     <div style={{
@@ -625,15 +679,17 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         <div style={{ fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
           {currency === 'SOL' ? (
             <><SolIcon size={18} style={{ marginRight: 2 }} />{fmtSOL(balance)}</>
-          ) : (
+          ) : solPrice > 0 ? (
             `$${(balance * solPrice).toFixed(2)}`
+          ) : (
+            <span style={{ color: C.muted, fontSize: 14 }}>Chargement…</span>
           )}
         </div>
         <div style={{ color: C.muted, fontSize: 11, marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
-          {currency === 'SOL' && solPrice > 0 ? (
-            `≈ $${(balance * solPrice).toFixed(2)}`
+          {currency === 'SOL' ? (
+            solPrice > 0 ? `≈ $${(balance * solPrice).toFixed(2)}` : '...'
           ) : (
-            <><SolIcon size={10} />{fmtSOL(balance)}</>
+            <><SolIcon size={10} style={{ marginRight: 2 }} />{fmtSOL(balance)}</>
           )}
         </div>
       </div>
@@ -664,9 +720,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               <span style={{ fontSize: 16, fontWeight: 700, color: priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : priceStale ? C.yellow : C.text }}>
                 {price ? (price < 0.01 ? `$${price.toExponential(4)}` : `$${price.toFixed(price < 1 ? 6 : 2)}`) : '—'}
               </span>
-              {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠ stale</span>}
+              {mc && <span style={{ color: C.muted, fontSize: 11 }}>· {fmtMC(mc)}</span>}
+              {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
             </div>
-            {mc && <div style={{ color: C.muted, fontSize: 12 }}>MC {fmtMC(mc)}</div>}
+            {tokenInfo.holders != null
+              ? <div style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</div>
+              : null
+            }
           </div>
         </div>
       )}
@@ -682,7 +742,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           <TradeTab
             state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
             buyPresets={buyPresets} tpPresets={tpPresets} slPresets={slPresets}
-            hasPrice={!!price}
+            hasPrice={!!price} buyBlocked={buyBlocked}
             onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
             onSetTp={v => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: v, tpMC: null } })}
             onSetSl={v => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: v } })}
@@ -715,12 +775,12 @@ function fmtSOLLocal(n: number): string { return n.toFixed(n < 0.01 ? 4 : 2) }
 interface TradeTabProps {
   state: AppState; activeTrade: Trade | null; livePnL: { sol: number; percent: number } | null
   liveValue: number | null; buyPresets: number[]; tpPresets: number[]; slPresets: number[]
-  hasPrice: boolean; onBuy: (a: number) => void; onSell: (p: number) => void
+  hasPrice: boolean; buyBlocked: boolean; onBuy: (a: number) => void; onSell: (p: number) => void
   onSellInitials: () => void; onSetTp: (v: number | null) => void; onSetSl: (v: number | null) => void
   fmtCurStr: (sol: number) => string; currency: 'SOL' | 'USD'; solPrice: number
 }
 
-function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCurStr, currency }: TradeTabProps) {
+function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCurStr, currency }: TradeTabProps) {
   function AmountLabel({ sol }: { sol: number }) {
     if (currency === 'USD') return <>{fmtCurStr(sol)}</>
     return <><SolIcon size={11} style={{ marginRight: 2 }} />{fmtSOLLocal(sol)}</>
@@ -732,7 +792,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
         <div style={sL}>Achat Rapide</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
           {buyPresets.map(amt => (
-            <Btn key={amt} variant="green" size="sm" disabled={!!activeTrade || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
+            <Btn key={amt} variant="green" size="sm" disabled={buyBlocked || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
               {amt}<SolIcon size={10} style={{ marginLeft: 2 }} />
             </Btn>
           ))}

@@ -33,6 +33,9 @@ export const Storage = {
   async partialClose(trade: Trade, newBalance: number): Promise<void> {
     await chrome.storage.local.set({ activeTrade: trade, balance: newBalance })
   },
+  async dcaBuy(trade: Trade, newBalance: number): Promise<void> {
+    await chrome.storage.local.set({ activeTrade: trade, balance: newBalance })
+  },
   onChanged(cb: (changes: Partial<AppState>) => void) {
     chrome.storage.onChanged.addListener((changes) => {
       const out: Record<string, unknown> = {}
