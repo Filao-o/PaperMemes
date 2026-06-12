@@ -1,5 +1,6 @@
 .claude/*.local.json
 .claude/todos/
+.claude/worktrees/
 node_modules/
 package-lock.json
 
