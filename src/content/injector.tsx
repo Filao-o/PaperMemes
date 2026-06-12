@@ -769,7 +769,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : priceStale ? C.yellow : C.text, transition: 'color 0.3s' }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : priceStale ? C.yellow : C.text, transition: 'color 0.3s' }}>
                 {mc != null ? fmtMC(mc) : '—'}
               </span>
               {priceStale && !mcDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
