@@ -501,7 +501,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     const poll = () => {
       const price = adapter.getPrice()
       const mcRaw = document.querySelector<HTMLElement>('.css-1u0gsx2')?.textContent?.trim() ?? null
-      const mc = adapter.getMarketCap() ?? (mcRaw ? q(mcRaw) : null)
+      // Pour Padre (pump.fun) : supply = 1 milliard → MC = price × 1e9 (plus fiable que scraping)
+      const mcFromPrice = (currentTerminal === 'padre' && price && price > 0) ? Math.round(price * 1e9) : null
+      const mc = mcFromPrice ?? adapter.getMarketCap() ?? (mcRaw ? q(mcRaw) : null)
       const name = adapter.getTokenName()
       const mint = currentMint ?? adapter.getMintAddress() ?? undefined
       const ext = adapter.getExtended()
