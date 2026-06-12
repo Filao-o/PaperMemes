@@ -808,6 +808,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             fmtCurStr={fmtCurStr}
             currency={currency}
             solPrice={solPrice}
+            price={price}
           />
         ) : (
           <JournalPanel closedTrades={closedTrades} currency={currency} solPrice={solPrice} />
@@ -969,7 +970,7 @@ interface TradeTabProps {
   liveValue: number | null; buyPresets: number[]; tpPresets: number[]; slPresets: number[]
   hasPrice: boolean; buyBlocked: boolean; onBuy: (a: number) => void; onSell: (p: number) => void
   onSellInitials: () => void; onSetTp: (v: number | null) => void; onSetSl: (v: number | null) => void
-  fmtCurStr: (sol: number) => string; currency: 'SOL' | 'USD'; solPrice: number
+  fmtCurStr: (sol: number) => string; currency: 'SOL' | 'USD'; solPrice: number; price: number | null
 }
 
 function SellInitialsLink({ onSellInitials, invested, AmountLabel }: {
@@ -996,7 +997,7 @@ function SellInitialsLink({ onSellInitials, invested, AmountLabel }: {
   )
 }
 
-function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCurStr, currency }: TradeTabProps) {
+function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCurStr, currency, price }: TradeTabProps) {
   function AmountLabel({ sol }: { sol: number }) {
     if (currency === 'USD') return <>{fmtCurStr(sol)}</>
     return <><SolIcon size={11} style={{ marginRight: 2 }} />{fmtSOLLocal(sol)}</>
