@@ -589,25 +589,15 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     const existing = state.activeTrade
     // Block if a different token is already open
     if (existing && existing.mintAddress !== currentMint) return
-    const newEntry: import('../types').TradeEntry = {
-      entryPrice: tokenInfo.price,
-      entryMC: tokenInfo.marketCap ?? 0,
-      invested: amount,
-      tokensHeld: amount / tokenInfo.price,
-      timestamp: Date.now(),
-    }
     if (existing && existing.mintAddress === currentMint) {
-      // DCA: add entry, recalculate weighted average
-      const newTokensHeld = existing.tokensHeld + newEntry.tokensHeld
+      // DCA: add to existing position, recalculate weighted average entry
+      const newTokensHeld = existing.tokensHeld + amount / tokenInfo.price
       const newInvested = existing.invested + amount
-      const totalMCWeight = (existing.entries ?? []).reduce((s, e) => s + e.entryMC * e.invested, 0) + newEntry.entryMC * amount
       const updated: Trade = {
         ...existing,
         tokensHeld: newTokensHeld,
         invested: newInvested,
         entryPrice: newInvested / newTokensHeld,
-        entryMC: totalMCWeight / newInvested,
-        entries: [...(existing.entries ?? []), newEntry],
       }
       Storage.dcaBuy(updated, state.balance - amount)
     } else {
@@ -620,7 +610,6 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         entryMC: tokenInfo.marketCap ?? 0,
         invested: amount,
         tokensHeld: amount / tokenInfo.price,
-        entries: [newEntry],
         tp: null, tpMC: null, sl: null,
         status: 'active',
         openedAt: Date.now(),
@@ -1027,46 +1016,21 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
             <span style={sL}>Position ouverte</span>
             <span style={{ color: pnlColor(livePnL.percent), fontSize: 12, fontWeight: 700 }}>{fmtPct(livePnL.percent)}</span>
           </div>
-          {/* Résumé global */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 5, marginBottom: 9 }}>
+          <div style={{ color: C.muted, fontSize: 11, marginBottom: 7 }}>MC ENTRÉE {fmtMC(activeTrade.entryMC)}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
             {[
               { label: 'INV.', sol: activeTrade.invested },
               { label: 'LIVE', sol: liveValue },
+              { label: 'PNL', sol: livePnL.sol, color: pnlColor(livePnL.sol) },
               { label: 'EARNS', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
-            ].map(({ label, sol }) => (
+            ].map(({ label, sol, color }) => (
               <div key={label} style={{ background: C.surface, borderRadius: 6, padding: '6px 4px', textAlign: 'center' }}>
                 <div style={{ color: C.muted, fontSize: 9, marginBottom: 2 }}>{label}</div>
-                <div style={{ color: C.text, fontSize: 11, fontWeight: 700 }}>
+                <div style={{ color: color ?? C.text, fontSize: 11, fontWeight: 700 }}>
                   {sol !== null ? <AmountLabel sol={sol} /> : '—'}
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Entries individuelles */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-            {(activeTrade.entries ?? [{ entryPrice: activeTrade.entryPrice, entryMC: activeTrade.entryMC, invested: activeTrade.invested, tokensHeld: activeTrade.tokensHeld, timestamp: activeTrade.openedAt }]).map((entry, i) => {
-              const entryPnlPct = price ? ((price / entry.entryPrice) - 1) * 100 : null
-              return (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: C.surface, borderRadius: 6, padding: '5px 8px',
-                  borderLeft: `2px solid ${entryPnlPct == null ? C.border : entryPnlPct >= 0 ? C.green : C.red}`,
-                }}>
-                  <span style={{ color: C.muted, fontSize: 11, fontWeight: 600 }}>{fmtMC(entry.entryMC)}</span>
-                  <span style={{ color: C.text, fontSize: 11 }}><AmountLabel sol={entry.invested} /></span>
-                  <span style={{ color: entryPnlPct == null ? C.muted : pnlColor(entryPnlPct), fontSize: 11, fontWeight: 700, minWidth: 48, textAlign: 'right' }}>
-                    {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-
-          {/* MC moyen pondéré */}
-          <div style={{ color: C.muted, fontSize: 10, textAlign: 'center', marginBottom: 7 }}>
-            MC moy. <span style={{ color: C.text, fontWeight: 700 }}>{fmtMC(activeTrade.entryMC)}</span>
-            {' · '}PNL <span style={{ color: pnlColor(livePnL.percent), fontWeight: 700 }}>{fmtPct(livePnL.percent)}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 7 }}>
             {[10, 25, 50, 100].map(pct => (
@@ -1122,71 +1086,37 @@ const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: '
 
 let widgetRoot: ReturnType<typeof createRoot> | null = null
 let lastMint: string | null = null
-let isMounting = false
-let unmountTimer: ReturnType<typeof setTimeout> | null = null
-
-function doUnmount() {
-  if (unmountTimer) { clearTimeout(unmountTimer); unmountTimer = null }
-  const el = document.getElementById('papermemes-root')
-  if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
-  lastMint = null
-}
-
-// Unmount uniquement après 3s de confirmation que l'URL n'est plus sur un token
-function scheduleUnmount() {
-  if (unmountTimer) return
-  unmountTimer = setTimeout(() => {
-    unmountTimer = null
-    const { terminal, mintAddress } = detectTerminal()
-    if (!terminal || !mintAddress) doUnmount()
-  }, 3000)
-}
-
-function cancelUnmount() {
-  if (unmountTimer) { clearTimeout(unmountTimer); unmountTimer = null }
-}
 
 async function tryMount() {
-  if (isMounting) return
   const { terminal, mintAddress: rawMint } = detectTerminal()
 
   if (!terminal || !rawMint) {
-    scheduleUnmount()
+    const el = document.getElementById('papermemes-root')
+    if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
+    lastMint = null
     return
   }
 
-  cancelUnmount()
-  isMounting = true
-  try {
-    const mint = await resolveMint(rawMint)
-    if (mint === lastMint && document.getElementById('papermemes-root')) return
-    lastMint = mint
+  const mint = await resolveMint(rawMint)
 
-    const existing = document.getElementById('papermemes-root')
-    if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
+  if (mint === lastMint && document.getElementById('papermemes-root')) return
+  lastMint = mint
 
-    if (terminal === 'gmgn') fetchGmgn(mint)
+  const existing = document.getElementById('papermemes-root')
+  if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
 
-    const div = document.createElement('div')
-    div.id = 'papermemes-root'
-    document.body.appendChild(div)
-    widgetRoot = createRoot(div)
-    widgetRoot.render(<Widget initialTerminal={terminal} />)
+  if (terminal === 'gmgn') fetchGmgn(mint)
 
-    setTimeout(() => {
-      window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
-    }, 100)
-  } finally {
-    isMounting = false
-  }
+  const div = document.createElement('div')
+  div.id = 'papermemes-root'
+  document.body.appendChild(div)
+  widgetRoot = createRoot(div)
+  widgetRoot.render(<Widget initialTerminal={terminal} />)
+
+  setTimeout(() => {
+    window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
+  }, 100)
 }
-
-// Heartbeat: si le widget a disparu alors qu'on est sur un token, remonter
-setInterval(() => {
-  if (!document.getElementById('papermemes-root') && lastMint) {
-    tryMount()
-  }
-}, 1000)
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => { tryMount(); setupUrlWatcher() })
@@ -1198,25 +1128,32 @@ if (document.readyState === 'loading') {
 function setupUrlWatcher() {
   let lastHref = window.location.href
 
-  const onUrlChange = () => {
-    if (window.location.href === lastHref) return
-    lastHref = window.location.href
-    setTimeout(tryMount, 300)
-    setTimeout(tryMount, 1000)
-  }
-
   const patchHistory = (method: 'pushState' | 'replaceState') => {
     const original = history[method].bind(history)
     history[method] = (...args: Parameters<typeof history.pushState>) => {
       original(...args)
-      onUrlChange()
+      if (window.location.href !== lastHref) {
+        lastHref = window.location.href
+        setTimeout(tryMount, 300)
+      }
     }
   }
   patchHistory('pushState')
   patchHistory('replaceState')
-  window.addEventListener('popstate', onUrlChange)
 
-  setInterval(onUrlChange, 800)
+  window.addEventListener('popstate', () => {
+    if (window.location.href !== lastHref) {
+      lastHref = window.location.href
+      setTimeout(tryMount, 300)
+    }
+  })
+
+  setInterval(() => {
+    if (window.location.href !== lastHref) {
+      lastHref = window.location.href
+      setTimeout(tryMount, 300)
+    }
+  }, 1000)
 }
 
 export {}

@@ -1,11 +1,3 @@
-export interface TradeEntry {
-  entryPrice: number
-  entryMC: number
-  invested: number
-  tokensHeld: number
-  timestamp: number
-}
-
 export interface Trade {
   id: string
   mintAddress: string
@@ -15,7 +7,6 @@ export interface Trade {
   entryMC: number
   invested: number
   tokensHeld: number
-  entries: TradeEntry[]
   tp: number | null
   tpMC: number | null
   sl: number | null
