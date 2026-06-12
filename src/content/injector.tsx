@@ -356,33 +356,32 @@ const padreAdapter: Adapter = {
     return null
   },
   getMarketCap() {
-    // 1. monospace3 avec K/M/B ($43.7K) — format le plus fiable sur Padre
-    for (const el of document.querySelectorAll<HTMLElement>('[class*="monospace3"]')) {
-      const t = (el.textContent ?? '').trim()
-      if (/^\$[\d.]+[KMB]$/i.test(t)) {
-        const n = q(t); if (n && n >= 1e3) return n
+    // 1. Cherche le label "Market cap" (aria-label FDV) puis prend le monospace3 dans le même container
+    for (const label of document.querySelectorAll<HTMLElement>('[aria-label*="diluted"], [aria-label*="Market cap"], [aria-label*="market cap"]')) {
+      const container = label.closest('.MuiStack-root, [class*="Stack"], div') as HTMLElement | null
+      if (!container) continue
+      for (const el of container.querySelectorAll<HTMLElement>('[class*="monospace3"]')) {
+        const n = q(el.textContent); if (n && n >= 1e3) return n
       }
     }
-    // 2. css-1u0gsx2 — même classe, attrape aussi les montants bruts ($10000)
-    for (const el of document.querySelectorAll<HTMLElement>('.css-1u0gsx2')) {
-      const t = (el.textContent ?? '').trim()
-      if (/^\$[\d,.]+[KMB]?$/.test(t)) {
-        const n = q(t); if (n && n >= 1e3 && n <= 1e12) return n
-      }
-    }
-    for (const sel of ['[class*="mcap"]', '[class*="marketCap"]', '[class*="market-cap"]', '[class*="MarketCap"]']) {
-      const el = document.querySelector<HTMLElement>(sel)
-      if (el) { const n = q(el.textContent); if (n && n >= 1e3) return n }
-    }
-    // 3. TreeWalker : label MC + valeur, ou gros montant $ brut
+    // 2. TreeWalker: trouve le texte "Market cap" puis récupère la valeur voisine
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
     let node: Node | null
     while ((node = walker.nextNode())) {
       const t = (node.textContent ?? '').trim()
-      const mLabel = t.match(MC_TEXT_RE)
-      if (mLabel) { const n = q(mLabel[1]); if (n && n >= 1e3) return n }
-      if (/^\$[\d,]{4,}(\.\d+)?$/.test(t)) {
-        const n = q(t); if (n && n >= 1e3 && n <= 1e12) return n
+      if (!/^market\s*cap$/i.test(t)) continue
+      const container = (node.parentElement?.closest('div, section') ?? node.parentElement) as HTMLElement | null
+      if (!container) continue
+      for (const el of container.querySelectorAll<HTMLElement>('[class*="monospace3"], [class*="css-1u0gsx2"]')) {
+        const n = q(el.textContent); if (n && n >= 1e3) return n
+      }
+      break
+    }
+    // 3. Fallback: monospace3 avec K/M/B
+    for (const el of document.querySelectorAll<HTMLElement>('[class*="monospace3"]')) {
+      const t = (el.textContent ?? '').trim()
+      if (/^\$[\d.]+[KMB]$/i.test(t)) {
+        const n = q(t); if (n && n >= 1e3) return n
       }
     }
     return null
