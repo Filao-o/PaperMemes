@@ -338,20 +338,18 @@ function getPadreHolders(): number | null {
 
 const padreAdapter: Adapter = {
   getPrice() {
-    const title = fromTitle(); if (title.price) return title.price
-    // Target monospace3 elements but only sub-cent prices (not MC values like $43.7K)
+    // Parse Padre's subscript price format: $0.0₄145 → 0.00000145
+    // Subscript digits ₀₁₂₃₄₅₆₇₈₉ encode the number of leading zeros after "0."
+    const SUBSCRIPT_MAP: Record<string, number> = { '₀':0,'₁':1,'₂':2,'₃':3,'₄':4,'₅':5,'₆':6,'₇':7,'₈':8,'₉':9 }
     for (const el of document.querySelectorAll<HTMLElement>('[class*="monospace3"]')) {
       const t = (el.textContent ?? '').trim()
-      // Price looks like $0.000042 or $1.23, MC looks like $43.7K — skip K/M/B
-      if (/[KMB]$/i.test(t)) continue
-      const n = q(t); if (n && n > 0 && n < 1000) return n
-    }
-    const el = dt(/^\$?(0\.0*[1-9][\d.]{0,10})$/)
-    if (el) { const n = q(el.textContent); if (n && n > 0) return n }
-    for (const sel of ['[class*="price"]:not([class*="change"])', '[class*="Price"]:not([class*="Diff"])', '[class*="tokenValue"]']) {
-      for (const el of document.querySelectorAll<HTMLElement>(sel)) {
-        const n = q(el.textContent); if (n && n > 0 && n < 1000) return n
+      const sub = t.match(/^\$0\.0([₀-₉])(\d+)$/)
+      if (sub) {
+        const zeros = SUBSCRIPT_MAP[sub[1]] ?? 0
+        return parseFloat(`0.${'0'.repeat(zeros)}${sub[2]}`)
       }
+      if (/[KMB]$/i.test(t)) continue
+      const n = q(t); if (n && n > 0 && n < 1) return n
     }
     return null
   },
