@@ -1122,37 +1122,71 @@ const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: '
 
 let widgetRoot: ReturnType<typeof createRoot> | null = null
 let lastMint: string | null = null
+let isMounting = false
+let unmountTimer: ReturnType<typeof setTimeout> | null = null
+
+function doUnmount() {
+  if (unmountTimer) { clearTimeout(unmountTimer); unmountTimer = null }
+  const el = document.getElementById('papermemes-root')
+  if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
+  lastMint = null
+}
+
+// Unmount uniquement après 3s de confirmation que l'URL n'est plus sur un token
+function scheduleUnmount() {
+  if (unmountTimer) return
+  unmountTimer = setTimeout(() => {
+    unmountTimer = null
+    const { terminal, mintAddress } = detectTerminal()
+    if (!terminal || !mintAddress) doUnmount()
+  }, 3000)
+}
+
+function cancelUnmount() {
+  if (unmountTimer) { clearTimeout(unmountTimer); unmountTimer = null }
+}
 
 async function tryMount() {
+  if (isMounting) return
   const { terminal, mintAddress: rawMint } = detectTerminal()
 
   if (!terminal || !rawMint) {
-    const el = document.getElementById('papermemes-root')
-    if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
-    lastMint = null
+    scheduleUnmount()
     return
   }
 
-  const mint = await resolveMint(rawMint)
+  cancelUnmount()
+  isMounting = true
+  try {
+    const mint = await resolveMint(rawMint)
+    if (mint === lastMint && document.getElementById('papermemes-root')) return
+    lastMint = mint
 
-  if (mint === lastMint && document.getElementById('papermemes-root')) return
-  lastMint = mint
+    const existing = document.getElementById('papermemes-root')
+    if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
 
-  const existing = document.getElementById('papermemes-root')
-  if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
+    if (terminal === 'gmgn') fetchGmgn(mint)
 
-  if (terminal === 'gmgn') fetchGmgn(mint)
+    const div = document.createElement('div')
+    div.id = 'papermemes-root'
+    document.body.appendChild(div)
+    widgetRoot = createRoot(div)
+    widgetRoot.render(<Widget initialTerminal={terminal} />)
 
-  const div = document.createElement('div')
-  div.id = 'papermemes-root'
-  document.body.appendChild(div)
-  widgetRoot = createRoot(div)
-  widgetRoot.render(<Widget initialTerminal={terminal} />)
-
-  setTimeout(() => {
-    window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
-  }, 100)
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('papermemes:urlchange', { detail: { terminal, mintAddress: mint } }))
+    }, 100)
+  } finally {
+    isMounting = false
+  }
 }
+
+// Heartbeat: si le widget a disparu alors qu'on est sur un token, remonter
+setInterval(() => {
+  if (!document.getElementById('papermemes-root') && lastMint) {
+    tryMount()
+  }
+}, 1000)
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => { tryMount(); setupUrlWatcher() })
@@ -1164,32 +1198,25 @@ if (document.readyState === 'loading') {
 function setupUrlWatcher() {
   let lastHref = window.location.href
 
+  const onUrlChange = () => {
+    if (window.location.href === lastHref) return
+    lastHref = window.location.href
+    setTimeout(tryMount, 300)
+    setTimeout(tryMount, 1000)
+  }
+
   const patchHistory = (method: 'pushState' | 'replaceState') => {
     const original = history[method].bind(history)
     history[method] = (...args: Parameters<typeof history.pushState>) => {
       original(...args)
-      if (window.location.href !== lastHref) {
-        lastHref = window.location.href
-        setTimeout(tryMount, 300)
-      }
+      onUrlChange()
     }
   }
   patchHistory('pushState')
   patchHistory('replaceState')
+  window.addEventListener('popstate', onUrlChange)
 
-  window.addEventListener('popstate', () => {
-    if (window.location.href !== lastHref) {
-      lastHref = window.location.href
-      setTimeout(tryMount, 300)
-    }
-  })
-
-  setInterval(() => {
-    if (window.location.href !== lastHref) {
-      lastHref = window.location.href
-      setTimeout(tryMount, 300)
-    }
-  }, 1000)
+  setInterval(onUrlChange, 800)
 }
 
 export {}
