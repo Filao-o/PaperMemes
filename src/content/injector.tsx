@@ -1125,16 +1125,18 @@ let lastMint: string | null = null
 let unmountTimer: number | null = null
 let mountPending = false
 
+// Only call scheduleUnmount from the URL watcher (URL changed away from token page),
+// never from tryMount (DOM may be briefly unstable during SPA transitions / buy actions).
 function scheduleUnmount() {
   if (unmountTimer) return
   unmountTimer = window.setTimeout(() => {
     unmountTimer = null
     const { terminal, mintAddress } = detectTerminal()
-    if (terminal && mintAddress) return // page has a token again, abort unmount
+    if (terminal && mintAddress) return // token page again — abort
     const el = document.getElementById('papermemes-root')
     if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
     lastMint = null
-  }, 2500)
+  }, 3000)
 }
 
 function cancelUnmount() {
@@ -1147,10 +1149,8 @@ async function tryMount() {
   try {
     const { terminal, mintAddress: rawMint } = detectTerminal()
 
-    if (!terminal || !rawMint) {
-      scheduleUnmount()
-      return
-    }
+    // No token detected — do nothing. Unmount is ONLY triggered by URL changes.
+    if (!terminal || !rawMint) return
 
     cancelUnmount()
     const mint = await resolveMint(rawMint)
@@ -1182,8 +1182,9 @@ async function tryMount() {
 // Retry mount with backoff on initial load (SPA may not be ready immediately)
 function tryMountWithRetry() {
   tryMount()
-  setTimeout(tryMount, 800)
-  setTimeout(tryMount, 2000)
+  setTimeout(tryMount, 600)
+  setTimeout(tryMount, 1500)
+  setTimeout(tryMount, 3000)
 }
 
 if (document.readyState === 'loading') {
@@ -1196,35 +1197,48 @@ if (document.readyState === 'loading') {
 function setupUrlWatcher() {
   let lastHref = window.location.href
 
+  const onUrlChange = () => {
+    const href = window.location.href
+    if (href === lastHref) return
+    const prev = lastHref
+    lastHref = href
+
+    // If URL changed away from a token page, schedule unmount
+    const { terminal, mintAddress } = detectTerminal()
+    if (!terminal || !mintAddress) {
+      scheduleUnmount()
+    } else {
+      cancelUnmount()
+      // New token page — try mount with retries
+      setTimeout(tryMount, 300)
+      setTimeout(tryMount, 900)
+      setTimeout(tryMount, 2000)
+    }
+    void prev
+  }
+
   const patchHistory = (method: 'pushState' | 'replaceState') => {
     const original = history[method].bind(history)
     history[method] = (...args: Parameters<typeof history.pushState>) => {
       original(...args)
-      if (window.location.href !== lastHref) {
-        lastHref = window.location.href
-        setTimeout(tryMount, 400)
-        setTimeout(tryMount, 1200)
-      }
+      setTimeout(onUrlChange, 0)
     }
   }
   patchHistory('pushState')
   patchHistory('replaceState')
 
-  window.addEventListener('popstate', () => {
-    if (window.location.href !== lastHref) {
-      lastHref = window.location.href
-      setTimeout(tryMount, 400)
-      setTimeout(tryMount, 1200)
+  window.addEventListener('popstate', () => setTimeout(onUrlChange, 0))
+
+  // Polling fallback for SPAs that mutate URL without history API
+  setInterval(onUrlChange, 800)
+
+  // MutationObserver: re-try mount when major DOM structure changes (SPA navigation)
+  const observer = new MutationObserver(() => {
+    if (!document.getElementById('papermemes-root')) {
+      tryMount()
     }
   })
-
-  // Polling fallback — only triggers when URL actually changed
-  setInterval(() => {
-    if (window.location.href !== lastHref) {
-      lastHref = window.location.href
-      setTimeout(tryMount, 400)
-    }
-  }, 1000)
+  observer.observe(document.body, { childList: true, subtree: false })
 }
 
 export {}
