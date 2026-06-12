@@ -1031,6 +1031,28 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
               </span>
             )}
           </div>
+          {/* Lignes par entry — uniquement si DCA (2+ achats) */}
+          {(activeTrade.entries ?? []).length > 1 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 9 }}>
+              {(activeTrade.entries ?? []).map((entry, i) => {
+                const entryPnlPct = price ? ((price / entry.entryPrice) - 1) * 100 : null
+                const pctColor = entryPnlPct == null ? C.muted : entryPnlPct >= 0 ? C.green : C.red
+                return (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: C.surface, borderRadius: 6, padding: '4px 8px',
+                    borderLeft: `2px solid ${pctColor}`, fontSize: 11,
+                  }}>
+                    <span style={{ color: C.muted }}>{fmtMC(entry.entryMC)}</span>
+                    <span style={{ color: C.text }}><AmountLabel sol={entry.invested} /></span>
+                    <span style={{ color: pctColor, fontWeight: 700 }}>
+                      {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
             {[
               { label: 'INV.', sol: activeTrade.invested },
