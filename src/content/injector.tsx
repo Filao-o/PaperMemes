@@ -431,6 +431,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [showConfig, setShowConfig] = useState(false)
   const [priceStale, setPriceStale] = useState(false)
   const [priceDir, setPriceDir] = useState<'up' | 'down' | null>(null)
+  const [mcDir, setMcDir] = useState<'up' | 'down' | null>(null)
   const [copied, setCopied] = useState(false)
   const [currentTerminal, setCurrentTerminal] = useState(initialTerminal)
   const [currentMint, setCurrentMint] = useState<string | null>(null)
@@ -438,6 +439,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const intervalRef = useRef<number | null>(null)
   const staleRef = useRef<number | null>(null)
   const dirRef = useRef<number | null>(null)
+  const mcDirRef = useRef<number | null>(null)
+  const lastMcRef = useRef<number | null>(null)
   const lastPriceRef = useRef<number | null>(null)
   const prevPriceRef = useRef<number | null>(null)
   const stateRef = useRef(state)
@@ -521,6 +524,14 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           setPriceStale(false)
           if (staleRef.current) clearTimeout(staleRef.current)
           staleRef.current = window.setTimeout(() => setPriceStale(true), 10_000)
+          // MC direction tracking
+          if (mc !== null && lastMcRef.current !== null && mc !== lastMcRef.current) {
+            const dir = mc > lastMcRef.current ? 'up' : 'down'
+            setMcDir(dir)
+            if (mcDirRef.current) clearTimeout(mcDirRef.current)
+            mcDirRef.current = window.setTimeout(() => setMcDir(null), 1200)
+          }
+          if (mc !== null) lastMcRef.current = mc
 
           const trade = stateRef.current.activeTrade
           if (trade && mc !== null) checkTpSl(price, mc, trade)
@@ -753,12 +764,18 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               <span style={{ fontSize: 16, fontWeight: 700, color: priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : priceStale ? C.yellow : C.text }}>
                 {price ? (price < 0.01 ? `$${price.toExponential(4)}` : `$${price.toFixed(price < 1 ? 6 : 2)}`) : '—'}
               </span>
-              {mc != null && <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{fmtMC(mc)}</span>}
               {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
             </div>
-            {tokenInfo.holders != null && (
-              <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>
-            )}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {mc != null && (
+                <span style={{ color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : C.muted, fontSize: 11, transition: 'color 0.3s' }}>
+                  MC {fmtMC(mc)}
+                </span>
+              )}
+              {tokenInfo.holders != null && (
+                <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>
+              )}
+            </div>
           </div>
         </div>
       )}
