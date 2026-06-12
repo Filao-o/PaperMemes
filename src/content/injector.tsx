@@ -435,6 +435,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [risk, setRisk] = useState<RiskInfo | null>(null)
   const [tab, setTab] = useState<'trade' | 'journal'>('trade')
+  const [showConfig, setShowConfig] = useState(false)
   const [priceStale, setPriceStale] = useState(false)
   const [priceDir, setPriceDir] = useState<'up' | 'down' | null>(null)
   const [copied, setCopied] = useState(false)
@@ -686,10 +687,22 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
           <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
-        <CurrencyToggle
-          value={currency}
-          onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <CurrencyToggle
+            value={currency}
+            onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
+          />
+          <button
+            onClick={() => setShowConfig(v => !v)}
+            title="Paramètres"
+            style={{
+              background: showConfig ? C.surface : 'transparent',
+              border: `1px solid ${showConfig ? C.green : C.border}`,
+              borderRadius: 6, cursor: 'pointer', color: showConfig ? C.green : C.muted,
+              fontSize: 14, lineHeight: 1, padding: '3px 6px',
+            }}
+          >⚙</button>
+        </div>
       </div>
 
       {/* 2 — Wallet */}
@@ -749,14 +762,18 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         </div>
       )}
 
-      {/* Tabs */}
-      <div style={{ flexShrink: 0, padding: '0 12px' }}>
-        <Tabs tabs={['trade', 'journal']} active={tab} onChange={t => setTab(t as 'trade' | 'journal')} />
-      </div>
+      {/* Tabs — masqués quand config ouvert */}
+      {!showConfig && (
+        <div style={{ flexShrink: 0, padding: '0 12px' }}>
+          <Tabs tabs={['trade', 'journal']} active={tab} onChange={t => setTab(t as 'trade' | 'journal')} />
+        </div>
+      )}
 
-      {/* 4/5 — Content */}
+      {/* Contenu principal ou panneau config */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '9px 12px' }}>
-        {tab === 'trade' && (
+        {showConfig ? (
+          <ConfigPanel buyPresets={buyPresets} />
+        ) : tab === 'trade' ? (
           <TradeTab
             state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
             buyPresets={buyPresets} tpPresets={tpPresets} slPresets={slPresets}
@@ -768,8 +785,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             currency={currency}
             solPrice={solPrice}
           />
-        )}
-        {tab === 'journal' && (
+        ) : (
           <JournalPanel closedTrades={closedTrades} currency={currency} solPrice={solPrice} />
         )}
       </div>
@@ -781,6 +797,75 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           <div style={{ color: C.red, fontSize: 11, marginBottom: 2 }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
         )}
         <div style={{ color: C.yellow, fontSize: 10 }}>⚠ TP/SL s'exécutent uniquement si cet onglet reste ouvert.</div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Config Panel ─────────────────────────────────────────────────────────────
+
+function ConfigPanel({ buyPresets }: { buyPresets: number[] }) {
+  // 8 slots, pre-filled with existing presets
+  const [inputs, setInputs] = useState<string[]>(() => {
+    const filled = buyPresets.map(v => String(v))
+    while (filled.length < 8) filled.push('')
+    return filled.slice(0, 8)
+  })
+
+  function handleChange(i: number, val: string) {
+    // Allow only digits and dot
+    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return
+    setInputs(prev => { const next = [...prev]; next[i] = val; return next })
+  }
+
+  function handleSave() {
+    const presets = inputs
+      .map(v => parseFloat(v))
+      .filter(v => !isNaN(v) && v > 0)
+    Storage.set({ buyPresets: presets })
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div>
+        <div style={sL}>Boutons d'achat rapide</div>
+        <div style={{ color: C.muted, fontSize: 11, marginBottom: 10 }}>
+          Saisis tes montants en SOL (jusqu'à 8 boutons). Les cases vides sont ignorées.
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          {inputs.map((val, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={val}
+                placeholder="—"
+                onChange={e => handleChange(i, e.target.value)}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  background: C.surface, border: `1px solid ${val ? C.green : C.border}`,
+                  borderRadius: 6, color: C.text, fontSize: 12, fontWeight: 700,
+                  padding: '7px 4px', textAlign: 'center', outline: 'none',
+                  fontFamily: 'inherit',
+                }}
+              />
+              {val && (
+                <span style={{ position: 'absolute', bottom: 2, right: 4, fontSize: 8, color: C.muted }}>SOL</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={handleSave}
+          style={{
+            marginTop: 12, width: '100%', padding: '9px 0',
+            background: C.green, border: 'none', borderRadius: 6,
+            color: '#000', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+            fontFamily: 'inherit',
+          }}
+        >
+          Sauvegarder
+        </button>
       </div>
     </div>
   )
