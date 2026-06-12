@@ -339,32 +339,40 @@ function getPadreHolders(): number | null {
 const padreAdapter: Adapter = {
   getPrice() {
     const title = fromTitle(); if (title.price) return title.price
-    const el = dt(/^\$?(0\.0*[1-9][\d.]{0,10}|[\d]{1,6}\.[\d]+)$/)
+    // Target monospace3 elements but only sub-cent prices (not MC values like $43.7K)
+    for (const el of document.querySelectorAll<HTMLElement>('[class*="monospace3"]')) {
+      const t = (el.textContent ?? '').trim()
+      // Price looks like $0.000042 or $1.23, MC looks like $43.7K — skip K/M/B
+      if (/[KMB]$/i.test(t)) continue
+      const n = q(t); if (n && n > 0 && n < 1000) return n
+    }
+    const el = dt(/^\$?(0\.0*[1-9][\d.]{0,10})$/)
     if (el) { const n = q(el.textContent); if (n && n > 0) return n }
-    for (const sel of ['[class*="price"]:not([class*="change"])', '[class*="Price"]:not([class*="Diff"])', '[class*="tokenValue"]', '.css-1u0gsx2']) {
+    for (const sel of ['[class*="price"]:not([class*="change"])', '[class*="Price"]:not([class*="Diff"])', '[class*="tokenValue"]']) {
       for (const el of document.querySelectorAll<HTMLElement>(sel)) {
-        const n = q(el.textContent); if (n && n > 0 && n < 1e6) return n
+        const n = q(el.textContent); if (n && n > 0 && n < 1000) return n
       }
     }
     return null
   },
   getMarketCap() {
-    // Try CSS selectors first
+    // Target monospace3 elements that contain K/M/B formatted dollar amounts
+    for (const el of document.querySelectorAll<HTMLElement>('[class*="monospace3"]')) {
+      const t = (el.textContent ?? '').trim()
+      if (/^\$[\d.]+[KMB]$/i.test(t)) {
+        const n = q(t); if (n && n >= 1e3) return n
+      }
+    }
     for (const sel of ['[class*="mcap"]', '[class*="marketCap"]', '[class*="market-cap"]', '[class*="MarketCap"]']) {
       const el = document.querySelector<HTMLElement>(sel)
       if (el) { const n = q(el.textContent); if (n && n >= 1e3) return n }
     }
-    // TreeWalker: look for MC label then nearby value, or large dollar amounts
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
     let node: Node | null
     while ((node = walker.nextNode())) {
       const t = (node.textContent ?? '').trim()
       const mLabel = t.match(MC_TEXT_RE)
       if (mLabel) { const n = q(mLabel[1]); if (n && n >= 1e3) return n }
-      // Bare large numbers like "1,234,567" or "$1.2M"
-      if (/^\$?[\d,.]+[KMB]?$/.test(t)) {
-        const n = q(t); if (n && n >= 1e4 && n <= 1e12) return n
-      }
     }
     return null
   },
