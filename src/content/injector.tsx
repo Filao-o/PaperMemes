@@ -356,28 +356,10 @@ const padreAdapter: Adapter = {
     return null
   },
   getMarketCap() {
-    // 1. Cherche le label "Market cap" (aria-label FDV) puis prend le monospace3 dans le même container
-    for (const label of document.querySelectorAll<HTMLElement>('[aria-label*="diluted"], [aria-label*="Market cap"], [aria-label*="market cap"]')) {
-      const container = label.closest('.MuiStack-root, [class*="Stack"], div') as HTMLElement | null
-      if (!container) continue
-      for (const el of container.querySelectorAll<HTMLElement>('[class*="monospace3"]')) {
-        const n = q(el.textContent); if (n && n >= 1e3) return n
-      }
-    }
-    // 2. TreeWalker: trouve le texte "Market cap" puis récupère la valeur voisine
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
-    let node: Node | null
-    while ((node = walker.nextNode())) {
-      const t = (node.textContent ?? '').trim()
-      if (!/^market\s*cap$/i.test(t)) continue
-      const container = (node.parentElement?.closest('div, section') ?? node.parentElement) as HTMLElement | null
-      if (!container) continue
-      for (const el of container.querySelectorAll<HTMLElement>('[class*="monospace3"], [class*="css-1u0gsx2"]')) {
-        const n = q(el.textContent); if (n && n >= 1e3) return n
-      }
-      break
-    }
-    // 3. Fallback: monospace3 avec K/M/B
+    // css-1u0gsx2 est la classe unique du MC sur Padre (les valeurs de table utilisent css-5ztp4i etc.)
+    const el = document.querySelector<HTMLElement>('.css-1u0gsx2')
+    if (el) { const n = q(el.textContent); if (n && n >= 1e3) return n }
+    // Fallback: monospace3 avec préfixe $ et suffix K/M/B (les valeurs de table n'ont pas de $)
     for (const el of document.querySelectorAll<HTMLElement>('[class*="monospace3"]')) {
       const t = (el.textContent ?? '').trim()
       if (/^\$[\d.]+[KMB]$/i.test(t)) {
