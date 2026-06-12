@@ -446,13 +446,18 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     Storage.onChanged(c => setState(prev => ({ ...prev, ...c })))
   }, [])
 
-  // SOL price — fetch on mount then every 60s
+  // SOL price — fetch directly (service worker MV3 sleep causes message loss)
   useEffect(() => {
-    const fetch = () => chrome.runtime.sendMessage({ type: 'FETCH_SOL_PRICE' }, res => {
-      if (res?.ok && res.data > 0) setSolPriceLocal(res.data)
-    })
-    fetch()
-    const t = setInterval(fetch, 60_000)
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch('https://price.jup.ag/v6/price?ids=SOL')
+        const data = await res.json()
+        const p = data?.data?.SOL?.price ?? 0
+        if (p > 0) setSolPriceLocal(p)
+      } catch {}
+    }
+    fetchPrice()
+    const t = setInterval(fetchPrice, 60_000)
     return () => clearInterval(t)
   }, [])
 
@@ -720,13 +725,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               <span style={{ fontSize: 16, fontWeight: 700, color: priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : priceStale ? C.yellow : C.text }}>
                 {price ? (price < 0.01 ? `$${price.toExponential(4)}` : `$${price.toFixed(price < 1 ? 6 : 2)}`) : '—'}
               </span>
-              {mc && <span style={{ color: C.muted, fontSize: 11 }}>· {fmtMC(mc)}</span>}
               {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
             </div>
-            {tokenInfo.holders != null
-              ? <div style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</div>
-              : null
-            }
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+              {mc && <span style={{ color: C.muted, fontSize: 11 }}>{fmtMC(mc)}</span>}
+              {tokenInfo.holders != null && <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>}
+            </div>
           </div>
         </div>
       )}
