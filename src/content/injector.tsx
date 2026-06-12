@@ -954,6 +954,30 @@ interface TradeTabProps {
   fmtCurStr: (sol: number) => string; currency: 'SOL' | 'USD'; solPrice: number
 }
 
+function SellInitialsLink({ onSellInitials, invested, AmountLabel }: {
+  onSellInitials: () => void
+  invested: number
+  AmountLabel: React.FC<{ sol: number }>
+}) {
+  const [hover, setHover] = React.useState(false)
+  return (
+    <div style={{ textAlign: 'center', marginTop: 4 }}>
+      <span
+        onClick={onSellInitials}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{
+          color: C.yellow, fontSize: 11, cursor: 'pointer',
+          textDecoration: hover ? 'underline' : 'none',
+          userSelect: 'none',
+        }}
+      >
+        ⟳ Récupérer la mise — <AmountLabel sol={invested} />
+      </span>
+    </div>
+  )
+}
+
 function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCurStr, currency }: TradeTabProps) {
   function AmountLabel({ sol }: { sol: number }) {
     if (currency === 'USD') return <>{fmtCurStr(sol)}</>
@@ -984,10 +1008,10 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
           <div style={{ color: C.muted, fontSize: 11, marginBottom: 7 }}>MC ENTRÉE {fmtMC(activeTrade.entryMC)}</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
             {[
-              { label: 'INVESTI', sol: activeTrade.invested },
-              { label: 'VALEUR', sol: liveValue },
+              { label: 'INV.', sol: activeTrade.invested },
+              { label: 'LIVE', sol: liveValue },
               { label: 'PNL', sol: livePnL.sol, color: pnlColor(livePnL.sol) },
-              { label: 'CASHOUT', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
+              { label: 'EARNS', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
             ].map(({ label, sol, color }) => (
               <div key={label} style={{ background: C.surface, borderRadius: 6, padding: '6px 4px', textAlign: 'center' }}>
                 <div style={{ color: C.muted, fontSize: 9, marginBottom: 2 }}>{label}</div>
@@ -1002,10 +1026,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
               <Btn key={pct} variant="red" size="sm" onClick={() => onSell(pct)}>{pct}%</Btn>
             ))}
           </div>
-          <Btn variant="yellow" style={{ width: '100%', padding: '8px 0' }} onClick={onSellInitials}>
-            ⟳ SELL INITIALS — <AmountLabel sol={activeTrade.invested} />
-          </Btn>
-          <div style={{ color: C.muted, fontSize: 10, textAlign: 'center', marginTop: 3 }}>Récupère votre mise · laisse les gains courir</div>
+          <SellInitialsLink onSellInitials={onSellInitials} invested={activeTrade.invested} AmountLabel={AmountLabel} />
         </div>
       ) : (
         <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '14px 0' }}>
