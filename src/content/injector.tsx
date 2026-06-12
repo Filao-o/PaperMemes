@@ -499,7 +499,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
     const poll = () => {
       const price = adapter.getPrice()
-      const mc = adapter.getMarketCap()
+      const mcRaw = document.querySelector<HTMLElement>('.css-1u0gsx2')?.textContent?.trim() ?? null
+      const mc = adapter.getMarketCap() ?? (mcRaw ? q(mcRaw) : null)
       const name = adapter.getTokenName()
       const mint = currentMint ?? adapter.getMintAddress() ?? undefined
       const ext = adapter.getExtended()
@@ -754,9 +755,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               </span>
               {priceStale && !priceDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
             </div>
-            {tokenInfo.holders != null && (
-              <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>
-            )}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {mc != null && <span style={{ color: C.muted, fontSize: 11 }}>MC {fmtMC(mc)}</span>}
+              {tokenInfo.holders != null && (
+                <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>
+              )}
+            </div>
           </div>
         </div>
       )}
