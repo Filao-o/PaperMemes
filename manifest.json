@@ -15,7 +15,8 @@
     "https://frontend-api.pump.fun/*",
     "https://api.rugcheck.xyz/*",
     "https://api.dexscreener.com/*",
-    "https://price.jup.ag/*"
+    "https://price.jup.ag/*",
+    "https://api.binance.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

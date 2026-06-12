@@ -446,9 +446,15 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     Storage.onChanged(c => setState(prev => ({ ...prev, ...c })))
   }, [])
 
-  // SOL price — fetch directly (service worker MV3 sleep causes message loss)
+  // SOL price — try multiple sources with open CORS
   useEffect(() => {
     const fetchPrice = async () => {
+      try {
+        const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT')
+        const data = await res.json()
+        const p = parseFloat(data?.price ?? '0')
+        if (p > 0) { setSolPriceLocal(p); return }
+      } catch {}
       try {
         const res = await fetch('https://price.jup.ag/v6/price?ids=SOL')
         const data = await res.json()
