@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Storage } from '../storage'
 import type { AppState, Trade } from '../types'
-import { C, fmtSOL, fmtMC, pnlColor, Tabs, Divider, Badge, SolIcon } from './components/ui'
-import { JournalPanel } from './components/JournalPanel'
+import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Badge, SolIcon } from './components/ui'
 
 // ─── Reset Modal ──────────────────────────────────────────────────────────────
 
@@ -31,7 +30,6 @@ function ResetModal({ onClose }: { onClose: () => void }) {
         fontFamily: "'JetBrains Mono', monospace",
       }}>
         <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.text }}>Réinitialiser le wallet</div>
-
         <div>
           <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Montant (SOL)</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -47,7 +45,6 @@ function ResetModal({ onClose }: { onClose: () => void }) {
             ))}
           </div>
         </div>
-
         <div>
           <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Montant personnalisé</div>
           <input type="text" inputMode="decimal" placeholder="ex: 25" value={custom}
@@ -59,11 +56,9 @@ function ResetModal({ onClose }: { onClose: () => void }) {
               padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
             }} />
         </div>
-
         <div style={{ color: C.muted, fontSize: 11, textAlign: 'center' }}>
           Nouveau solde : <span style={{ color: C.green, fontWeight: 700 }}>{activeAmount > 0 ? `${activeAmount} SOL` : '—'}</span>
         </div>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={() => handleReset(false)} disabled={activeAmount <= 0} style={{
             width: '100%', padding: '10px 0', borderRadius: 6, fontFamily: 'inherit',
@@ -88,10 +83,165 @@ function ResetModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+// ─── PnL Curve ────────────────────────────────────────────────────────────────
+
+function PnlCurve({ trades }: { trades: Trade[] }) {
+  const W = 332
+  const H = 56
+  const PAD = 4
+
+  if (trades.length < 2) {
+    return (
+      <div style={{
+        height: H, background: C.surface, borderRadius: 8,
+        border: `1px solid ${C.border}`, display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{ color: C.muted, fontSize: 10 }}>Pas encore de données</span>
+      </div>
+    )
+  }
+
+  const sorted = [...trades].sort((a, b) => (a.closedAt ?? 0) - (b.closedAt ?? 0))
+  const cumulative = sorted.reduce<number[]>((acc, t) => {
+    acc.push((acc[acc.length - 1] ?? 0) + (t.pnlSOL ?? 0))
+    return acc
+  }, [])
+
+  const min = Math.min(0, ...cumulative)
+  const max = Math.max(0, ...cumulative)
+  const range = max - min || 1
+
+  const pts = cumulative.map((v, i) => {
+    const x = PAD + (i / (cumulative.length - 1)) * (W - PAD * 2)
+    const y = PAD + (1 - (v - min) / range) * (H - PAD * 2)
+    return `${x},${y}`
+  }).join(' ')
+
+  const zeroY = PAD + (1 - (0 - min) / range) * (H - PAD * 2)
+  const lastVal = cumulative[cumulative.length - 1]
+  const lineColor = lastVal >= 0 ? C.green : C.red
+
+  return (
+    <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+      <svg width={W} height={H} style={{ display: 'block' }}>
+        <line x1={PAD} y1={zeroY} x2={W - PAD} y2={zeroY} stroke={C.border} strokeWidth={1} strokeDasharray="3,3" />
+        <polyline points={pts} fill="none" stroke={lineColor} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+        {cumulative.map((v, i) => {
+          const x = PAD + (i / (cumulative.length - 1)) * (W - PAD * 2)
+          const y = PAD + (1 - (v - min) / range) * (H - PAD * 2)
+          return <circle key={i} cx={x} cy={y} r={2} fill={v >= 0 ? C.green : C.red} />
+        })}
+      </svg>
+    </div>
+  )
+}
+
+// ─── Stat Cards ───────────────────────────────────────────────────────────────
+
+function StatCard({ label, value, sub, color }: { label: string; value: React.ReactNode; sub?: React.ReactNode; color?: string }) {
+  return (
+    <div style={{ background: C.surface, borderRadius: 8, padding: '8px 10px', border: `1px solid ${C.border}`, flex: 1 }}>
+      <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{label}</div>
+      <div style={{ color: color ?? C.text, fontSize: 15, fontWeight: 700 }}>{value}</div>
+      {sub && <div style={{ color: C.muted, fontSize: 9, marginTop: 2 }}>{sub}</div>}
+    </div>
+  )
+}
+
+// ─── Filter Buttons ───────────────────────────────────────────────────────────
+
+type Filter = 'ALL' | 'Active' | 'Gain' | 'Loss'
+const FILTERS: Filter[] = ['ALL', 'Active', 'Gain', 'Loss']
+
+function FilterBar({ active, onChange }: { active: Filter; onChange: (f: Filter) => void }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
+      {FILTERS.map(f => (
+        <button key={f} onClick={() => onChange(f)} style={{
+          padding: '6px 0', borderRadius: 6, fontFamily: 'inherit',
+          background: active === f ? `${C.green}18` : C.surface,
+          border: `1px solid ${active === f ? C.green : C.border}`,
+          color: active === f ? C.green : C.muted,
+          fontSize: 10, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5,
+        }}>{f}</button>
+      ))}
+    </div>
+  )
+}
+
+// ─── Trade Card (compact) ─────────────────────────────────────────────────────
+
+function TradeRow({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
+  const pnl = trade.pnlSOL ?? 0
+  const pct = trade.pnlPercent ?? 0
+  const color = trade.status === 'won' ? C.green : C.red
+
+  function fmt(sol: number) {
+    return currency === 'USD' && solPrice > 0
+      ? `$${(sol * solPrice).toFixed(2)}`
+      : <>{fmtSOL(sol)} <SolIcon size={10} style={{ marginLeft: 1 }} /></>
+  }
+
+  return (
+    <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`, padding: '8px 10px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <span style={{ fontWeight: 700, fontSize: 12, color: C.text }}>{trade.tokenName}</span>
+        <Badge text={trade.status === 'won' ? 'WIN' : 'LOSE'} color={color} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4, fontSize: 10 }}>
+        <div>
+          <div style={{ color: C.muted, fontSize: 9 }}>MC ENTRÉE</div>
+          <div style={{ color: C.text, fontWeight: 600 }}>{fmtMC(trade.entryMC)}</div>
+        </div>
+        <div>
+          <div style={{ color: C.muted, fontSize: 9 }}>PNL</div>
+          <div style={{ color: pnlColor(pnl), fontWeight: 600 }}>{pnl >= 0 ? '+' : ''}{fmt(pnl)}</div>
+        </div>
+        <div>
+          <div style={{ color: C.muted, fontSize: 9 }}>PNL %</div>
+          <div style={{ color: pnlColor(pct), fontWeight: 600 }}>{fmtPct(pct)}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ActiveTradeRow({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
+  return (
+    <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.green}40`, padding: '8px 10px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <span style={{ fontWeight: 700, fontSize: 12, color: C.text }}>{trade.tokenName}</span>
+        <Badge text="ACTIF" color={C.green} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4, fontSize: 10 }}>
+        <div>
+          <div style={{ color: C.muted, fontSize: 9 }}>TERMINAL</div>
+          <div style={{ color: C.text, fontWeight: 600 }}>{trade.terminal}</div>
+        </div>
+        <div>
+          <div style={{ color: C.muted, fontSize: 9 }}>MC ENTRÉE</div>
+          <div style={{ color: C.text, fontWeight: 600 }}>{fmtMC(trade.entryMC)}</div>
+        </div>
+        <div>
+          <div style={{ color: C.muted, fontSize: 9 }}>INVESTI</div>
+          <div style={{ color: C.text, fontWeight: 600 }}>
+            {currency === 'USD' && solPrice > 0
+              ? `$${(trade.invested * solPrice).toFixed(2)}`
+              : <>{fmtSOL(trade.invested)} <SolIcon size={10} style={{ marginLeft: 1 }} /></>}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── App ──────────────────────────────────────────────────────────────────────
+
 export function App() {
   const [state, setState] = useState<AppState | null>(null)
-  const [tab, setTab] = useState<'trade' | 'journal'>('trade')
   const [showReset, setShowReset] = useState(false)
+  const [filter, setFilter] = useState<Filter>('ALL')
 
   useEffect(() => {
     Storage.get().then(setState)
@@ -109,152 +259,149 @@ export function App() {
 
   const { balance, activeTrade, closedTrades, currency, solPrice } = state
 
-  function FmtBal({ sol }: { sol: number }) {
+  // Stats
+  const totalPnl = closedTrades.reduce((s, t) => s + (t.pnlSOL ?? 0), 0)
+  const won = closedTrades.filter(t => t.status === 'won').length
+  const winRate = closedTrades.length > 0 ? (won / closedTrades.length) * 100 : null
+  const best = closedTrades.reduce<Trade | null>((b, t) => !b || (t.pnlPercent ?? -Infinity) > (b.pnlPercent ?? -Infinity) ? t : b, null)
+
+  function fmtBal(sol: number): React.ReactNode {
     if (currency === 'USD') return <>${(sol * solPrice).toFixed(2)}</>
     return <>{fmtSOL(sol)} <SolIcon size={20} /></>
   }
 
-  function toggleCurrency() {
-    Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })
+  function fmtPnl(sol: number): React.ReactNode {
+    if (currency === 'USD' && solPrice > 0) return <>${(sol * solPrice).toFixed(2)}</>
+    return <>{fmtSOL(sol)} <SolIcon size={11} /></>
   }
+
+  // Filtered list
+  const filteredTrades = filter === 'Gain'
+    ? closedTrades.filter(t => t.status === 'won')
+    : filter === 'Loss'
+    ? closedTrades.filter(t => t.status === 'lost')
+    : closedTrades
 
   return (
     <>
-    {showReset && <ResetModal onClose={() => setShowReset(false)} />}
-    <div style={{
-      width: 360, minHeight: 480, background: C.bg, color: C.text,
-      fontFamily: "'JetBrains Mono', monospace", display: 'flex', flexDirection: 'column',
-    }}>
-      {/* Header */}
+      {showReset && <ResetModal onClose={() => setShowReset(false)} />}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+        width: 360, minHeight: 480, background: C.bg, color: C.text,
+        fontFamily: "'JetBrains Mono', monospace", display: 'flex', flexDirection: 'column',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{
-            width: 8, height: 8, borderRadius: '50%', background: C.green,
-            boxShadow: `0 0 6px ${C.green}`, display: 'inline-block',
-          }} />
-          <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1, color: C.text }}>PAPERMEMES</span>
-          <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={() => setShowReset(true)} title="Réinitialiser" style={iconBtnStyle}>↺</button>
-          <button
-            onClick={toggleCurrency}
-            style={{
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: '50%', background: C.green,
+              boxShadow: `0 0 6px ${C.green}`, display: 'inline-block',
+            }} />
+            <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1, color: C.text }}>PAPERMEMES</span>
+            <span style={{ color: C.muted, fontSize: 10 }}>v1.3</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={() => setShowReset(true)} title="Réinitialiser" style={iconBtnStyle}>↺</button>
+            <button onClick={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })} style={{
               background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6,
               color: C.text, fontSize: 10, fontWeight: 700, padding: '3px 8px',
               fontFamily: 'inherit', cursor: 'pointer',
-            }}
-          >
-            {currency === 'SOL' ? <><SolIcon size={10} /> SOL</> : '$ USD'}
-          </button>
-        </div>
-      </div>
-
-      {/* Balance */}
-      <div style={{ padding: '12px 14px', borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>
-          Solde Virtuel
-        </div>
-        <div style={{ fontSize: 26, fontWeight: 700, color: C.text }}><FmtBal sol={balance} /></div>
-        {solPrice > 0 && currency === 'SOL' && (
-          <div style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>
-            ≈ ${(balance * solPrice).toFixed(2)} USD &nbsp;·&nbsp; <SolIcon size={10} />${solPrice.toFixed(0)}
+            }}>
+              {currency === 'SOL' ? <><SolIcon size={10} style={{ marginLeft: 0 }} /> SOL</> : '$ USD'}
+            </button>
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Position active */}
-      {activeTrade && (
-        <ActiveTradeCard trade={activeTrade} currency={currency} solPrice={solPrice} />
-      )}
+        {/* Balance */}
+        <div style={{ padding: '12px 14px', borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>
+            Solde Virtuel
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 700, color: C.text }}>{fmtBal(balance)}</div>
+          {solPrice > 0 && currency === 'SOL' && (
+            <div style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>
+              ≈ ${(balance * solPrice).toFixed(2)} USD &nbsp;·&nbsp; <SolIcon size={10} />${solPrice.toFixed(0)}
+            </div>
+          )}
+        </div>
 
-      {/* Tabs */}
-      <div style={{ padding: '0 14px' }}>
-        <Tabs
-          tabs={['trade', 'journal']}
-          active={tab}
-          onChange={t => setTab(t as 'trade' | 'journal')}
-        />
-      </div>
+        {/* Content */}
+        <div style={{ flex: 1, padding: '10px 14px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-      {/* Content */}
-      <div style={{ flex: 1, padding: '10px 14px', overflowY: 'auto' }}>
-        {tab === 'trade' && (
-          activeTrade ? (
-            <div style={{ textAlign: 'center', color: C.muted, padding: '24px 0', fontSize: 12 }}>
-              Position ouverte sur <span style={{ color: C.text }}>{activeTrade.tokenName}</span>.<br />
-              Rendez-vous sur le terminal pour gérer votre position.
+          {/* PnL Curve */}
+          <PnlCurve trades={closedTrades} />
+
+          {/* Stat Cards Row 1 */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <StatCard
+              label="PNL Total"
+              value={<>{totalPnl >= 0 ? '+' : ''}{fmtPnl(totalPnl)}</>}
+              color={pnlColor(totalPnl)}
+              sub={closedTrades.length > 0 ? <>moy. {fmtSOL(totalPnl / closedTrades.length)} <SolIcon size={9} /></> : undefined}
+            />
+            <StatCard
+              label="Win Rate"
+              value={winRate != null ? `${winRate.toFixed(0)}%` : '—'}
+              color={winRate != null ? (winRate >= 50 ? C.green : C.red) : C.muted}
+              sub={closedTrades.length > 0 ? `${won}W / ${closedTrades.length - won}L` : 'Aucun trade'}
+            />
+          </div>
+
+          {/* Stat Cards Row 2 */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <StatCard
+              label="Trades"
+              value={closedTrades.length}
+              sub={activeTrade ? '1 position active' : 'Aucune position'}
+              color={C.text}
+            />
+            <StatCard
+              label="Best"
+              value={best ? fmtPct(best.pnlPercent ?? 0) : '—'}
+              color={best ? C.green : C.muted}
+              sub={best ? best.tokenName : 'Aucun trade'}
+            />
+          </div>
+
+          {/* Filter Buttons */}
+          <FilterBar active={filter} onChange={setFilter} />
+
+          {/* Trade List */}
+          {filter === 'Active' ? (
+            activeTrade ? (
+              <ActiveTradeRow trade={activeTrade} currency={currency} solPrice={solPrice} />
+            ) : (
+              <div style={{ textAlign: 'center', color: C.muted, fontSize: 11, padding: '16px 0' }}>
+                Aucune position active
+              </div>
+            )
+          ) : filteredTrades.length === 0 ? (
+            <div style={{ textAlign: 'center', color: C.muted, fontSize: 11, padding: '16px 0' }}>
+              Aucun trade
             </div>
           ) : (
-            <div style={{ textAlign: 'center', color: C.muted, padding: '24px 0', fontSize: 12 }}>
-              Aucune position ouverte.<br />Ouvrez un terminal pour trader.
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {filteredTrades.map(t => (
+                <TradeRow key={t.id} trade={t} currency={currency} solPrice={solPrice} />
+              ))}
             </div>
-          )
-        )}
-        {tab === 'journal' && (
-          <JournalPanel
-            closedTrades={closedTrades}
-            currency={currency}
-            solPrice={solPrice}
-          />
-        )}
-      </div>
+          )}
+        </div>
 
-      {/* Footer */}
-      <div style={{
-        borderTop: `1px solid ${C.border}`, padding: '6px 14px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      }}>
-        <span style={{ color: C.muted, fontSize: 9, letterSpacing: 1 }}>PAPERMEMES · PAPER TRADING</span>
-        <span style={{ color: activeTrade ? C.green : C.muted, fontSize: 9 }}>
-          {activeTrade ? `1 position ouverte` : 'Aucune position ouverte'}
-        </span>
+        {/* Footer */}
+        <div style={{
+          borderTop: `1px solid ${C.border}`, padding: '6px 14px',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span style={{ color: C.muted, fontSize: 9, letterSpacing: 1 }}>PAPERMEMES · PAPER TRADING</span>
+          <span style={{ color: activeTrade ? C.green : C.muted, fontSize: 9 }}>
+            {activeTrade ? '1 position ouverte' : 'Aucune position'}
+          </span>
+        </div>
       </div>
-    </div>
     </>
-  )
-}
-
-function ActiveTradeCard({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
-  return (
-    <div style={{
-      margin: '8px 14px', padding: '10px', background: C.surface,
-      borderRadius: 8, border: `1px solid ${C.green}30`,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <div>
-          <span style={{ fontWeight: 700, fontSize: 13, color: C.text }}>{trade.tokenName}</span>
-          <span style={{ color: C.muted, fontSize: 10, marginLeft: 6 }}>· {trade.terminal}</span>
-        </div>
-        <Badge text="ACTIF" color={C.green} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: 11 }}>
-        <div>
-          <span style={{ color: C.muted, fontSize: 9 }}>MC ENTRÉE</span>
-          <div style={{ color: C.text, fontWeight: 600 }}>{fmtMC(trade.entryMC)}</div>
-        </div>
-        <div>
-          <span style={{ color: C.muted, fontSize: 9 }}>INVESTI</span>
-          <div style={{ color: C.text, fontWeight: 600 }}>
-            {currency === 'USD'
-              ? `$${(trade.invested * solPrice).toFixed(2)}`
-              : <>{fmtSOL(trade.invested)} <SolIcon size={11} /></>}
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-        <a
-          href={`https://solscan.io/token/${trade.mintAddress}`}
-          target="_blank" rel="noreferrer"
-          style={{ color: C.muted, fontSize: 10, textDecoration: 'none' }}
-        >
-          ↗ Solscan
-        </a>
-      </div>
-    </div>
   )
 }
 
