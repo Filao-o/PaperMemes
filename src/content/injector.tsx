@@ -11,15 +11,14 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
   return (
     <div onClick={onChange} style={{
       display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
-      background: C.surface, border: `1px solid ${C.border}`,
-      borderRadius: 20, padding: 2, gap: 0,
+      background: '#1a1a1a', border: '1px solid #333',
+      borderRadius: 20, padding: 2, gap: 0, fontFamily: "'Roboto', sans-serif",
     }}>
       {(['SOL', 'USD'] as const).map(opt => (
         <div key={opt} style={{
-          padding: '3px 9px', borderRadius: 16, fontSize: 10, fontWeight: 700,
-          background: value === opt ? C.green : 'transparent',
-          color: value === opt ? '#000' : C.muted,
-          boxShadow: value === opt ? `0 0 8px ${C.green}60` : 'none',
+          padding: '4px 11px', borderRadius: 16, fontSize: 11, fontWeight: 700,
+          background: value === opt ? '#ffffff' : 'transparent',
+          color: value === opt ? '#111' : '#A1A1A1',
           transition: 'all 0.15s',
         }}>{opt}</div>
       ))}
@@ -846,7 +845,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)}`
   }
 
-  const tokenBg = priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : '#ffffff'
+  const flashLine = priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : 'transparent'
 
   const blockStyle: React.CSSProperties = {
     background: C.bg, border: `1px solid ${C.border}`, borderTop: 'none',
@@ -954,17 +953,22 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         defaultPos={() => ({ x: window.innerWidth - 316, y: 190 })}
         style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', outline: '3px solid #ffffff' }}
         renderHandle={onDragStart => (
-          /* Zone blanche token = zone de drag */
           <div
             onMouseDown={onDragStart}
-            style={{ cursor: 'grab', background: tokenBg, padding: '10px 14px', transition: 'background 0.25s ease' }}
+            style={{
+              cursor: 'grab', background: '#ffffff',
+              padding: '10px 14px',
+              borderBottom: `3px solid ${flashLine}`,
+              transition: 'border-color 0.25s ease',
+            }}
           >
             {tokenInfo ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }} onMouseDown={e => e.stopPropagation()}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span
                       style={{ fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: 16, color: '#111', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, textDecorationColor: '#A1A1A1' }}
+                      onMouseDown={e => e.stopPropagation()}
                       onClick={handleCopyCA}
                       title="Copier l'adresse CA"
                     >{tokenInfo.tokenName?.toUpperCase() ?? '—'}</span>
@@ -977,7 +981,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 22, color: '#111', transition: 'color 0.15s' }}>
+                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 22, color: '#111' }}>
                     {mc != null ? fmtMC(mc) : '—'}
                     {priceStale && !mcDir && <span style={{ fontSize: 11, color: C.yellow, marginLeft: 4 }}>⚠</span>}
                   </div>
@@ -1206,7 +1210,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 13, color: C.text }}>Quick Buy</span>
-          <button onClick={onOpenConfig} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, cursor: 'pointer', color: C.muted, fontSize: 13, padding: '1px 6px', lineHeight: 1 }}>⚙</button>
+          <button onClick={onOpenConfig} onMouseDown={e => e.stopPropagation()} style={{ background: '#ffffff', border: 'none', borderRadius: 6, cursor: 'pointer', color: '#111', fontSize: 13, padding: '2px 7px', lineHeight: 1, fontWeight: 700 }}>⚙</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {buyPresets.map(amt => (
@@ -1227,7 +1231,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
         </div>
       </div>
 
-      <Divider />
+      <div style={{ height: 1, background: C.border, margin: '4px 0' }} />
 
       {/* ── Open Trades ── */}
       {activeTrade && livePnL != null && liveValue != null ? (
@@ -1248,10 +1252,10 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               : null
             return (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: '#A1A1A1', fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>
-                  {multiEntry ? 'MC Entry ou Ave. Entries' : 'MC Entry'}
+                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
+                  {multiEntry ? 'Ave. Entries' : 'MC Entry'}
                 </span>
-                <span style={{ color: C.text, fontWeight: 700, fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>
+                <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 14, fontFamily: "'Roboto', sans-serif" }}>
                   {multiEntry && avgMC != null ? fmtMC(avgMC) : fmtMC(activeTrade.entryMC)}
                 </span>
               </div>
@@ -1266,12 +1270,12 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               return (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: '#ffffff', borderRadius: 8, padding: '7px 10px', fontSize: 12,
+                  background: '#ffffff', borderRadius: 8, padding: '7px 10px', fontSize: 13,
                 }}>
                   <span style={{ color: '#111', fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
                     {fmtMC(entry.entryMC)} <span style={{ color: '#A1A1A1' }}>•</span> {fmtSOL(entry.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 2 }} />
                   </span>
-                  <span style={{ color: pctColor, fontWeight: 700, fontFamily: "'Roboto', sans-serif" }}>
+                  <span style={{ color: pctColor, fontWeight: 700, fontFamily: "'Roboto', sans-serif", fontSize: 13 }}>
                     {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
                   </span>
                 </div>
@@ -1291,9 +1295,9 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
                 background: '#ffffff', padding: '6px 4px', textAlign: 'center',
                 borderLeft: idx > 0 ? '1px solid #ddd' : undefined,
               }}>
-                <div style={{ color: '#A1A1A1', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
-                <div style={{ color: color ?? '#111', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
-                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={9} fill="#111" style={{ marginLeft: 1 }} /></> : '—'}
+                <div style={{ color: '#111', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
+                <div style={{ color: color ?? '#111', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
+                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={10} fill="#111" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
               </div>
             ))}
