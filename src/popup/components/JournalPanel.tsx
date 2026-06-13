@@ -120,10 +120,13 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
           <span style={labelStyle}>PNL % Total</span>
           <span style={{ ...valueStyle, color: pnlColor(pnlPct) }}>{fmtPct(pnlPct)}</span>
         </div>
-        <a href={`https://solscan.io/token/${trade.mintAddress}`} target="_blank" rel="noreferrer"
-          style={{ color: C.muted, fontSize: 10, textDecoration: 'none', marginTop: 4 }}>
-          ↗ Solscan
-        </a>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+          <a href={`https://solscan.io/token/${trade.mintAddress}`} target="_blank" rel="noreferrer"
+            style={{ color: C.muted, fontSize: 10, textDecoration: 'none' }}>
+            ↗ Solscan
+          </a>
+          <span style={{ color: C.dim, fontSize: 10 }}>{fmtTs(trade.openedAt)}</span>
+        </div>
       </div>
 
       {hasDetails && (
