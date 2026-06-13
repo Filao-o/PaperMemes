@@ -88,25 +88,21 @@ function ResetModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-const DEFAULTS: AppState = {
-  balance: 50, activeTrade: null, closedTrades: [],
-  tpPresets: [25, 50, 100, 200], slPresets: [-10, -20, -30, -50],
-  buyPresets: [0.1, 0.5, 1, 5], currency: 'SOL', solPrice: 0,
-}
-
 export function App() {
-  const [state, setState] = useState<AppState>(DEFAULTS)
+  const [state, setState] = useState<AppState | null>(null)
   const [tab, setTab] = useState<'trade' | 'journal'>('trade')
   const [showReset, setShowReset] = useState(false)
 
   useEffect(() => {
     Storage.get().then(setState)
-    Storage.onChanged(changes => setState(prev => ({ ...prev, ...changes })))
-
+    const cleanup = Storage.onChanged(changes => setState(prev => prev ? { ...prev, ...changes } : prev))
     chrome.runtime.sendMessage({ type: 'FETCH_SOL_PRICE' }, res => {
-      if (res?.ok) setState(prev => ({ ...prev, solPrice: res.data }))
+      if (res?.ok) setState(prev => prev ? { ...prev, solPrice: res.data } : prev)
     })
+    return cleanup
   }, [])
+
+  if (!state) return null
 
   const { balance, activeTrade, closedTrades, currency, solPrice } = state
 
