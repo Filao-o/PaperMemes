@@ -810,15 +810,6 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
           />
           <button
-            onClick={() => setShowReset(true)}
-            title="Réinitialiser le wallet"
-            style={{
-              background: 'transparent', border: `1px solid ${C.border}`,
-              borderRadius: 6, cursor: 'pointer', color: C.muted,
-              fontSize: 14, lineHeight: 1, padding: '3px 6px',
-            }}
-          >↺</button>
-          <button
             onClick={() => setShowConfig(v => !v)}
             title="Paramètres"
             style={{
