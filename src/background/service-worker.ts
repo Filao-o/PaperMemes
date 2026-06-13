@@ -19,8 +19,8 @@ const handlers: Record<string, (payload: any) => Promise<{ ok: boolean; data?: u
     return { ok: true, data: mint }
   },
   async FETCH_SOL_PRICE() {
-    const data: any = await fetchJSON('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd')
-    return { ok: true, data: data?.solana?.usd ?? 0 }
+    const data: any = await fetchJSON('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT')
+    return { ok: true, data: parseFloat(data?.price ?? '0') }
   },
 }
 
