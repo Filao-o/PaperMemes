@@ -57,7 +57,7 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {/* Stats globales */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ background: C.surface, borderRadius: 8, padding: '8px 10px', border: `1px solid ${C.border}` }}>
           <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>PNL Total</div>
           <div style={{ color: pnlColor(totalPnl), fontSize: 14, fontWeight: 700 }}>{fmtVal(totalPnl)}</div>
@@ -72,7 +72,12 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
           <div style={{ color: winRate != null && winRate >= 50 ? C.green : C.red, fontSize: 14, fontWeight: 700 }}>
             {winRate != null ? `${winRate.toFixed(0)}%` : '—'}
           </div>
-          <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {closedTrades.length}f</div>
+          <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {closedTrades.length - won}p</div>
+        </div>
+        <div style={{ background: C.surface, borderRadius: 8, padding: '8px 10px', border: `1px solid ${C.border}` }}>
+          <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Trades</div>
+          <div style={{ color: C.text, fontSize: 14, fontWeight: 700 }}>{closedTrades.length}</div>
+          <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {closedTrades.length - won}p</div>
         </div>
       </div>
 
