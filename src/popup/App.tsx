@@ -85,19 +85,36 @@ function ResetModal({ onClose }: { onClose: () => void }) {
 
 // ─── PnL Curve ────────────────────────────────────────────────────────────────
 
+function smoothPath(pts: [number, number][]): string {
+  if (pts.length < 2) return ''
+  const t = 0.35
+  let d = `M ${pts[0][0]},${pts[0][1]}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(i - 1, 0)]
+    const p1 = pts[i]
+    const p2 = pts[i + 1]
+    const p3 = pts[Math.min(i + 2, pts.length - 1)]
+    const cp1x = p1[0] + (p2[0] - p0[0]) * t
+    const cp1y = p1[1] + (p2[1] - p0[1]) * t
+    const cp2x = p2[0] - (p3[0] - p1[0]) * t
+    const cp2y = p2[1] - (p3[1] - p1[1]) * t
+    d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2[0]},${p2[1]}`
+  }
+  return d
+}
+
 function PnlCurve({ trades }: { trades: Trade[] }) {
   const W = 332
-  const H = 56
-  const PAD = 4
+  const H = 68
+  const PAD = { x: 8, top: 20, bottom: 8 }
 
   if (trades.length < 2) {
     return (
-      <div style={{
-        height: H, background: C.surface, borderRadius: 8,
-        border: `1px solid ${C.border}`, display: 'flex',
-        alignItems: 'center', justifyContent: 'center',
-      }}>
-        <span style={{ color: C.muted, fontSize: 10 }}>Pas encore de données</span>
+      <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`, height: H, position: 'relative' }}>
+        <span style={{ position: 'absolute', top: 7, left: 10, color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1 }}>Courbe PNL Cumulé</span>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ color: C.dim, fontSize: 10 }}>Pas encore de données</span>
+        </div>
       </div>
     )
   }
@@ -111,27 +128,36 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
   const min = Math.min(0, ...cumulative)
   const max = Math.max(0, ...cumulative)
   const range = max - min || 1
+  const drawH = H - PAD.top - PAD.bottom
 
-  const pts = cumulative.map((v, i) => {
-    const x = PAD + (i / (cumulative.length - 1)) * (W - PAD * 2)
-    const y = PAD + (1 - (v - min) / range) * (H - PAD * 2)
-    return `${x},${y}`
-  }).join(' ')
+  const pts: [number, number][] = cumulative.map((v, i) => [
+    PAD.x + (i / (cumulative.length - 1)) * (W - PAD.x * 2),
+    PAD.top + (1 - (v - min) / range) * drawH,
+  ])
 
-  const zeroY = PAD + (1 - (0 - min) / range) * (H - PAD * 2)
+  const linePath = smoothPath(pts)
+  const last = pts[pts.length - 1]
   const lastVal = cumulative[cumulative.length - 1]
   const lineColor = lastVal >= 0 ? C.green : C.red
+  const gradId = `pnlFill_${lastVal >= 0 ? 'g' : 'r'}`
+
+  const areaPath = `${linePath} L ${last[0]},${H - PAD.bottom} L ${pts[0][0]},${H - PAD.bottom} Z`
 
   return (
-    <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+    <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden', position: 'relative' }}>
+      <span style={{ position: 'absolute', top: 7, left: 10, color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, zIndex: 1 }}>
+        Courbe PNL Cumulé
+      </span>
       <svg width={W} height={H} style={{ display: 'block' }}>
-        <line x1={PAD} y1={zeroY} x2={W - PAD} y2={zeroY} stroke={C.border} strokeWidth={1} strokeDasharray="3,3" />
-        <polyline points={pts} fill="none" stroke={lineColor} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
-        {cumulative.map((v, i) => {
-          const x = PAD + (i / (cumulative.length - 1)) * (W - PAD * 2)
-          const y = PAD + (1 - (v - min) / range) * (H - PAD * 2)
-          return <circle key={i} cx={x} cy={y} r={2} fill={v >= 0 ? C.green : C.red} />
-        })}
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#${gradId})`} />
+        <path d={linePath} fill="none" stroke={lineColor} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+        <circle cx={last[0]} cy={last[1]} r="3.5" fill={lineColor} />
       </svg>
     </div>
   )
