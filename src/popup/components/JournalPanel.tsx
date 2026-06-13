@@ -81,7 +81,7 @@ interface Props {
   solPrice: number
 }
 
-function TradeCard({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
+export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
   const [expanded, setExpanded] = useState(false)
 
   const V = ({ sol, size }: { sol: number; size?: number }) =>

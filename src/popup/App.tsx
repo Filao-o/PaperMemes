@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Storage } from '../storage'
 import type { AppState, Trade } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Badge, SolIcon } from './components/ui'
+import { TradeCard } from './components/JournalPanel'
 
 // ─── Reset Modal ──────────────────────────────────────────────────────────────
 
@@ -196,43 +197,6 @@ function FilterBar({ active, onChange }: { active: Filter; onChange: (f: Filter)
   )
 }
 
-// ─── Trade Card (compact) ─────────────────────────────────────────────────────
-
-function TradeRow({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
-  const pnl = trade.pnlSOL ?? 0
-  const pct = trade.pnlPercent ?? 0
-  const color = trade.status === 'won' ? C.green : C.red
-
-  function fmt(sol: number) {
-    return currency === 'USD' && solPrice > 0
-      ? `$${(sol * solPrice).toFixed(2)}`
-      : <>{fmtSOL(sol)} <SolIcon size={10} style={{ marginLeft: 1 }} /></>
-  }
-
-  return (
-    <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`, padding: '8px 10px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <span style={{ fontWeight: 700, fontSize: 12, color: C.text }}>{trade.tokenName}</span>
-        <Badge text={trade.status === 'won' ? 'WIN' : 'LOSE'} color={color} />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4, fontSize: 10 }}>
-        <div>
-          <div style={{ color: C.muted, fontSize: 9 }}>MC ENTRÉE</div>
-          <div style={{ color: C.text, fontWeight: 600 }}>{fmtMC(trade.entryMC)}</div>
-        </div>
-        <div>
-          <div style={{ color: C.muted, fontSize: 9 }}>PNL</div>
-          <div style={{ color: pnlColor(pnl), fontWeight: 600 }}>{pnl >= 0 ? '+' : ''}{fmt(pnl)}</div>
-        </div>
-        <div>
-          <div style={{ color: C.muted, fontSize: 9 }}>PNL %</div>
-          <div style={{ color: pnlColor(pct), fontWeight: 600 }}>{fmtPct(pct)}</div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function ActiveTradeRow({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
   return (
     <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.green}40`, padding: '8px 10px' }}>
@@ -391,8 +355,13 @@ export function App() {
             />
           </div>
 
-          {/* Filter Buttons */}
-          <FilterBar active={filter} onChange={setFilter} />
+          {/* Trade History */}
+          <div>
+            <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+              Trade History
+            </div>
+            <FilterBar active={filter} onChange={setFilter} />
+          </div>
 
           {/* Trade List */}
           {filter === 'Active' ? (
@@ -410,7 +379,7 @@ export function App() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {filteredTrades.map(t => (
-                <TradeRow key={t.id} trade={t} currency={currency} solPrice={solPrice} />
+                <TradeCard key={t.id} trade={t} currency={currency} solPrice={solPrice} />
               ))}
             </div>
           )}
