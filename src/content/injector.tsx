@@ -805,10 +805,15 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CurrencyToggle
-            value={currency}
-            onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
-          />
+          <button
+            onClick={() => setShowReset(true)}
+            title="Réinitialiser le wallet"
+            style={{
+              background: 'transparent', border: `1px solid ${C.border}`,
+              borderRadius: 6, cursor: 'pointer', color: C.muted,
+              fontSize: 14, lineHeight: 1, padding: '3px 6px',
+            }}
+          >↺</button>
           <button
             onClick={() => setShowConfig(v => !v)}
             title="Paramètres"
@@ -824,7 +829,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
       {/* 2 — Wallet */}
       <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        <div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>Wallet Virtuel</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+          <div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Wallet Virtuel</div>
+          <CurrencyToggle
+            value={currency}
+            onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
+          />
+        </div>
         <div style={{ fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
           {currency === 'SOL' ? (
             <><SolIcon size={18} style={{ marginRight: 2 }} />{fmtSOL(balance)}</>
