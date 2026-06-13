@@ -4,6 +4,90 @@ import type { AppState, Trade } from '../types'
 import { C, fmtSOL, fmtMC, pnlColor, Tabs, Divider, Badge } from './components/ui'
 import { JournalPanel } from './components/JournalPanel'
 
+// ─── Reset Modal ──────────────────────────────────────────────────────────────
+
+const RESET_PRESETS = [2, 5, 10, 15, 50]
+
+function ResetModal({ onClose }: { onClose: () => void }) {
+  const [amount, setAmount] = useState(50)
+  const [custom, setCustom] = useState('')
+  const activeAmount = custom !== '' ? parseFloat(custom) || 0 : amount
+
+  function handleReset(keepHistory: boolean) {
+    if (activeAmount <= 0) return
+    Storage.set({ balance: activeAmount, activeTrade: null, ...(keepHistory ? {} : { closedTrades: [] }) })
+    onClose()
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, padding: 20,
+    }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{
+        background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
+        padding: 20, width: '100%', display: 'flex', flexDirection: 'column', gap: 14,
+        fontFamily: "'JetBrains Mono', monospace",
+      }}>
+        <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.text }}>Réinitialiser le wallet</div>
+
+        <div>
+          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Montant (SOL)</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {RESET_PRESETS.map(p => (
+              <button key={p} onClick={() => { setAmount(p); setCustom('') }} style={{
+                flex: '1 1 auto',
+                background: amount === p && custom === '' ? `${C.green}22` : C.bg,
+                border: `1px solid ${amount === p && custom === '' ? C.green : C.border}`,
+                borderRadius: 6, color: amount === p && custom === '' ? C.green : C.textSub,
+                fontWeight: 700, fontSize: 12, padding: '7px 4px',
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}>{p}</button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Montant personnalisé</div>
+          <input type="text" inputMode="decimal" placeholder="ex: 25" value={custom}
+            onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: C.bg, border: `1px solid ${custom ? C.green : C.border}`,
+              borderRadius: 6, color: C.text, fontSize: 13, fontWeight: 700,
+              padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
+            }} />
+        </div>
+
+        <div style={{ color: C.muted, fontSize: 11, textAlign: 'center' }}>
+          Nouveau solde : <span style={{ color: C.green, fontWeight: 700 }}>{activeAmount > 0 ? `${activeAmount} SOL` : '—'}</span>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={() => handleReset(false)} disabled={activeAmount <= 0} style={{
+            width: '100%', padding: '10px 0', borderRadius: 6, fontFamily: 'inherit',
+            background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
+            fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
+            opacity: activeAmount > 0 ? 1 : 0.4,
+          }}>Reset solde + historique</button>
+          <button onClick={() => handleReset(true)} disabled={activeAmount <= 0} style={{
+            width: '100%', padding: '10px 0', borderRadius: 6, fontFamily: 'inherit',
+            background: `${C.green}18`, border: `1px solid ${C.green}60`, color: C.green,
+            fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
+            opacity: activeAmount > 0 ? 1 : 0.4,
+          }}>Reset solde uniquement</button>
+          <button onClick={onClose} style={{
+            width: '100%', padding: '8px 0', borderRadius: 6, fontFamily: 'inherit',
+            background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
+            fontWeight: 600, fontSize: 11, cursor: 'pointer',
+          }}>Annuler</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const DEFAULTS: AppState = {
   balance: 50, activeTrade: null, closedTrades: [],
   tpPresets: [25, 50, 100, 200], slPresets: [-10, -20, -30, -50],
@@ -13,6 +97,7 @@ const DEFAULTS: AppState = {
 export function App() {
   const [state, setState] = useState<AppState>(DEFAULTS)
   const [tab, setTab] = useState<'trade' | 'journal'>('trade')
+  const [showReset, setShowReset] = useState(false)
 
   useEffect(() => {
     Storage.get().then(setState)
@@ -33,12 +118,9 @@ export function App() {
     Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })
   }
 
-  function resetBalance() {
-    if (!confirm('Réinitialiser le solde à 50 SOL ?')) return
-    Storage.set({ balance: 50, activeTrade: null, closedTrades: [] })
-  }
-
   return (
+    <>
+    {showReset && <ResetModal onClose={() => setShowReset(false)} />}
     <div style={{
       width: 360, minHeight: 480, background: C.bg, color: C.text,
       fontFamily: "'JetBrains Mono', monospace", display: 'flex', flexDirection: 'column',
@@ -57,7 +139,7 @@ export function App() {
           <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button onClick={resetBalance} title="Réinitialiser" style={iconBtnStyle}>↺</button>
+          <button onClick={() => setShowReset(true)} title="Réinitialiser" style={iconBtnStyle}>↺</button>
           <button
             onClick={toggleCurrency}
             style={{
@@ -132,6 +214,7 @@ export function App() {
         </span>
       </div>
     </div>
+    </>
   )
 }
 

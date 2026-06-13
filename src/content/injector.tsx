@@ -423,6 +423,101 @@ function fmtPrice(p: number): string {
   return p.toFixed(Math.min(decimals, 10)).replace(/0+$/, '')
 }
 
+// ─── Reset Modal ─────────────────────────────────────────────────────────────
+
+const RESET_PRESETS = [2, 5, 10, 15, 50]
+
+function ResetModal({ onClose }: { onClose: () => void }) {
+  const [amount, setAmount] = useState<number>(50)
+  const [custom, setCustom] = useState('')
+
+  const activeAmount = custom !== '' ? parseFloat(custom) || 0 : amount
+
+  function handleReset(keepHistory: boolean) {
+    if (activeAmount <= 0) return
+    Storage.set({
+      balance: activeAmount,
+      activeTrade: null,
+      ...(keepHistory ? {} : { closedTrades: [] }),
+    })
+    onClose()
+  }
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 10, padding: 16,
+    }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{
+        background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
+        padding: 18, width: '100%', display: 'flex', flexDirection: 'column', gap: 14,
+      }}>
+        <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5 }}>Réinitialiser le wallet</div>
+
+        {/* Presets */}
+        <div>
+          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Montant (SOL)</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {RESET_PRESETS.map(p => (
+              <button key={p} onClick={() => { setAmount(p); setCustom('') }} style={{
+                flex: '1 1 auto',
+                background: amount === p && custom === '' ? `${C.green}22` : C.bg,
+                border: `1px solid ${amount === p && custom === '' ? C.green : C.border}`,
+                borderRadius: 6, color: amount === p && custom === '' ? C.green : C.textSub,
+                fontWeight: 700, fontSize: 12, padding: '6px 4px',
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}>{p}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom input */}
+        <div>
+          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Montant personnalisé</div>
+          <input
+            type="text" inputMode="decimal" placeholder="ex: 25"
+            value={custom}
+            onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: C.bg, border: `1px solid ${custom ? C.green : C.border}`,
+              borderRadius: 6, color: C.text, fontSize: 13, fontWeight: 700,
+              padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
+            }}
+          />
+        </div>
+
+        {/* Résumé */}
+        <div style={{ color: C.muted, fontSize: 11, textAlign: 'center' }}>
+          Nouveau solde : <span style={{ color: C.green, fontWeight: 700 }}>{activeAmount > 0 ? `${activeAmount} SOL` : '—'}</span>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={() => handleReset(false)} disabled={activeAmount <= 0} style={{
+            width: '100%', padding: '9px 0', borderRadius: 6, fontFamily: 'inherit',
+            background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
+            fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
+            opacity: activeAmount > 0 ? 1 : 0.4,
+          }}>Reset solde + historique</button>
+          <button onClick={() => handleReset(true)} disabled={activeAmount <= 0} style={{
+            width: '100%', padding: '9px 0', borderRadius: 6, fontFamily: 'inherit',
+            background: `${C.green}18`, border: `1px solid ${C.green}60`, color: C.green,
+            fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
+            opacity: activeAmount > 0 ? 1 : 0.4,
+          }}>Reset solde uniquement</button>
+          <button onClick={onClose} style={{
+            width: '100%', padding: '7px 0', borderRadius: 6, fontFamily: 'inherit',
+            background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
+            fontWeight: 600, fontSize: 11, cursor: 'pointer',
+          }}>Annuler</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [state, setState] = useState<AppState>({
     balance: 50, activeTrade: null, closedTrades: [],
@@ -435,6 +530,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [risk, setRisk] = useState<RiskInfo | null>(null)
   const [tab, setTab] = useState<'trade' | 'journal'>('trade')
   const [showConfig, setShowConfig] = useState(false)
+  const [showReset, setShowReset] = useState(false)
   const [priceStale, setPriceStale] = useState(false)
   const [priceDir, setPriceDir] = useState<'up' | 'down' | null>(null)
   const [mcDir, setMcDir] = useState<'up' | 'down' | null>(null)
@@ -700,6 +796,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       fontFamily: FONT, color: C.text,
       display: 'flex', flexDirection: 'column', zIndex: 2147483647, fontSize: BASE,
     }}>
+      {showReset && <ResetModal onClose={() => setShowReset(false)} />}
       {/* 1 — Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -712,6 +809,15 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             value={currency}
             onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
           />
+          <button
+            onClick={() => setShowReset(true)}
+            title="Réinitialiser le wallet"
+            style={{
+              background: 'transparent', border: `1px solid ${C.border}`,
+              borderRadius: 6, cursor: 'pointer', color: C.muted,
+              fontSize: 14, lineHeight: 1, padding: '3px 6px',
+            }}
+          >↺</button>
           <button
             onClick={() => setShowConfig(v => !v)}
             title="Paramètres"
