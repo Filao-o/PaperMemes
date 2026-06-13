@@ -846,7 +846,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)}`
   }
 
-  const tokenBg = priceDir === 'up' ? `rgba(1,253,115,0.18)` : priceDir === 'down' ? `rgba(254,1,73,0.18)` : '#ffffff'
+  const tokenBg = priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : '#ffffff'
 
   const blockStyle: React.CSSProperties = {
     background: C.bg, border: `1px solid ${C.border}`, borderTop: 'none',
@@ -860,7 +860,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       {/* Bloc A — Header + Wallet + Config */}
       <DraggableBlock
         defaultPos={() => ({ x: window.innerWidth - 316, y: 10 })}
-        style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+        style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', outline: '3px solid #ffffff' }}
         renderHandle={onDragStart => (
           /* White header — sert aussi de zone de drag */
           <div
@@ -952,16 +952,15 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       {/* Bloc B — Bloc Mid */}
       <DraggableBlock
         defaultPos={() => ({ x: window.innerWidth - 316, y: 190 })}
-        style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
-      >
-        <div style={{ fontFamily: FONT, color: C.text, fontSize: BASE }}>
-          {/* Token Info Bar — fond blanc, flash vert/rouge */}
-          {tokenInfo ? (
-            <div style={{
-              padding: '10px 14px', background: tokenBg,
-              transition: 'background 0.35s ease',
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', outline: '3px solid #ffffff' }}
+        renderHandle={onDragStart => (
+          /* Zone blanche token = zone de drag */
+          <div
+            onMouseDown={onDragStart}
+            style={{ cursor: 'grab', background: tokenBg, padding: '10px 14px', transition: 'background 0.25s ease' }}
+          >
+            {tokenInfo ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }} onMouseDown={e => e.stopPropagation()}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span
@@ -969,61 +968,43 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                       onClick={handleCopyCA}
                       title="Copier l'adresse CA"
                     >{tokenInfo.tokenName?.toUpperCase() ?? '—'}</span>
-                    {copied && <span style={{ color: C.green, fontSize: 10, fontFamily: FONT }}>✓</span>}
+                    {copied && <span style={{ color: '#006622', fontSize: 10, fontFamily: FONT }}>✓</span>}
                   </div>
-                  <div style={{ color: '#A1A1A1', fontSize: 12, fontFamily: "'Roboto', sans-serif", marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ color: '#555', fontSize: 12, fontFamily: "'Roboto', sans-serif", marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
                     {tokenInfo.age && <span>{tokenInfo.age}</span>}
                     {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
                     {tokenInfo.holders != null && <span>{tokenInfo.holders.toLocaleString()} holders</span>}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{
-                    fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 22,
-                    color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : '#111',
-                    transition: 'color 0.3s',
-                  }}>
+                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 22, color: '#111', transition: 'color 0.15s' }}>
                     {mc != null ? fmtMC(mc) : '—'}
                     {priceStale && !mcDir && <span style={{ fontSize: 11, color: C.yellow, marginLeft: 4 }}>⚠</span>}
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div style={{ background: '#fff', padding: '10px 14px' }}>
+            ) : (
               <div style={{ color: '#A1A1A1', fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>Navigue sur un token…</div>
-            </div>
-          )}
-
-          {/* Dark body */}
-          <div style={{ background: C.bg }}>
-            {/* Tabs */}
-            {!showConfig && (
-              <div style={{ padding: '0 12px' }}>
-                <Tabs tabs={['trade', 'journal']} active={tab} onChange={t => setTab(t as 'trade' | 'journal')} />
-              </div>
             )}
-            <div style={{ padding: '10px 12px' }}>
-              {showConfig ? null : tab === 'trade' ? (
-                <TradeTabTop
-                  state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
-                  buyPresets={buyPresets}
-                  hasPrice={!!price} buyBlocked={buyBlocked}
-                  onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
-                  fmtCurStr={fmtCurStr} currency={currency} solPrice={solPrice} price={price}
-                  onOpenConfig={() => setShowConfig(v => !v)}
-                />
-              ) : (
-                <JournalPanel closedTrades={closedTrades} currency={currency} solPrice={solPrice} />
-              )}
-            </div>
           </div>
+        )}
+      >
+        {/* Dark body */}
+        <div style={{ background: C.bg, fontFamily: FONT, color: C.text, fontSize: BASE, padding: '10px 12px' }}>
+          <TradeTabTop
+            state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
+            buyPresets={buyPresets}
+            hasPrice={!!price} buyBlocked={buyBlocked}
+            onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
+            fmtCurStr={fmtCurStr} currency={currency} solPrice={solPrice} price={price}
+            onOpenConfig={() => setShowConfig(v => !v)}
+          />
         </div>
       </DraggableBlock>
 
       {/* Bloc C — TP/SL + Footer (seulement si trade tab et pas config) */}
       {!showConfig && tab === 'trade' && (
-        <DraggableBlock defaultPos={() => ({ x: window.innerWidth - 310, y: 560 })}>
+        <DraggableBlock defaultPos={() => ({ x: window.innerWidth - 316, y: 560 })} style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', outline: '3px solid #ffffff' }}>
           <div style={blockStyle}>
             <div style={{ padding: '9px 12px' }}>
               {/* TP/SL */}
@@ -1285,9 +1266,9 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               return (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: C.surface, borderRadius: 8, padding: '7px 10px', fontSize: 12,
+                  background: '#ffffff', borderRadius: 8, padding: '7px 10px', fontSize: 12,
                 }}>
-                  <span style={{ color: C.text, fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
+                  <span style={{ color: '#111', fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
                     {fmtMC(entry.entryMC)} <span style={{ color: '#A1A1A1' }}>•</span> {fmtSOL(entry.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 2 }} />
                   </span>
                   <span style={{ color: pctColor, fontWeight: 700, fontFamily: "'Roboto', sans-serif" }}>
@@ -1299,7 +1280,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           </div>
 
           {/* Stats: INVEST / LIVE / PNL / EARNS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderRadius: 8, overflow: 'hidden', border: '1px solid #ddd' }}>
             {[
               { label: 'INVEST.', sol: activeTrade.invested },
               { label: 'LIVE', sol: liveValue },
@@ -1307,12 +1288,12 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               { label: 'EARNS', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
             ].map(({ label, sol, color }, idx) => (
               <div key={label} style={{
-                background: C.surface, padding: '6px 4px', textAlign: 'center',
-                borderLeft: idx > 0 ? `1px solid ${C.border}` : undefined,
+                background: '#ffffff', padding: '6px 4px', textAlign: 'center',
+                borderLeft: idx > 0 ? '1px solid #ddd' : undefined,
               }}>
                 <div style={{ color: '#A1A1A1', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
-                <div style={{ color: color ?? C.text, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
-                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={9} fill="#fff" style={{ marginLeft: 1 }} /></> : '—'}
+                <div style={{ color: color ?? '#111', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
+                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={9} fill="#111" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
               </div>
             ))}
