@@ -77,10 +77,10 @@ interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md'
 }
 const BTN_COLORS: Record<string, { bg: string; text: string; border: string; shadow: string }> = {
-  yellow: { bg: `${C.yellow}15`, text: C.yellow,  border: `${C.yellow}55`, shadow: `0 0 10px ${C.yellow}35` },
-  green:  { bg: `${C.green}15`,  text: C.green,   border: `${C.green}55`,  shadow: `0 0 8px ${C.green}30`   },
-  red:    { bg: `${C.red}15`,    text: C.red,     border: `${C.red}55`,    shadow: `0 0 8px ${C.red}30`     },
-  dim:    { bg: C.surface,       text: C.textSub, border: C.border,        shadow: 'none'                   },
+  yellow: { bg: `${C.yellow}30`, text: C.yellow,  border: `${C.yellow}70`, shadow: `0 0 12px ${C.yellow}50, 0 0 4px ${C.yellow}80` },
+  green:  { bg: `${C.green}30`,  text: C.green,   border: `${C.green}70`,  shadow: `0 0 12px ${C.green}45, 0 0 4px ${C.green}70`   },
+  red:    { bg: `${C.red}30`,    text: C.red,     border: `${C.red}70`,    shadow: `0 0 12px ${C.red}45, 0 0 4px ${C.red}70`       },
+  dim:    { bg: C.surface,       text: C.textSub, border: C.border,        shadow: 'none'                                           },
 }
 
 export function Btn({ variant = 'dim', size = 'md', style, children, ...rest }: BtnProps) {

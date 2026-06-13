@@ -11,16 +11,16 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
   const isUSD = value === 'USD'
   return (
     <div onClick={onChange} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', userSelect: 'none' }}>
-      <span style={{ fontSize: 10, fontWeight: 700, color: !isUSD ? C.yellow : C.muted }}>SOL</span>
+      <span style={{ fontSize: 10, fontWeight: 700, color: !isUSD ? C.green : C.muted }}>SOL</span>
       <div style={{ width: 34, height: 18, borderRadius: 9, background: C.surface, border: `1px solid ${C.border}`, position: 'relative' }}>
         <div style={{
           position: 'absolute', top: 3, left: isUSD ? 16 : 3,
-          width: 10, height: 10, borderRadius: '50%', background: C.yellow,
-          boxShadow: `0 0 6px ${C.yellow}`,
+          width: 10, height: 10, borderRadius: '50%', background: C.green,
+          boxShadow: `0 0 6px ${C.green}`,
           transition: 'left 0.18s ease',
         }} />
       </div>
-      <span style={{ fontSize: 10, fontWeight: 700, color: isUSD ? C.yellow : C.muted }}>USD</span>
+      <span style={{ fontSize: 10, fontWeight: 700, color: isUSD ? C.green : C.muted }}>USD</span>
     </div>
   )
 }
@@ -442,7 +442,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
         background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
         padding: 18, width: '100%', display: 'flex', flexDirection: 'column', gap: 14,
       }}>
-        <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5 }}>Réinitialiser le wallet</div>
+        <div style={{ fontFamily: "'League Gothic', sans-serif", fontSize: 20, letterSpacing: 2, color: C.yellow }}>RÉINITIALISER LE WALLET</div>
 
         {/* Presets */}
         <div>
@@ -451,9 +451,9 @@ function ResetModal({ onClose }: { onClose: () => void }) {
             {RESET_PRESETS.map(p => (
               <button key={p} onClick={() => { setAmount(p); setCustom('') }} style={{
                 flex: '1 1 auto',
-                background: amount === p && custom === '' ? `${C.green}22` : C.bg,
-                border: `1px solid ${amount === p && custom === '' ? C.green : C.border}`,
-                borderRadius: 6, color: amount === p && custom === '' ? C.green : C.textSub,
+                background: amount === p && custom === '' ? `${C.yellow}22` : C.bg,
+                border: `1px solid ${amount === p && custom === '' ? C.yellow : C.border}`,
+                borderRadius: 6, color: amount === p && custom === '' ? C.yellow : C.textSub,
                 fontWeight: 700, fontSize: 12, padding: '6px 4px',
                 cursor: 'pointer', fontFamily: 'inherit',
               }}>{p}</button>
@@ -470,7 +470,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
             onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: C.bg, border: `1px solid ${custom ? C.green : C.border}`,
+              background: C.bg, border: `1px solid ${custom ? C.yellow : C.border}`,
               borderRadius: 6, color: C.text, fontSize: 13, fontWeight: 700,
               padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
             }}
@@ -479,7 +479,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
 
         {/* Résumé */}
         <div style={{ color: C.muted, fontSize: 11, textAlign: 'center' }}>
-          Nouveau solde : <span style={{ color: C.green, fontWeight: 700 }}>{activeAmount > 0 ? `${activeAmount} SOL` : '—'}</span>
+          Nouveau solde : <span style={{ color: C.yellow, fontWeight: 700 }}>{activeAmount > 0 ? `${activeAmount} SOL` : '—'}</span>
         </div>
 
         {/* Actions */}
@@ -492,7 +492,8 @@ function ResetModal({ onClose }: { onClose: () => void }) {
           }}>Reset solde + historique</button>
           <button onClick={() => handleReset(true)} disabled={activeAmount <= 0} style={{
             width: '100%', padding: '9px 0', borderRadius: 6, fontFamily: 'inherit',
-            background: `${C.green}18`, border: `1px solid ${C.green}60`, color: C.green,
+            background: `${C.yellow}20`, border: `1px solid ${C.yellow}70`, color: C.yellow,
+            boxShadow: `0 0 10px ${C.yellow}35`,
             fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmount > 0 ? 1 : 0.4,
           }}>Reset solde uniquement</button>
@@ -785,8 +786,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       {/* 1 — Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.yellow, boxShadow: `0 0 8px ${C.yellow}, 0 0 16px ${C.yellow}60`, display: 'inline-block' }} />
-          <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 8px ${C.green}, 0 0 16px ${C.green}60`, display: 'inline-block' }} />
+          <span style={{ fontFamily: "'League Gothic', sans-serif", fontWeight: 400, fontSize: 18, letterSpacing: 2 }}>PAPERMEMES</span>
           <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -794,8 +795,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             onClick={() => setShowReset(true)}
             title="Réinitialiser le wallet"
             style={{
-              background: 'transparent', border: `1px solid ${C.border}`,
-              borderRadius: 6, cursor: 'pointer', color: C.muted,
+              background: `${C.yellow}20`, border: `1px solid ${C.yellow}60`,
+              boxShadow: `0 0 8px ${C.yellow}35`,
+              borderRadius: 6, cursor: 'pointer', color: C.yellow,
               fontSize: 14, lineHeight: 1, padding: '3px 6px',
             }}
           >↺</button>
@@ -816,7 +818,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       {/* 2 — Wallet */}
       <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-          <div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>Wallet Virtuel</div>
+          <div style={{ color: C.textSub, fontSize: 14, fontFamily: "'League Gothic', sans-serif", letterSpacing: 2 }}>WALLET VIRTUEL</div>
           <CurrencyToggle
             value={currency}
             onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
@@ -1100,7 +1102,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
         <div style={sL}>Achat Rapide</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
           {buyPresets.map(amt => (
-            <Btn key={amt} variant="yellow" size="sm" disabled={buyBlocked || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
+            <Btn key={amt} variant="green" size="sm" disabled={buyBlocked || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
               {amt} <SolIcon size={10} style={{ marginLeft: 1 }} />
             </Btn>
           ))}
@@ -1208,7 +1210,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
   )
 }
 
-const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
+const sL: React.CSSProperties = { color: C.textSub, fontSize: 13, fontFamily: "'League Gothic', sans-serif", letterSpacing: 2, marginBottom: 7, display: 'block' }
 
 // ─── Mount + URL watcher ──────────────────────────────────────────────────────
 
@@ -1220,7 +1222,7 @@ function injectFont() {
   const link = document.createElement('link')
   link.id = 'papermemes-font'
   link.rel = 'stylesheet'
-  link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
+  link.href = 'https://fonts.googleapis.com/css2?family=League+Gothic&family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
   document.head.appendChild(link)
 }
 

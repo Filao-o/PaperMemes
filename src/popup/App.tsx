@@ -30,16 +30,16 @@ function ResetModal({ onClose }: { onClose: () => void }) {
         padding: 20, width: '100%', display: 'flex', flexDirection: 'column', gap: 14,
         fontFamily: "'Space Grotesk', -apple-system, sans-serif",
       }}>
-        <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.text }}>Réinitialiser le wallet</div>
+        <div style={{ fontFamily: "'League Gothic', sans-serif", fontSize: 20, letterSpacing: 2, color: C.yellow }}>RÉINITIALISER LE WALLET</div>
         <div>
           <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Montant (SOL)</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {RESET_PRESETS.map(p => (
               <button key={p} onClick={() => { setAmount(p); setCustom('') }} style={{
                 flex: '1 1 auto',
-                background: amount === p && custom === '' ? `${C.green}22` : C.bg,
-                border: `1px solid ${amount === p && custom === '' ? C.green : C.border}`,
-                borderRadius: 6, color: amount === p && custom === '' ? C.green : C.textSub,
+                background: amount === p && custom === '' ? `${C.yellow}22` : C.bg,
+                border: `1px solid ${amount === p && custom === '' ? C.yellow : C.border}`,
+                borderRadius: 6, color: amount === p && custom === '' ? C.yellow : C.textSub,
                 fontWeight: 700, fontSize: 12, padding: '7px 4px',
                 cursor: 'pointer', fontFamily: 'inherit',
               }}>{p}</button>
@@ -52,13 +52,13 @@ function ResetModal({ onClose }: { onClose: () => void }) {
             onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: C.bg, border: `1px solid ${custom ? C.green : C.border}`,
+              background: C.bg, border: `1px solid ${custom ? C.yellow : C.border}`,
               borderRadius: 6, color: C.text, fontSize: 13, fontWeight: 700,
               padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
             }} />
         </div>
         <div style={{ color: C.muted, fontSize: 11, textAlign: 'center' }}>
-          Nouveau solde : <span style={{ color: C.green, fontWeight: 700 }}>{activeAmount > 0 ? `${activeAmount} SOL` : '—'}</span>
+          Nouveau solde : <span style={{ color: C.yellow, fontWeight: 700 }}>{activeAmount > 0 ? `${activeAmount} SOL` : '—'}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={() => handleReset(false)} disabled={activeAmount <= 0} style={{
@@ -69,7 +69,8 @@ function ResetModal({ onClose }: { onClose: () => void }) {
           }}>Reset solde + historique</button>
           <button onClick={() => handleReset(true)} disabled={activeAmount <= 0} style={{
             width: '100%', padding: '10px 0', borderRadius: 6, fontFamily: 'inherit',
-            background: `${C.green}18`, border: `1px solid ${C.green}60`, color: C.green,
+            background: `${C.yellow}20`, border: `1px solid ${C.yellow}70`, color: C.yellow,
+            boxShadow: `0 0 10px ${C.yellow}35`,
             fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmount > 0 ? 1 : 0.4,
           }}>Reset solde uniquement</button>
@@ -289,14 +290,20 @@ export function App() {
               width: 8, height: 8, borderRadius: '50%', background: C.green,
               boxShadow: `0 0 6px ${C.green}`, display: 'inline-block',
             }} />
-            <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1, color: C.text }}>PAPERMEMES</span>
+            <span style={{ fontFamily: "'League Gothic', sans-serif", fontWeight: 400, fontSize: 20, letterSpacing: 3, color: C.text }}>PAPERMEMES</span>
             <span style={{ color: C.muted, fontSize: 10 }}>v1.3</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button onClick={() => setShowReset(true)} title="Réinitialiser" style={iconBtnStyle}>↺</button>
+            <button onClick={() => setShowReset(true)} title="Réinitialiser" style={{
+              background: `${C.yellow}20`, border: `1px solid ${C.yellow}60`,
+              boxShadow: `0 0 8px ${C.yellow}35`,
+              borderRadius: 6, cursor: 'pointer', color: C.yellow,
+              fontSize: 14, lineHeight: 1, padding: '3px 6px', fontFamily: 'inherit',
+            }}>↺</button>
             <button onClick={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })} style={{
-              background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6,
-              color: C.text, fontSize: 10, fontWeight: 700, padding: '3px 8px',
+              background: `${C.green}20`, border: `1px solid ${C.green}60`,
+              boxShadow: `0 0 8px ${C.green}35`,
+              borderRadius: 6, color: C.green, fontSize: 10, fontWeight: 700, padding: '3px 8px',
               fontFamily: 'inherit', cursor: 'pointer',
             }}>
               {currency === 'SOL' ? <><SolIcon size={10} style={{ marginLeft: 0 }} /> SOL</> : '$ USD'}
@@ -357,8 +364,8 @@ export function App() {
 
           {/* Trade History */}
           <div>
-            <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-              Trade History
+            <div style={{ fontFamily: "'League Gothic', sans-serif", fontSize: 14, letterSpacing: 2, color: C.textSub, marginBottom: 8 }}>
+              TRADE HISTORY
             </div>
             <FilterBar active={filter} onChange={setFilter} />
           </div>
