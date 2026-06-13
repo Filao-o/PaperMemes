@@ -139,15 +139,12 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
                 </button>
               )}
             </div>
-            {isExpanded && (() => {
-              let remainingInv = trade.invested
-              return (
+            {isExpanded && (
               <div style={{ borderTop: `1px solid ${C.border}`, padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {trade.closeEvents.map(ev => {
-                  const invForThisSell = remainingInv * (ev.sellPercent / 100)
-                  remainingInv -= invForThisSell
-                  const pnl = ev.solReturned - invForThisSell
-                  const pnlPct = invForThisSell > 0 ? (pnl / invForThisSell) * 100 : 0
+                  const costBasis = trade.invested * (ev.sellPercent / 100)
+                  const pnl = ev.solReturned - costBasis
+                  const pnlPct = (pnl / costBasis) * 100
                   const color = pnl >= 0 ? C.green : C.red
                   return (
                     <div key={ev.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: C.muted }}>
@@ -158,8 +155,7 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
                   )
                 })}
               </div>
-              )
-            })()}
+            )}
           </div>
         )
       })}
