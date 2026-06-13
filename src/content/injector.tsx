@@ -574,7 +574,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       })
     }
     fetchPrice()
-    const t = setInterval(fetchPrice, 60_000)
+    const t = setInterval(fetchPrice, 30_000)
     return () => clearInterval(t)
   }, [])
 
