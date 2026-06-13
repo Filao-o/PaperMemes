@@ -584,6 +584,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [priceStale, setPriceStale] = useState(false)
   const [priceDir, setPriceDir] = useState<'up' | 'down' | null>(null)
   const [mcDir, setMcDir] = useState<'up' | 'down' | null>(null)
+  const [holdersDir, setHoldersDir] = useState<'up' | 'down' | null>(null)
   const [copied, setCopied] = useState(false)
   const [currentTerminal, setCurrentTerminal] = useState(initialTerminal)
   const [currentMint, setCurrentMint] = useState<string | null>(null)
@@ -594,6 +595,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const mcDirRef = useRef<number | null>(null)
   const lastMcRef = useRef<number | null>(null)
   const prevPriceRef = useRef<number | null>(null)
+  const holdersDirRef = useRef<number | null>(null)
+  const prevHoldersRef = useRef<number | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
 
@@ -687,6 +690,15 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             mcDirRef.current = window.setTimeout(() => setMcDir(null), 1200)
           }
           if (mc !== null) lastMcRef.current = mc
+
+          // Holders direction tracking
+          if (ext.holders !== null && prevHoldersRef.current !== null && ext.holders !== prevHoldersRef.current) {
+            const hDir = ext.holders > prevHoldersRef.current ? 'up' : 'down'
+            setHoldersDir(hDir)
+            if (holdersDirRef.current) clearTimeout(holdersDirRef.current)
+            holdersDirRef.current = window.setTimeout(() => setHoldersDir(null), 1200)
+          }
+          if (ext.holders !== null) prevHoldersRef.current = ext.holders
 
           const trade = stateRef.current.activeTrade
           if (trade && mc !== null) checkTpSl(price, mc, trade)
@@ -958,7 +970,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             style={{
               cursor: 'grab', background: '#ffffff',
               padding: '10px 14px',
-              borderBottom: `3px solid ${flashLine}`,
+              borderBottom: `5px solid ${flashLine}`,
               transition: 'border-color 0.25s ease',
             }}
           >
@@ -977,11 +989,17 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                   <div style={{ color: '#555', fontSize: 12, fontFamily: "'Roboto', sans-serif", marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
                     {tokenInfo.age && <span>{tokenInfo.age}</span>}
                     {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
-                    {tokenInfo.holders != null && <span>{tokenInfo.holders.toLocaleString()} holders</span>}
+                    {tokenInfo.holders != null && (
+                      <span style={{
+                        fontWeight: 700,
+                        color: holdersDir === 'up' ? C.green : holdersDir === 'down' ? C.red : '#555',
+                        transition: 'color 0.2s',
+                      }}>{tokenInfo.holders.toLocaleString()} holders</span>
+                    )}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 22, color: '#111' }}>
+                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 30, color: '#111', lineHeight: 1 }}>
                     {mc != null ? fmtMC(mc) : '—'}
                     {priceStale && !mcDir && <span style={{ fontSize: 11, color: C.yellow, marginLeft: 4 }}>⚠</span>}
                   </div>
@@ -1273,7 +1291,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
                   background: '#ffffff', borderRadius: 8, padding: '7px 10px', fontSize: 13,
                 }}>
                   <span style={{ color: '#111', fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
-                    {fmtMC(entry.entryMC)} <span style={{ color: '#A1A1A1' }}>•</span> {fmtSOL(entry.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 2 }} />
+                    {fmtMC(entry.entryMC)} <span style={{ color: '#A1A1A1' }}>•</span> {fmtSOL(entry.invested)}<SolIcon size={10} fill="#111" style={{ marginLeft: 2 }} />
                   </span>
                   <span style={{ color: pctColor, fontWeight: 700, fontFamily: "'Roboto', sans-serif", fontSize: 13 }}>
                     {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
@@ -1318,9 +1336,10 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           <div style={{ textAlign: 'center' }}>
             <span onClick={onSellInitials} style={{
               color: C.text, fontSize: 12, cursor: 'pointer', fontFamily: "'Roboto', sans-serif",
-              textDecoration: 'underline', textUnderlineOffset: 2, userSelect: 'none',
+              borderBottom: `1px solid ${C.text}`, paddingBottom: 1,
+              userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: 3,
             }}>
-              Sell Inits. — {fmtSOL(activeTrade.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 2 }} />
+              Sell Inits. — {fmtSOL(activeTrade.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 0 }} />
             </span>
           </div>
 
