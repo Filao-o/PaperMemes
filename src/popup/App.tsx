@@ -30,7 +30,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
         padding: 20, width: '100%', display: 'flex', flexDirection: 'column', gap: 14,
         fontFamily: "'Space Grotesk', -apple-system, sans-serif",
       }}>
-        <div style={{ fontFamily: "'League Gothic', sans-serif", fontSize: 20, letterSpacing: 2, color: C.yellow }}>RÉINITIALISER LE WALLET</div>
+        <div style={{ fontFamily: '"Geist Mono", monospace', fontWeight: 900, fontStyle: 'italic', fontSize: 13, letterSpacing: 0.5, color: C.yellow }}>RÉINITIALISER LE WALLET</div>
         <div>
           <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Montant (SOL)</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -290,7 +290,7 @@ export function App() {
               width: 8, height: 8, borderRadius: '50%', background: C.green,
               boxShadow: `0 0 6px ${C.green}`, display: 'inline-block',
             }} />
-            <span style={{ fontFamily: "'League Gothic', sans-serif", fontWeight: 400, fontSize: 20, letterSpacing: 3, color: C.text }}>PAPERMEMES</span>
+            <span style={{ fontFamily: '"Geist Mono", monospace', fontWeight: 900, fontStyle: 'italic', fontSize: 14, letterSpacing: 1, color: C.text }}>PAPERMEMES</span>
             <span style={{ color: C.muted, fontSize: 10 }}>v1.3</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

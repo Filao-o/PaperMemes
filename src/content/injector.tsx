@@ -444,7 +444,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
         background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
         padding: 18, width: '100%', display: 'flex', flexDirection: 'column', gap: 14,
       }}>
-        <div style={{ fontFamily: "'League Gothic', sans-serif", fontSize: 20, letterSpacing: 2, color: C.yellow }}>RÉINITIALISER LE WALLET</div>
+        <div style={{ fontFamily: '"Geist Mono", monospace', fontWeight: 900, fontStyle: 'italic', fontSize: 13, letterSpacing: 0.5, color: C.yellow }}>RÉINITIALISER LE WALLET</div>
 
         {/* Presets */}
         <div>
@@ -789,7 +789,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 8px ${C.green}, 0 0 16px ${C.green}60`, display: 'inline-block' }} />
-          <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
+          <span style={{ fontFamily: '"Geist Mono", monospace', fontWeight: 900, fontStyle: 'italic', fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
           <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1224,7 +1224,7 @@ function injectFont() {
   const link = document.createElement('link')
   link.id = 'papermemes-font'
   link.rel = 'stylesheet'
-  link.href = 'https://fonts.googleapis.com/css2?family=League+Gothic&family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
+  link.href = 'https://fonts.googleapis.com/css2?family=Geist+Mono:wght@900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
   document.head.appendChild(link)
 }
 
