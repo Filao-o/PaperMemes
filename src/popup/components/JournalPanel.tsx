@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
-import type { Trade } from '../../types'
+import type { Trade, TradeEntry, CloseEvent } from '../../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Divider, Badge } from './ui'
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
 
 function SolIcon({ size = 11 }: { size?: number }) {
   return (
@@ -26,14 +28,9 @@ function SolIcon({ size = 11 }: { size?: number }) {
   )
 }
 
-function SolVal({ sol, size }: { sol: number; size?: number }) {
+function Val({ sol, size, currency, solPrice }: { sol: number; size?: number; currency: 'SOL' | 'USD'; solPrice: number }) {
+  if (currency === 'USD' && solPrice > 0) return <>${(sol * solPrice).toFixed(2)}</>
   return <>{fmtSOL(sol)} <SolIcon size={size} /></>
-}
-
-interface Props {
-  closedTrades: Trade[]
-  currency: 'SOL' | 'USD'
-  solPrice: number
 }
 
 function fmtTs(ts: number): string {
@@ -60,7 +57,7 @@ function CopyTokenName({ trade }: { trade: Trade }) {
   return (
     <span
       onClick={handleCopy}
-      title={trade.mintAddress ? `Copier CA` : undefined}
+      title={trade.mintAddress ? 'Copier CA' : undefined}
       style={{
         color: C.text, fontWeight: 700, fontSize: 13,
         cursor: trade.mintAddress ? 'pointer' : 'default',
@@ -72,176 +69,151 @@ function CopyTokenName({ trade }: { trade: Trade }) {
   )
 }
 
+// ─── Shared styles ────────────────────────────────────────────────────────────
+
+const rowStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }
+const labelStyle: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.8 }
+const valueStyle: React.CSSProperties = { color: C.text, fontSize: 11, fontWeight: 600 }
+
+// ─── Detail section (Entries or Sells) ───────────────────────────────────────
+
+function DetailSection({ title, color, rows }: {
+  title: string
+  color: string
+  rows: { key: string; ts: number; mc: number; amount: React.ReactNode }[]
+}) {
+  if (rows.length === 0) return null
+  return (
+    <div>
+      <div style={{ background: `${color}22`, padding: '4px 12px', fontSize: 9, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: 1 }}>
+        {title}
+      </div>
+      {rows.map(r => (
+        <div key={r.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 12px', borderBottom: `1px solid ${C.border}`, background: `${color}0a` }}>
+          <span style={{ color: C.muted, fontSize: 9 }}>{fmtTs(r.ts)}</span>
+          <span style={{ color: C.text, fontSize: 10, fontWeight: 600 }}>{fmtMC(r.mc)}</span>
+          <span style={{ color, fontSize: 10, fontWeight: 600 }}>{r.amount}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Trade card ───────────────────────────────────────────────────────────────
+
+interface Props {
+  closedTrades: Trade[]
+  currency: 'SOL' | 'USD'
+  solPrice: number
+}
+
 function TradeCard({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
   const [expanded, setExpanded] = useState(false)
 
-  function Val({ sol, size }: { sol: number; size?: number }) {
-    if (currency === 'USD' && solPrice > 0) return <>${(sol * solPrice).toFixed(2)}</>
-    return <SolVal sol={sol} size={size} />
-  }
+  const V = ({ sol, size }: { sol: number; size?: number }) =>
+    <Val sol={sol} size={size} currency={currency} solPrice={solPrice} />
 
   const color = trade.status === 'won' ? C.green : C.red
   const pnl = trade.pnlSOL ?? 0
   const pnlPct = trade.pnlPercent ?? 0
 
-  // Entries: use trade.entries if available, else build from main trade
-  const entries = trade.entries && trade.entries.length > 0
+  const entries: TradeEntry[] = trade.entries?.length
     ? trade.entries
     : [{ entryPrice: trade.entryPrice, entryMC: trade.entryMC, invested: trade.invested, tokensHeld: trade.tokensHeld, timestamp: trade.openedAt }]
 
-  const hasDetails = entries.length > 0 || trade.closeEvents.length > 0
-
-  const rowStyle: React.CSSProperties = {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0',
-  }
-  const labelStyle: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.8 }
-  const valueStyle: React.CSSProperties = { color: C.text, fontSize: 11, fontWeight: 600 }
+  const hasDetails = trade.closeEvents.length > 0
 
   return (
     <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
-      {/* Main info */}
       <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {/* Token + badge */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <CopyTokenName trade={trade} />
           <Badge text={trade.status === 'won' ? 'WIN' : 'LOSE'} color={color} />
         </div>
-
         <div style={rowStyle}>
           <span style={labelStyle}>MC Ave. Entries</span>
           <span style={valueStyle}>{fmtMC(trade.entryMC)}</span>
         </div>
         <div style={rowStyle}>
           <span style={labelStyle}>Total Inv.</span>
-          <span style={valueStyle}><Val sol={trade.invested} /></span>
+          <span style={valueStyle}><V sol={trade.invested} /></span>
         </div>
         <div style={rowStyle}>
           <span style={labelStyle}>PNL Total</span>
-          <span style={{ ...valueStyle, color: pnlColor(pnl) }}>{pnl >= 0 ? '+' : ''}<Val sol={pnl} /></span>
+          <span style={{ ...valueStyle, color: pnlColor(pnl) }}>{pnl >= 0 ? '+' : ''}<V sol={pnl} /></span>
         </div>
         <div style={rowStyle}>
           <span style={labelStyle}>PNL % Total</span>
           <span style={{ ...valueStyle, color: pnlColor(pnlPct) }}>{fmtPct(pnlPct)}</span>
         </div>
-
-        <a
-          href={`https://solscan.io/token/${trade.mintAddress}`}
-          target="_blank" rel="noreferrer"
-          style={{ color: C.muted, fontSize: 10, textDecoration: 'none', marginTop: 4 }}
-        >
+        <a href={`https://solscan.io/token/${trade.mintAddress}`} target="_blank" rel="noreferrer"
+          style={{ color: C.muted, fontSize: 10, textDecoration: 'none', marginTop: 4 }}>
           ↗ Solscan
         </a>
       </div>
 
-      {/* Details toggle button */}
       {hasDetails && (
-        <button
-          onClick={() => setExpanded(v => !v)}
-          style={{
-            width: '100%', padding: '7px 0',
-            background: expanded ? C.border : 'transparent',
-            border: 'none', borderTop: `1px solid ${C.border}`,
-            color: C.muted, fontSize: 10, fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'inherit',
-            letterSpacing: 0.5, textTransform: 'uppercase',
-          }}
-        >
+        <button onClick={() => setExpanded(v => !v)} style={{
+          width: '100%', padding: '7px 0', background: expanded ? C.border : 'transparent',
+          border: 'none', borderTop: `1px solid ${C.border}`, color: C.muted,
+          fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+          letterSpacing: 0.5, textTransform: 'uppercase',
+        }}>
           {expanded ? '▲ Fermer' : '▼ Détails'}
         </button>
       )}
 
-      {/* Details */}
       {expanded && (
         <div style={{ borderTop: `1px solid ${C.border}` }}>
-          {/* Entries */}
-          {entries.length > 0 && (
-            <div>
-              <div style={{
-                background: `${C.green}22`, padding: '4px 12px',
-                fontSize: 9, fontWeight: 700, color: C.green,
-                textTransform: 'uppercase', letterSpacing: 1,
-              }}>Entries</div>
-              {entries.map((e, i) => (
-                <div key={i} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '5px 12px', borderBottom: `1px solid ${C.border}`,
-                  background: `${C.green}0a`,
-                }}>
-                  <span style={{ color: C.muted, fontSize: 9 }}>{fmtTs(e.timestamp)}</span>
-                  <span style={{ color: C.text, fontSize: 10, fontWeight: 600 }}>{fmtMC(e.entryMC)}</span>
-                  <span style={{ color: C.green, fontSize: 10, fontWeight: 600 }}><Val sol={e.invested} size={9} /></span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Sells */}
-          {trade.closeEvents.length > 0 && (
-            <div>
-              <div style={{
-                background: `${C.red}22`, padding: '4px 12px',
-                fontSize: 9, fontWeight: 700, color: C.red,
-                textTransform: 'uppercase', letterSpacing: 1,
-              }}>Sells</div>
-              {trade.closeEvents.map(ev => (
-                <div key={ev.id} style={{
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '5px 12px', borderBottom: `1px solid ${C.border}`,
-                  background: `${C.red}0a`,
-                }}>
-                  <span style={{ color: C.muted, fontSize: 9 }}>{fmtTs(ev.timestamp)}</span>
-                  <span style={{ color: C.text, fontSize: 10, fontWeight: 600 }}>{fmtMC(ev.mcAtClose)}</span>
-                  <span style={{ color: C.textSub, fontSize: 10, fontWeight: 600 }}><Val sol={ev.solReturned} size={9} /></span>
-                </div>
-              ))}
-            </div>
-          )}
+          <DetailSection
+            title="Entries" color={C.green}
+            rows={entries.map((e, i) => ({ key: String(i), ts: e.timestamp, mc: e.entryMC, amount: <V sol={e.invested} size={9} /> }))}
+          />
+          <DetailSection
+            title="Sells" color={C.red}
+            rows={trade.closeEvents.map(ev => ({ key: ev.id, ts: ev.timestamp, mc: ev.mcAtClose, amount: <V sol={ev.solReturned} size={9} /> }))}
+          />
         </div>
       )}
     </div>
   )
 }
 
+// ─── Journal panel ────────────────────────────────────────────────────────────
+
 export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
   const totalPnl = closedTrades.reduce((s, t) => s + (t.pnlSOL ?? 0), 0)
   const won = closedTrades.filter(t => t.status === 'won').length
   const winRate = closedTrades.length > 0 ? (won / closedTrades.length) * 100 : null
 
-  function Val({ sol, size }: { sol: number; size?: number }) {
-    if (currency === 'USD' && solPrice > 0) return <>${(sol * solPrice).toFixed(2)}</>
-    return <SolVal sol={sol} size={size} />
-  }
+  const V = ({ sol, size }: { sol: number; size?: number }) =>
+    <Val sol={sol} size={size} currency={currency} solPrice={solPrice} />
 
   if (closedTrades.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', color: C.muted, padding: '32px 0', fontSize: 12 }}>
-        Aucun trade enregistré
-      </div>
-    )
+    return <div style={{ textAlign: 'center', color: C.muted, padding: '32px 0', fontSize: 12 }}>Aucun trade enregistré</div>
   }
+
+  const lost = closedTrades.length - won
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {/* Stats globales */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ background: C.surface, borderRadius: 8, padding: '8px 10px', border: `1px solid ${C.border}` }}>
           <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>PNL Total</div>
-          <div style={{ color: pnlColor(totalPnl), fontSize: 14, fontWeight: 700 }}><Val sol={totalPnl} size={12} /></div>
-          {closedTrades.length > 0 && (
-            <div style={{ color: C.muted, fontSize: 9 }}>moy. <Val sol={totalPnl / closedTrades.length} size={9} /></div>
-          )}
+          <div style={{ color: pnlColor(totalPnl), fontSize: 14, fontWeight: 700 }}><V sol={totalPnl} size={12} /></div>
+          <div style={{ color: C.muted, fontSize: 9 }}>moy. <V sol={totalPnl / closedTrades.length} size={9} /></div>
         </div>
         <div style={{ background: C.surface, borderRadius: 8, padding: '8px 10px', border: `1px solid ${C.border}` }}>
           <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Win Rate</div>
           <div style={{ color: winRate != null && winRate >= 50 ? C.green : C.red, fontSize: 14, fontWeight: 700 }}>
             {winRate != null ? `${winRate.toFixed(0)}%` : '—'}
           </div>
-          <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {closedTrades.length - won}p</div>
+          <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {lost}p</div>
         </div>
         <div style={{ background: C.surface, borderRadius: 8, padding: '8px 10px', border: `1px solid ${C.border}` }}>
           <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Trades</div>
           <div style={{ color: C.text, fontSize: 14, fontWeight: 700 }}>{closedTrades.length}</div>
-          <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {closedTrades.length - won}p</div>
+          <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {lost}p</div>
         </div>
       </div>
 
