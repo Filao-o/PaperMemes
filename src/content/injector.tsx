@@ -436,13 +436,13 @@ function ResetModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div style={{
-      position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)',
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 10, padding: 16,
+      zIndex: 2147483647, padding: 16,
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
         background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
-        padding: 18, width: '100%', display: 'flex', flexDirection: 'column', gap: 14,
+        padding: 18, width: 280, display: 'flex', flexDirection: 'column', gap: 14,
       }}>
         <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.yellow }}>RÉINITIALISER LE WALLET</div>
 
@@ -506,6 +506,56 @@ function ResetModal({ onClose }: { onClose: () => void }) {
           }}>Annuler</button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ─── DraggableBlock ───────────────────────────────────────────────────────────
+
+function DraggableBlock({ children, defaultPos, style }: {
+  children: React.ReactNode
+  defaultPos: { x: number; y: number }
+  style?: React.CSSProperties
+}) {
+  const [pos, setPos] = React.useState(defaultPos)
+  const dragging = React.useRef(false)
+  const offset = React.useRef({ x: 0, y: 0 })
+
+  React.useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!dragging.current) return
+      setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y })
+    }
+    function onUp() { dragging.current = false }
+    document.addEventListener('mousemove', onMove, true)
+    document.addEventListener('mouseup', onUp, true)
+    return () => {
+      document.removeEventListener('mousemove', onMove, true)
+      document.removeEventListener('mouseup', onUp, true)
+    }
+  }, [])
+
+  function onMouseDown(e: React.MouseEvent) {
+    dragging.current = true
+    offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  return (
+    <div style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 2147483647, width: 300, ...style }}>
+      {/* Drag handle */}
+      <div
+        onMouseDown={onMouseDown}
+        style={{
+          height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'grab', background: C.surface, borderRadius: '8px 8px 0 0',
+          borderBottom: `1px solid ${C.border}`,
+        }}
+      >
+        <span style={{ color: C.dim, fontSize: 10, letterSpacing: 3 }}>⠿⠿⠿</span>
+      </div>
+      {children}
     </div>
   )
 }
@@ -777,155 +827,207 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
   const dirBg = priceDir === 'up' ? `${C.green}28` : priceDir === 'down' ? `${C.red}28` : 'transparent'
 
+  const blockStyle: React.CSSProperties = {
+    background: C.bg, border: `1px solid ${C.border}`, borderTop: 'none',
+    borderRadius: '0 0 10px 10px', fontFamily: FONT, color: C.text, fontSize: BASE,
+  }
+
   return (
-    <div style={{
-      position: 'fixed', top: 0, right: 0, width: 300, height: '100vh',
-      background: C.bg, borderLeft: `1px solid ${C.border}`,
-      fontFamily: FONT, color: C.text,
-      display: 'flex', flexDirection: 'column', zIndex: 2147483647, fontSize: BASE,
-    }}>
+    <>
       {showReset && <ResetModal onClose={() => setShowReset(false)} />}
-      {/* 1 — Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 8px ${C.green}, 0 0 16px ${C.green}60`, display: 'inline-block' }} />
-          <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
-          <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => setShowReset(true)}
-            title="Réinitialiser le wallet"
-            style={{
-              background: C.yellow, border: 'none',
-              boxShadow: `0 0 10px ${C.yellow}60`,
-              borderRadius: 6, cursor: 'pointer', color: '#000',
-              fontSize: 14, lineHeight: 1, padding: '3px 7px', fontWeight: 700,
-            }}
-          >↺</button>
-          <button
-            onClick={() => setShowConfig(v => !v)}
-            title="Paramètres"
-            style={{
-              background: showConfig ? C.yellow : C.surface,
-              border: `1px solid ${showConfig ? C.yellow : C.border}`,
-              boxShadow: showConfig ? `0 0 10px ${C.yellow}60` : 'none',
-              borderRadius: 8, cursor: 'pointer', color: showConfig ? '#000' : C.muted,
-              fontSize: 14, lineHeight: 1, padding: '3px 7px', transition: 'all 0.15s',
-            }}
-          >⚙</button>
-        </div>
-      </div>
 
-      {/* 2 — Wallet */}
-      <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-          <div style={{ color: 'rgba(240,240,250,0.45)', fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Wallet Virtuel</div>
-          <CurrencyToggle
-            value={currency}
-            onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
-          />
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
-          {currency === 'SOL' ? (
-            <>{fmtSOL(balance)} <SolIcon size={18} style={{ marginLeft: 2 }} /></>
-          ) : solPrice > 0 ? (
-            `$${(balance * solPrice).toFixed(2)}`
-          ) : (
-            <span style={{ color: C.muted, fontSize: 14 }}>Chargement…</span>
-          )}
-        </div>
-        <div style={{ color: 'rgba(240,240,250,0.45)', fontSize: 12, marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
-          {currency === 'SOL' ? (
-            solPrice > 0 ? `≈ $${(balance * solPrice).toFixed(2)}` : '...'
-          ) : (
-            <>{fmtSOL(balance)} <SolIcon size={10} style={{ marginLeft: 2 }} /></>
-          )}
-        </div>
-      </div>
-
-      {/* 3 — Live Token */}
-      {tokenInfo && (
-        <div style={{
-          padding: '8px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0,
-          background: dirBg,
-          transition: 'background 0.4s ease',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span
-                style={{ fontWeight: 700, fontSize: 15, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, textDecorationColor: C.muted }}
-                onClick={handleCopyCA}
-                title="Copier l'adresse CA"
-              >
-                {tokenInfo.tokenName ?? '—'}
-              </span>
-              {copied && <span style={{ color: C.green, fontSize: 10 }}>✓ copié</span>}
-              <span style={{ color: C.muted, fontSize: 11 }}>{currentTerminal}</span>
+      {/* Bloc A — Header + Wallet + Config */}
+      <DraggableBlock defaultPos={() => ({ x: window.innerWidth - 310, y: 10 })}>
+        <div style={blockStyle}>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 8px ${C.green}, 0 0 16px ${C.green}60`, display: 'inline-block' }} />
+              <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
+              <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
             </div>
-            {tokenInfo.age && <span style={{ color: C.text, fontSize: 11 }}>{tokenInfo.age}</span>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                onClick={() => setShowReset(true)}
+                title="Réinitialiser le wallet"
+                style={{
+                  background: C.yellow, border: 'none',
+                  boxShadow: `0 0 10px ${C.yellow}60`,
+                  borderRadius: 6, cursor: 'pointer', color: '#000',
+                  fontSize: 14, lineHeight: 1, padding: '3px 7px', fontWeight: 700,
+                }}
+              >↺</button>
+              <button
+                onClick={() => setShowConfig(v => !v)}
+                title="Paramètres"
+                style={{
+                  background: showConfig ? C.yellow : C.surface,
+                  border: `1px solid ${showConfig ? C.yellow : C.border}`,
+                  boxShadow: showConfig ? `0 0 10px ${C.yellow}60` : 'none',
+                  borderRadius: 8, cursor: 'pointer', color: showConfig ? '#000' : C.muted,
+                  fontSize: 14, lineHeight: 1, padding: '3px 7px', transition: 'all 0.15s',
+                }}
+              >⚙</button>
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : priceStale ? C.yellow : C.text, transition: 'color 0.3s' }}>
-                {mc != null ? fmtMC(mc) : '—'}
-              </span>
-              {priceStale && !mcDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
 
-              {tokenInfo.holders != null && (
-                <span style={{ color: C.green, fontSize: 13, fontWeight: 700 }}>{tokenInfo.holders.toLocaleString()} holders</span>
+          {/* Wallet */}
+          <div style={{ padding: '8px 12px', borderBottom: showConfig ? `1px solid ${C.border}` : undefined }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+              <div style={{ color: 'rgba(240,240,250,0.45)', fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Wallet Virtuel</div>
+              <CurrencyToggle
+                value={currency}
+                onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
+              />
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+              {currency === 'SOL' ? (
+                <>{fmtSOL(balance)} <SolIcon size={18} style={{ marginLeft: 2 }} /></>
+              ) : solPrice > 0 ? (
+                `$${(balance * solPrice).toFixed(2)}`
+              ) : (
+                <span style={{ color: C.muted, fontSize: 14 }}>Chargement…</span>
+              )}
+            </div>
+            <div style={{ color: 'rgba(240,240,250,0.45)', fontSize: 12, marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+              {currency === 'SOL' ? (
+                solPrice > 0 ? `≈ $${(balance * solPrice).toFixed(2)}` : '...'
+              ) : (
+                <>{fmtSOL(balance)} <SolIcon size={10} style={{ marginLeft: 2 }} /></>
               )}
             </div>
           </div>
+
+          {/* Config Panel */}
+          {showConfig && (
+            <div style={{ padding: '9px 12px' }}>
+              <ConfigPanel
+                buyPresets={buyPresets}
+                tpPresets={tpPresets}
+                slPresets={slPresets}
+                slippage={state.slippage}
+                fees={state.fees}
+              />
+            </div>
+          )}
         </div>
-      )}
+      </DraggableBlock>
 
-      {/* Tabs — masqués quand config ouvert */}
-      {!showConfig && (
-        <div style={{ flexShrink: 0, padding: '0 12px' }}>
-          <Tabs tabs={['trade', 'journal']} active={tab} onChange={t => setTab(t as 'trade' | 'journal')} />
+      {/* Bloc B — Token live + Tabs + TradeTabTop / Journal */}
+      <DraggableBlock defaultPos={() => ({ x: window.innerWidth - 310, y: 190 })}>
+        <div style={blockStyle}>
+          {/* Live Token */}
+          {tokenInfo && (
+            <div style={{
+              padding: '8px 12px', borderBottom: `1px solid ${C.border}`,
+              background: dirBg, transition: 'background 0.4s ease',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span
+                    style={{ fontWeight: 700, fontSize: 15, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, textDecorationColor: C.muted }}
+                    onClick={handleCopyCA}
+                    title="Copier l'adresse CA"
+                  >
+                    {tokenInfo.tokenName ?? '—'}
+                  </span>
+                  {copied && <span style={{ color: C.green, fontSize: 10 }}>✓ copié</span>}
+                  <span style={{ color: C.muted, fontSize: 11 }}>{currentTerminal}</span>
+                </div>
+                {tokenInfo.age && <span style={{ color: C.text, fontSize: 11 }}>{tokenInfo.age}</span>}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 18, fontWeight: 700, color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : priceStale ? C.yellow : C.text, transition: 'color 0.3s' }}>
+                    {mc != null ? fmtMC(mc) : '—'}
+                  </span>
+                  {priceStale && !mcDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  {tokenInfo.holders != null && (
+                    <span style={{ color: C.green, fontSize: 13, fontWeight: 700 }}>{tokenInfo.holders.toLocaleString()} holders</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tabs */}
+          {!showConfig && (
+            <div style={{ padding: '0 12px' }}>
+              <Tabs tabs={['trade', 'journal']} active={tab} onChange={t => setTab(t as 'trade' | 'journal')} />
+            </div>
+          )}
+
+          {/* Content */}
+          <div style={{ padding: '9px 12px' }}>
+            {showConfig ? null : tab === 'trade' ? (
+              <TradeTabTop
+                state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
+                buyPresets={buyPresets}
+                hasPrice={!!price} buyBlocked={buyBlocked}
+                onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
+                fmtCurStr={fmtCurStr}
+                currency={currency}
+                solPrice={solPrice}
+                price={price}
+              />
+            ) : (
+              <JournalPanel closedTrades={closedTrades} currency={currency} solPrice={solPrice} />
+            )}
+          </div>
         </div>
+      </DraggableBlock>
+
+      {/* Bloc C — TP/SL + Footer (seulement si trade tab et pas config) */}
+      {!showConfig && tab === 'trade' && (
+        <DraggableBlock defaultPos={() => ({ x: window.innerWidth - 310, y: 560 })}>
+          <div style={blockStyle}>
+            <div style={{ padding: '9px 12px' }}>
+              {/* TP/SL */}
+              <div>
+                <div style={sL}>TP / SL</div>
+                {activeTrade ? (
+                  <>
+                    <div style={{ color: C.muted, fontSize: 10, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Take Profit</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
+                      {tpPresets.map(pct => (
+                        <Btn key={pct} variant="green" size="sm"
+                          style={{ border: activeTrade.tp === pct ? `2px solid ${C.green}` : undefined }}
+                          onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: activeTrade.tp === pct ? null : pct, tpMC: null } })}>
+                          +{pct}%
+                        </Btn>
+                      ))}
+                    </div>
+                    <div style={{ color: C.muted, fontSize: 10, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Stop Loss</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
+                      {slPresets.map(pct => (
+                        <Btn key={pct} variant="red" size="sm"
+                          style={{ border: activeTrade.sl === pct ? `2px solid ${C.red}` : undefined }}
+                          onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: activeTrade.sl === pct ? null : pct } })}>
+                          {pct}%
+                        </Btn>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '9px 0' }}>Ouvrez une position d'abord</div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ borderTop: `1px solid ${C.border}`, padding: '7px 12px' }}>
+              {risk?.isHighRisk && <div style={{ color: C.red, fontSize: 11, marginBottom: 2 }}>■ Score risque élevé : {risk.score}/100</div>}
+              {risk?.topHolderPercent != null && risk.topHolderPercent > 20 && (
+                <div style={{ color: C.red, fontSize: 11, marginBottom: 2 }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
+              )}
+              <div style={{ color: C.yellow, fontSize: 10 }}>⚠ TP/SL s'exécutent uniquement si cet onglet reste ouvert.</div>
+            </div>
+          </div>
+        </DraggableBlock>
       )}
-
-      {/* Contenu principal ou panneau config */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '9px 12px' }}>
-        {showConfig ? (
-          <ConfigPanel
-            buyPresets={buyPresets}
-            tpPresets={tpPresets}
-            slPresets={slPresets}
-            slippage={state.slippage}
-            fees={state.fees}
-          />
-        ) : tab === 'trade' ? (
-          <TradeTab
-            state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
-            buyPresets={buyPresets} tpPresets={tpPresets} slPresets={slPresets}
-            hasPrice={!!price} buyBlocked={buyBlocked}
-            onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
-            onSetTp={v => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: v, tpMC: null } })}
-            onSetSl={v => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: v } })}
-            fmtCurStr={fmtCurStr}
-            currency={currency}
-            solPrice={solPrice}
-            price={price}
-          />
-        ) : (
-          <JournalPanel closedTrades={closedTrades} currency={currency} solPrice={solPrice} />
-        )}
-      </div>
-
-      {/* 7 — Footer */}
-      <div style={{ borderTop: `1px solid ${C.border}`, padding: '7px 12px', flexShrink: 0 }}>
-        {risk?.isHighRisk && <div style={{ color: C.red, fontSize: 11, marginBottom: 2 }}>■ Score risque élevé : {risk.score}/100</div>}
-        {risk?.topHolderPercent != null && risk.topHolderPercent > 20 && (
-          <div style={{ color: C.red, fontSize: 11, marginBottom: 2 }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
-        )}
-        <div style={{ color: C.yellow, fontSize: 10 }}>⚠ TP/SL s'exécutent uniquement si cet onglet reste ouvert.</div>
-      </div>
-    </div>
+    </>
   )
 }
 
@@ -1058,13 +1160,13 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
   )
 }
 
-// ─── Trade Tab ────────────────────────────────────────────────────────────────
+// ─── Trade Tab (Top part only: Achat Rapide + Position Ouverte) ───────────────
 
-interface TradeTabProps {
+interface TradeTabTopProps {
   state: AppState; activeTrade: Trade | null; livePnL: { sol: number; percent: number } | null
-  liveValue: number | null; buyPresets: number[]; tpPresets: number[]; slPresets: number[]
+  liveValue: number | null; buyPresets: number[]
   hasPrice: boolean; buyBlocked: boolean; onBuy: (a: number) => void; onSell: (p: number) => void
-  onSellInitials: () => void; onSetTp: (v: number | null) => void; onSetSl: (v: number | null) => void
+  onSellInitials: () => void
   fmtCurStr: (sol: number) => string; currency: 'SOL' | 'USD'; solPrice: number; price: number | null
 }
 
@@ -1092,7 +1194,7 @@ function SellInitialsLink({ onSellInitials, invested, AmountLabel }: {
   )
 }
 
-function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCurStr, currency, price }: TradeTabProps) {
+function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, fmtCurStr, currency, price }: TradeTabTopProps) {
   function AmountLabel({ sol }: { sol: number }) {
     if (currency === 'USD') return <>{fmtCurStr(sol)}</>
     return <>{fmtSOL(sol)} <SolIcon size={11} style={{ marginLeft: 2 }} /></>
@@ -1187,38 +1289,6 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
           {hasPrice ? 'Aucune position ouverte' : 'Chargement du prix…'}
         </div>
       )}
-
-      <Divider />
-
-      <div>
-        <div style={sL}>TP / SL</div>
-        {activeTrade ? (
-          <>
-            <div style={{ color: C.muted, fontSize: 10, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Take Profit</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
-              {tpPresets.map(pct => (
-                <Btn key={pct} variant="green" size="sm"
-                  style={{ border: activeTrade.tp === pct ? `2px solid ${C.green}` : undefined }}
-                  onClick={() => onSetTp(activeTrade.tp === pct ? null : pct)}>
-                  +{pct}%
-                </Btn>
-              ))}
-            </div>
-            <div style={{ color: C.muted, fontSize: 10, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Stop Loss</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
-              {slPresets.map(pct => (
-                <Btn key={pct} variant="red" size="sm"
-                  style={{ border: activeTrade.sl === pct ? `2px solid ${C.red}` : undefined }}
-                  onClick={() => onSetSl(activeTrade.sl === pct ? null : pct)}>
-                  {pct}%
-                </Btn>
-              ))}
-            </div>
-          </>
-        ) : (
-          <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '9px 0' }}>Ouvrez une position d'abord</div>
-        )}
-      </div>
     </div>
   )
 }
