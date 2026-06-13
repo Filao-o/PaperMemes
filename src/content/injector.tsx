@@ -970,7 +970,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             style={{
               cursor: 'grab', background: '#ffffff',
               padding: '10px 14px',
-              borderBottom: `5px solid ${flashLine}`,
+              borderBottom: `7px solid ${flashLine}`,
               transition: 'border-color 0.25s ease',
             }}
           >
@@ -1236,12 +1236,15 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               disabled={buyBlocked || !hasPrice || state.balance < amt}
               onClick={() => onBuy(amt)}
               style={{
-                background: buyBlocked || !hasPrice || state.balance < amt ? '#1a2e1f' : C.green,
+                background: buyBlocked || !hasPrice || state.balance < amt
+                  ? '#1a2e1f'
+                  : 'linear-gradient(160deg, #5dffaa 0%, #01fd73 45%, #00c057 100%)',
                 border: 'none', borderRadius: 10, cursor: 'pointer',
                 color: '#000', fontWeight: 700, fontSize: 13,
                 padding: '10px 4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 gap: 4, opacity: buyBlocked || !hasPrice || state.balance < amt ? 0.4 : 1,
                 fontFamily: "'Roboto', sans-serif",
+                boxShadow: buyBlocked || !hasPrice || state.balance < amt ? 'none' : 'inset 0 1px 0 rgba(255,255,255,0.3)',
               }}>
               {amt} <SolIcon size={11} fill="#000" style={{ marginLeft: 0 }} />
             </button>
@@ -1325,8 +1328,10 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {[10, 25, 50, 100].map(pct => (
               <button key={pct} onClick={() => onSell(pct)} style={{
-                background: C.red, border: 'none', borderRadius: 10, cursor: 'pointer',
+                background: 'linear-gradient(160deg, #ff5580 0%, #FE0149 45%, #c4003a 100%)',
+                border: 'none', borderRadius: 10, cursor: 'pointer',
                 color: '#fff', fontWeight: 700, fontSize: 14, padding: '10px 4px',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
                 fontFamily: "'Roboto', sans-serif",
               }}>{pct}%</button>
             ))}
