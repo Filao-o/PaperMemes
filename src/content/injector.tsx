@@ -846,7 +846,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)}`
   }
 
-  const dirBg = priceDir === 'up' ? `${C.green}28` : priceDir === 'down' ? `${C.red}28` : 'transparent'
+  const tokenBg = priceDir === 'up' ? `rgba(1,253,115,0.18)` : priceDir === 'down' ? `rgba(254,1,73,0.18)` : '#ffffff'
 
   const blockStyle: React.CSSProperties = {
     background: C.bg, border: `1px solid ${C.border}`, borderTop: 'none',
@@ -949,68 +949,74 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         )}
       </DraggableBlock>
 
-      {/* Bloc B — Token live + Tabs + TradeTabTop / Journal */}
-      <DraggableBlock defaultPos={() => ({ x: window.innerWidth - 310, y: 190 })}>
-        <div style={blockStyle}>
-          {/* Live Token */}
-          {tokenInfo && (
+      {/* Bloc B — Bloc Mid */}
+      <DraggableBlock
+        defaultPos={() => ({ x: window.innerWidth - 316, y: 190 })}
+        style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+      >
+        <div style={{ fontFamily: FONT, color: C.text, fontSize: BASE }}>
+          {/* Token Info Bar — fond blanc, flash vert/rouge */}
+          {tokenInfo ? (
             <div style={{
-              padding: '8px 12px', borderBottom: `1px solid ${C.border}`,
-              background: dirBg, transition: 'background 0.4s ease',
+              padding: '10px 14px', background: tokenBg,
+              transition: 'background 0.35s ease',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span
-                    style={{ fontWeight: 700, fontSize: 15, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, textDecorationColor: C.muted }}
-                    onClick={handleCopyCA}
-                    title="Copier l'adresse CA"
-                  >
-                    {tokenInfo.tokenName ?? '—'}
-                  </span>
-                  {copied && <span style={{ color: C.green, fontSize: 10 }}>✓ copié</span>}
-                  <span style={{ color: C.muted, fontSize: 11 }}>{currentTerminal}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span
+                      style={{ fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: 16, color: '#111', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, textDecorationColor: '#A1A1A1' }}
+                      onClick={handleCopyCA}
+                      title="Copier l'adresse CA"
+                    >{tokenInfo.tokenName?.toUpperCase() ?? '—'}</span>
+                    {copied && <span style={{ color: C.green, fontSize: 10, fontFamily: FONT }}>✓</span>}
+                  </div>
+                  <div style={{ color: '#A1A1A1', fontSize: 12, fontFamily: "'Roboto', sans-serif", marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {tokenInfo.age && <span>{tokenInfo.age}</span>}
+                    {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
+                    {tokenInfo.holders != null && <span>{tokenInfo.holders.toLocaleString()} holders</span>}
+                  </div>
                 </div>
-                {tokenInfo.age && <span style={{ color: C.text, fontSize: 11 }}>{tokenInfo.age}</span>}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : priceStale ? C.yellow : C.text, transition: 'color 0.3s' }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{
+                    fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 22,
+                    color: mcDir === 'up' ? C.green : mcDir === 'down' ? C.red : '#111',
+                    transition: 'color 0.3s',
+                  }}>
                     {mc != null ? fmtMC(mc) : '—'}
-                  </span>
-                  {priceStale && !mcDir && <span style={{ fontSize: 10, color: C.yellow }}>⚠</span>}
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {tokenInfo.holders != null && (
-                    <span style={{ color: C.green, fontSize: 13, fontWeight: 700 }}>{tokenInfo.holders.toLocaleString()} holders</span>
-                  )}
+                    {priceStale && !mcDir && <span style={{ fontSize: 11, color: C.yellow, marginLeft: 4 }}>⚠</span>}
+                  </div>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Tabs */}
-          {!showConfig && (
-            <div style={{ padding: '0 12px' }}>
-              <Tabs tabs={['trade', 'journal']} active={tab} onChange={t => setTab(t as 'trade' | 'journal')} />
+          ) : (
+            <div style={{ background: '#fff', padding: '10px 14px' }}>
+              <div style={{ color: '#A1A1A1', fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>Navigue sur un token…</div>
             </div>
           )}
 
-          {/* Content */}
-          <div style={{ padding: '9px 12px' }}>
-            {showConfig ? null : tab === 'trade' ? (
-              <TradeTabTop
-                state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
-                buyPresets={buyPresets}
-                hasPrice={!!price} buyBlocked={buyBlocked}
-                onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
-                fmtCurStr={fmtCurStr}
-                currency={currency}
-                solPrice={solPrice}
-                price={price}
-              />
-            ) : (
-              <JournalPanel closedTrades={closedTrades} currency={currency} solPrice={solPrice} />
+          {/* Dark body */}
+          <div style={{ background: C.bg }}>
+            {/* Tabs */}
+            {!showConfig && (
+              <div style={{ padding: '0 12px' }}>
+                <Tabs tabs={['trade', 'journal']} active={tab} onChange={t => setTab(t as 'trade' | 'journal')} />
+              </div>
             )}
+            <div style={{ padding: '10px 12px' }}>
+              {showConfig ? null : tab === 'trade' ? (
+                <TradeTabTop
+                  state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
+                  buyPresets={buyPresets}
+                  hasPrice={!!price} buyBlocked={buyBlocked}
+                  onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
+                  fmtCurStr={fmtCurStr} currency={currency} solPrice={solPrice} price={price}
+                  onOpenConfig={() => setShowConfig(v => !v)}
+                />
+              ) : (
+                <JournalPanel closedTrades={closedTrades} currency={currency} solPrice={solPrice} />
+              )}
+            </div>
           </div>
         </div>
       </DraggableBlock>
@@ -1202,63 +1208,57 @@ interface TradeTabTopProps {
   state: AppState; activeTrade: Trade | null; livePnL: { sol: number; percent: number } | null
   liveValue: number | null; buyPresets: number[]
   hasPrice: boolean; buyBlocked: boolean; onBuy: (a: number) => void; onSell: (p: number) => void
-  onSellInitials: () => void
+  onSellInitials: () => void; onOpenConfig: () => void
   fmtCurStr: (sol: number) => string; currency: 'SOL' | 'USD'; solPrice: number; price: number | null
 }
 
-function SellInitialsLink({ onSellInitials, invested, AmountLabel }: {
-  onSellInitials: () => void
-  invested: number
-  AmountLabel: React.FC<{ sol: number }>
-}) {
-  const [hover, setHover] = React.useState(false)
-  return (
-    <div style={{ textAlign: 'center', marginTop: 4 }}>
-      <span
-        onClick={onSellInitials}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        style={{
-          color: C.yellow, fontSize: 11, cursor: 'pointer',
-          textDecoration: hover ? 'underline' : 'none',
-          userSelect: 'none',
-        }}
-      >
-        ⟳ Récupérer la mise — <AmountLabel sol={invested} />
-      </span>
-    </div>
-  )
-}
-
-function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, fmtCurStr, currency, price }: TradeTabTopProps) {
+function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onOpenConfig, fmtCurStr, currency, price }: TradeTabTopProps) {
   function AmountLabel({ sol }: { sol: number }) {
     if (currency === 'USD') return <>{fmtCurStr(sol)}</>
-    return <>{fmtSOL(sol)} <SolIcon size={11} style={{ marginLeft: 2 }} /></>
+    return <>{fmtSOL(sol)} <SolIcon size={11} fill="#fff" style={{ marginLeft: 2 }} /></>
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+      {/* ── Quick Buy ── */}
       <div>
-        <div style={sL}>Achat Rapide</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 13, color: C.text }}>Quick Buy</span>
+          <button onClick={onOpenConfig} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 6, cursor: 'pointer', color: C.muted, fontSize: 13, padding: '1px 6px', lineHeight: 1 }}>⚙</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {buyPresets.map(amt => (
-            <Btn key={amt} variant="green" size="sm"
-              style={{ padding: '9px 8px', fontSize: 13, background: C.green, color: '#000', border: 'none', boxShadow: `0 0 10px ${C.green}50` }}
-              disabled={buyBlocked || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
-              {amt} <SolIcon size={10} style={{ marginLeft: 1 }} />
-            </Btn>
+            <button key={amt}
+              disabled={buyBlocked || !hasPrice || state.balance < amt}
+              onClick={() => onBuy(amt)}
+              style={{
+                background: buyBlocked || !hasPrice || state.balance < amt ? '#1a2e1f' : C.green,
+                border: 'none', borderRadius: 10, cursor: 'pointer',
+                color: '#000', fontWeight: 700, fontSize: 13,
+                padding: '10px 4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: 4, opacity: buyBlocked || !hasPrice || state.balance < amt ? 0.4 : 1,
+                fontFamily: "'Roboto', sans-serif",
+              }}>
+              {amt} <SolIcon size={11} fill="#000" style={{ marginLeft: 0 }} />
+            </button>
           ))}
         </div>
       </div>
 
       <Divider />
 
+      {/* ── Open Trades ── */}
       {activeTrade && livePnL != null && liveValue != null ? (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-            <span style={sL}>Position ouverte</span>
-            <span style={{ color: pnlColor(livePnL.percent), fontSize: 14, fontWeight: 700 }}>{fmtPct(livePnL.percent)}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+          {/* Header: Open Trades + PnL% */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 13, color: C.text }}>Open Trades</span>
+            <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 16, color: pnlColor(livePnL.percent) }}>{fmtPct(livePnL.percent)}</span>
           </div>
+
+          {/* MC Entry / Ave. Entries */}
           {(() => {
             const entries = activeTrade.entries ?? []
             const multiEntry = entries.length > 1
@@ -1266,59 +1266,79 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               ? entries.reduce((s, e) => s + e.entryMC * e.invested, 0) / entries.reduce((s, e) => s + e.invested, 0)
               : null
             return (
-              <div style={{ color: C.text, fontSize: 12, fontWeight: 600, marginBottom: 7, display: 'flex', justifyContent: 'space-between' }}>
-                <span>{multiEntry ? 'MC Entries' : 'MC Entry'} {fmtMC(activeTrade.entryMC)}</span>
-                {multiEntry && avgMC != null && (
-                  <span style={{ color: 'rgba(240,240,250,0.45)', fontSize: 11 }}>Average {fmtMC(avgMC)}</span>
-                )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#A1A1A1', fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>
+                  {multiEntry ? 'MC Entry ou Ave. Entries' : 'MC Entry'}
+                </span>
+                <span style={{ color: C.text, fontWeight: 700, fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>
+                  {multiEntry && avgMC != null ? fmtMC(avgMC) : fmtMC(activeTrade.entryMC)}
+                </span>
               </div>
             )
           })()}
-          {/* Lignes par entry — uniquement si DCA (2+ achats), triées par date croissante */}
-          {(activeTrade.entries ?? []).length > 1 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 9 }}>
-              {[...(activeTrade.entries ?? [])].sort((a, b) => a.timestamp - b.timestamp).map((entry, i) => {
-                const entryPnlPct = price ? ((price / entry.entryPrice) - 1) * 100 : null
-                const pctColor = entryPnlPct == null ? C.muted : entryPnlPct >= 0 ? C.green : C.red
-                return (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: C.surface, borderRadius: 8, padding: '6px 10px',
-                    border: `1px solid ${pctColor}40`,
-                    fontSize: 11, gap: 6,
-                  }}>
-                    <span style={{ color: 'rgba(240,240,250,0.45)', fontSize: 10, minWidth: 16 }}>#{i + 1}</span>
-                    <span style={{ color: C.text, fontWeight: 600, flex: 1 }}>{fmtMC(entry.entryMC)}</span>
-                    <span style={{ color: 'rgba(240,240,250,0.45)' }}><AmountLabel sol={entry.invested} /></span>
-                    <span style={{ color: pctColor, fontWeight: 700, minWidth: 44, textAlign: 'right' }}>
-                      {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
+
+          {/* Entry rows — toutes les entries, triées par date */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {[...(activeTrade.entries ?? [{ entryPrice: activeTrade.entryPrice, entryMC: activeTrade.entryMC, invested: activeTrade.invested, tokensHeld: activeTrade.tokensHeld, timestamp: activeTrade.openedAt }])].sort((a, b) => a.timestamp - b.timestamp).map((entry, i) => {
+              const entryPnlPct = price ? ((price / entry.entryPrice) - 1) * 100 : null
+              const pctColor = entryPnlPct == null ? C.muted : entryPnlPct >= 0 ? C.green : C.red
+              return (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: C.surface, borderRadius: 8, padding: '7px 10px', fontSize: 12,
+                }}>
+                  <span style={{ color: C.text, fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
+                    {fmtMC(entry.entryMC)} <span style={{ color: '#A1A1A1' }}>•</span> {fmtSOL(entry.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 2 }} />
+                  </span>
+                  <span style={{ color: pctColor, fontWeight: 700, fontFamily: "'Roboto', sans-serif" }}>
+                    {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Stats: INVEST / LIVE / PNL / EARNS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderRadius: 8, overflow: 'hidden', border: `1px solid ${C.border}` }}>
             {[
-              { label: 'INV.', sol: activeTrade.invested },
+              { label: 'INVEST.', sol: activeTrade.invested },
               { label: 'LIVE', sol: liveValue },
               { label: 'PNL', sol: livePnL.sol, color: pnlColor(livePnL.sol) },
               { label: 'EARNS', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
-            ].map(({ label, sol, color }) => (
-              <div key={label} style={{ background: C.surface, borderRadius: 10, padding: '6px 4px', textAlign: 'center' }}>
-                <div style={{ color: C.muted, fontSize: 9, marginBottom: 2 }}>{label}</div>
-                <div style={{ color: color ?? C.text, fontSize: 11, fontWeight: 700 }}>
-                  {sol !== null ? <AmountLabel sol={sol} /> : '—'}
+            ].map(({ label, sol, color }, idx) => (
+              <div key={label} style={{
+                background: C.surface, padding: '6px 4px', textAlign: 'center',
+                borderLeft: idx > 0 ? `1px solid ${C.border}` : undefined,
+              }}>
+                <div style={{ color: '#A1A1A1', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
+                <div style={{ color: color ?? C.text, fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
+                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={9} fill="#fff" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
               </div>
             ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 7 }}>
+
+          {/* Sell buttons: 10 / 25 / 50 / 100 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {[10, 25, 50, 100].map(pct => (
-              <Btn key={pct} variant="red" size="sm" onClick={() => onSell(pct)}>{pct}%</Btn>
+              <button key={pct} onClick={() => onSell(pct)} style={{
+                background: C.red, border: 'none', borderRadius: 10, cursor: 'pointer',
+                color: '#fff', fontWeight: 700, fontSize: 14, padding: '10px 4px',
+                fontFamily: "'Roboto', sans-serif",
+              }}>{pct}%</button>
             ))}
           </div>
-          <SellInitialsLink onSellInitials={onSellInitials} invested={activeTrade.invested} AmountLabel={AmountLabel} />
+
+          {/* Sell Inits */}
+          <div style={{ textAlign: 'center' }}>
+            <span onClick={onSellInitials} style={{
+              color: C.text, fontSize: 12, cursor: 'pointer', fontFamily: "'Roboto', sans-serif",
+              textDecoration: 'underline', textUnderlineOffset: 2, userSelect: 'none',
+            }}>
+              Sell Inits. — {fmtSOL(activeTrade.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 2 }} />
+            </span>
+          </div>
+
         </div>
       ) : (
         <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '14px 0' }}>
@@ -1341,7 +1361,7 @@ function injectFont() {
   const link = document.createElement('link')
   link.id = 'papermemes-font'
   link.rel = 'stylesheet'
-  link.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
+  link.href = 'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&family=Roboto:wght@400;700;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
   document.head.appendChild(link)
 }
 
