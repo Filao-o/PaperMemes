@@ -570,13 +570,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT')
         const data = await res.json()
         const p = parseFloat(data?.price ?? '0')
-        if (p > 0) { setSolPriceLocal(p); return }
+        if (p > 0) { setSolPriceLocal(p); Storage.set({ solPrice: p }); return }
       } catch {}
       try {
-        const res = await fetch('https://price.jup.ag/v6/price?ids=SOL')
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd')
         const data = await res.json()
-        const p = data?.data?.SOL?.price ?? 0
-        if (p > 0) setSolPriceLocal(p)
+        const p = data?.solana?.usd ?? 0
+        if (p > 0) { setSolPriceLocal(p); Storage.set({ solPrice: p }) }
       } catch {}
     }
     fetchPrice()
@@ -785,7 +785,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   }
 
   const { balance, activeTrade, closedTrades, currency, buyPresets, tpPresets, slPresets } = state
-  const solPrice = solPriceLocal
+  const solPrice = solPriceLocal || state.solPrice
   const price = tokenInfo?.price ?? null
   const mc = tokenInfo?.marketCap ?? null
   const livePnL = activeTrade && price ? getLivePnL(activeTrade, price) : null
