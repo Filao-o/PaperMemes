@@ -8,19 +8,21 @@ import { JournalPanel } from '../popup/components/JournalPanel'
 // ─── Currency toggle ──────────────────────────────────────────────────────────
 
 function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: () => void }) {
-  const isUSD = value === 'USD'
   return (
-    <div onClick={onChange} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', userSelect: 'none' }}>
-      <span style={{ fontSize: 10, fontWeight: 700, color: !isUSD ? C.green : C.muted }}>SOL</span>
-      <div style={{ width: 34, height: 18, borderRadius: 9, background: C.surface, border: `1px solid ${C.border}`, position: 'relative' }}>
-        <div style={{
-          position: 'absolute', top: 3, left: isUSD ? 16 : 3,
-          width: 10, height: 10, borderRadius: '50%', background: C.green,
-          boxShadow: `0 0 6px ${C.green}`,
-          transition: 'left 0.18s ease',
-        }} />
-      </div>
-      <span style={{ fontSize: 10, fontWeight: 700, color: isUSD ? C.green : C.muted }}>USD</span>
+    <div onClick={onChange} style={{
+      display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
+      background: C.surface, border: `1px solid ${C.border}`,
+      borderRadius: 20, padding: 2, gap: 0,
+    }}>
+      {(['SOL', 'USD'] as const).map(opt => (
+        <div key={opt} style={{
+          padding: '3px 9px', borderRadius: 16, fontSize: 10, fontWeight: 700,
+          background: value === opt ? C.green : 'transparent',
+          color: value === opt ? '#000' : C.muted,
+          boxShadow: value === opt ? `0 0 8px ${C.green}60` : 'none',
+          transition: 'all 0.15s',
+        }}>{opt}</div>
+      ))}
     </div>
   )
 }
@@ -773,7 +775,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)}`
   }
 
-  const dirBg = priceDir === 'up' ? `${C.green}18` : priceDir === 'down' ? `${C.red}18` : 'transparent'
+  const dirBg = priceDir === 'up' ? `${C.green}28` : priceDir === 'down' ? `${C.red}28` : 'transparent'
 
   return (
     <div style={{
@@ -787,7 +789,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 8px ${C.green}, 0 0 16px ${C.green}60`, display: 'inline-block' }} />
-          <span style={{ fontFamily: "'League Gothic', sans-serif", fontWeight: 400, fontSize: 18, letterSpacing: 2 }}>PAPERMEMES</span>
+          <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
           <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -795,21 +797,21 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             onClick={() => setShowReset(true)}
             title="Réinitialiser le wallet"
             style={{
-              background: `${C.yellow}20`, border: `1px solid ${C.yellow}60`,
-              boxShadow: `0 0 8px ${C.yellow}35`,
-              borderRadius: 6, cursor: 'pointer', color: C.yellow,
-              fontSize: 14, lineHeight: 1, padding: '3px 6px',
+              background: C.yellow, border: 'none',
+              boxShadow: `0 0 10px ${C.yellow}60`,
+              borderRadius: 6, cursor: 'pointer', color: '#000',
+              fontSize: 14, lineHeight: 1, padding: '3px 7px', fontWeight: 700,
             }}
           >↺</button>
           <button
             onClick={() => setShowConfig(v => !v)}
             title="Paramètres"
             style={{
-              background: showConfig ? `${C.yellow}12` : 'transparent',
+              background: showConfig ? C.yellow : C.surface,
               border: `1px solid ${showConfig ? C.yellow : C.border}`,
-              boxShadow: showConfig ? `0 0 8px ${C.yellow}40` : 'none',
-              borderRadius: 8, cursor: 'pointer', color: showConfig ? C.yellow : C.muted,
-              fontSize: 14, lineHeight: 1, padding: '3px 6px', transition: 'all 0.15s',
+              boxShadow: showConfig ? `0 0 10px ${C.yellow}60` : 'none',
+              borderRadius: 8, cursor: 'pointer', color: showConfig ? '#000' : C.muted,
+              fontSize: 14, lineHeight: 1, padding: '3px 7px', transition: 'all 0.15s',
             }}
           >⚙</button>
         </div>
@@ -818,7 +820,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       {/* 2 — Wallet */}
       <div style={{ padding: '8px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-          <div style={{ color: C.textSub, fontSize: 14, fontFamily: "'League Gothic', sans-serif", letterSpacing: 2 }}>WALLET VIRTUEL</div>
+          <div style={{ color: 'rgba(240,240,250,0.45)', fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Wallet Virtuel</div>
           <CurrencyToggle
             value={currency}
             onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
@@ -833,7 +835,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             <span style={{ color: C.muted, fontSize: 14 }}>Chargement…</span>
           )}
         </div>
-        <div style={{ color: C.muted, fontSize: 11, marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <div style={{ color: 'rgba(240,240,250,0.45)', fontSize: 12, marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
           {currency === 'SOL' ? (
             solPrice > 0 ? `≈ $${(balance * solPrice).toFixed(2)}` : '...'
           ) : (
@@ -852,7 +854,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span
-                style={{ fontWeight: 700, fontSize: 15, cursor: 'pointer', borderBottom: `1px dashed ${C.muted}` }}
+                style={{ fontWeight: 700, fontSize: 15, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, textDecorationColor: C.muted }}
                 onClick={handleCopyCA}
                 title="Copier l'adresse CA"
               >
@@ -861,7 +863,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               {copied && <span style={{ color: C.green, fontSize: 10 }}>✓ copié</span>}
               <span style={{ color: C.muted, fontSize: 11 }}>{currentTerminal}</span>
             </div>
-            {tokenInfo.age && <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.age}</span>}
+            {tokenInfo.age && <span style={{ color: C.text, fontSize: 11 }}>{tokenInfo.age}</span>}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -873,7 +875,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
 
               {tokenInfo.holders != null && (
-                <span style={{ color: C.muted, fontSize: 11 }}>{tokenInfo.holders.toLocaleString()} holders</span>
+                <span style={{ color: C.green, fontSize: 13, fontWeight: 700 }}>{tokenInfo.holders.toLocaleString()} holders</span>
               )}
             </div>
           </div>
@@ -1210,7 +1212,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
   )
 }
 
-const sL: React.CSSProperties = { color: C.textSub, fontSize: 13, fontFamily: "'League Gothic', sans-serif", letterSpacing: 2, marginBottom: 7, display: 'block' }
+const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
 
 // ─── Mount + URL watcher ──────────────────────────────────────────────────────
 
