@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Storage } from '../storage'
 import type { AppState, Trade } from '../types'
-import { C, fmtSOL, fmtMC, pnlColor, Tabs, Divider, Badge } from './components/ui'
+import { C, fmtSOL, fmtMC, pnlColor, Tabs, Divider, Badge, SolIcon } from './components/ui'
 import { JournalPanel } from './components/JournalPanel'
 
 // ─── Reset Modal ──────────────────────────────────────────────────────────────
@@ -97,7 +97,10 @@ export function App() {
     Storage.get().then(setState)
     const cleanup = Storage.onChanged(changes => setState(prev => prev ? { ...prev, ...changes } : prev))
     chrome.runtime.sendMessage({ type: 'FETCH_SOL_PRICE' }, res => {
-      if (res?.ok) setState(prev => prev ? { ...prev, solPrice: res.data } : prev)
+      if (res?.ok) {
+        setState(prev => prev ? { ...prev, solPrice: res.data } : prev)
+        Storage.set({ solPrice: res.data })
+      }
     })
     return cleanup
   }, [])
@@ -106,8 +109,9 @@ export function App() {
 
   const { balance, activeTrade, closedTrades, currency, solPrice } = state
 
-  function fmtBal(sol: number) {
-    return currency === 'USD' ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)} ≋`
+  function FmtBal({ sol }: { sol: number }) {
+    if (currency === 'USD') return <>${(sol * solPrice).toFixed(2)}</>
+    return <>{fmtSOL(sol)} <SolIcon size={20} /></>
   }
 
   function toggleCurrency() {
@@ -144,7 +148,7 @@ export function App() {
               fontFamily: 'inherit', cursor: 'pointer',
             }}
           >
-            {currency === 'SOL' ? '≋ SOL' : '$ USD'}
+            {currency === 'SOL' ? <><SolIcon size={10} /> SOL</> : '$ USD'}
           </button>
         </div>
       </div>
@@ -154,10 +158,10 @@ export function App() {
         <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>
           Solde Virtuel
         </div>
-        <div style={{ fontSize: 26, fontWeight: 700, color: C.text }}>{fmtBal(balance)}</div>
+        <div style={{ fontSize: 26, fontWeight: 700, color: C.text }}><FmtBal sol={balance} /></div>
         {solPrice > 0 && currency === 'SOL' && (
           <div style={{ color: C.muted, fontSize: 10, marginTop: 2 }}>
-            ≈ ${(balance * solPrice).toFixed(2)} USD &nbsp;·&nbsp; ≋${solPrice.toFixed(0)}
+            ≈ ${(balance * solPrice).toFixed(2)} USD &nbsp;·&nbsp; <SolIcon size={10} />${solPrice.toFixed(0)}
           </div>
         )}
       </div>
@@ -237,7 +241,7 @@ function ActiveTradeCard({ trade, currency, solPrice }: { trade: Trade; currency
           <div style={{ color: C.text, fontWeight: 600 }}>
             {currency === 'USD'
               ? `$${(trade.invested * solPrice).toFixed(2)}`
-              : `${fmtSOL(trade.invested)} ≋`}
+              : <>{fmtSOL(trade.invested)} <SolIcon size={11} /></>}
           </div>
         </div>
       </div>
