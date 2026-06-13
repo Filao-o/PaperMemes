@@ -113,8 +113,8 @@ export function Tabs({ tabs, active, onChange }: TabsProps) {
           key={t}
           onClick={() => onChange(t)}
           style={{
-            flex: 1, background: 'none', border: 'none', borderBottom: active === t ? `2px solid ${C.yellow}` : '2px solid transparent',
-            color: active === t ? C.yellow : C.muted, padding: '8px 0', fontSize: 11,
+            flex: 1, background: 'none', border: 'none', borderBottom: active === t ? `2px solid ${C.green}` : '2px solid transparent',
+            color: active === t ? C.green : 'rgba(240,240,250,0.45)', padding: '8px 0', fontSize: 11,
             fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1,
           }}
         >

@@ -1104,7 +1104,9 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
         <div style={sL}>Achat Rapide</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
           {buyPresets.map(amt => (
-            <Btn key={amt} variant="green" size="sm" disabled={buyBlocked || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
+            <Btn key={amt} variant="green" size="sm"
+              style={{ padding: '9px 8px', fontSize: 13, background: C.green, color: '#000', border: 'none', boxShadow: `0 0 10px ${C.green}50` }}
+              disabled={buyBlocked || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
               {amt} <SolIcon size={10} style={{ marginLeft: 1 }} />
             </Btn>
           ))}
@@ -1115,33 +1117,42 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
 
       {activeTrade && livePnL != null && liveValue != null ? (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
             <span style={sL}>Position ouverte</span>
-            <span style={{ color: pnlColor(livePnL.percent), fontSize: 12, fontWeight: 700 }}>{fmtPct(livePnL.percent)}</span>
+            <span style={{ color: pnlColor(livePnL.percent), fontSize: 14, fontWeight: 700 }}>{fmtPct(livePnL.percent)}</span>
           </div>
-          <div style={{ color: C.muted, fontSize: 11, marginBottom: 7, display: 'flex', justifyContent: 'space-between' }}>
-            <span>MC ENTRÉE {fmtMC(activeTrade.entryMC)}</span>
-            {(activeTrade.entries ?? []).length > 1 && (
-              <span style={{ color: C.text, fontSize: 10 }}>
-                Ave. Entry · {(activeTrade.entries ?? []).length} achats
-              </span>
-            )}
-          </div>
-          {/* Lignes par entry — uniquement si DCA (2+ achats) */}
+          {(() => {
+            const entries = activeTrade.entries ?? []
+            const multiEntry = entries.length > 1
+            const avgMC = multiEntry
+              ? entries.reduce((s, e) => s + e.entryMC * e.invested, 0) / entries.reduce((s, e) => s + e.invested, 0)
+              : null
+            return (
+              <div style={{ color: C.text, fontSize: 12, fontWeight: 600, marginBottom: 7, display: 'flex', justifyContent: 'space-between' }}>
+                <span>{multiEntry ? 'MC Entries' : 'MC Entry'} {fmtMC(activeTrade.entryMC)}</span>
+                {multiEntry && avgMC != null && (
+                  <span style={{ color: 'rgba(240,240,250,0.45)', fontSize: 11 }}>Average {fmtMC(avgMC)}</span>
+                )}
+              </div>
+            )
+          })()}
+          {/* Lignes par entry — uniquement si DCA (2+ achats), triées par date croissante */}
           {(activeTrade.entries ?? []).length > 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 9 }}>
-              {(activeTrade.entries ?? []).map((entry, i) => {
+              {[...(activeTrade.entries ?? [])].sort((a, b) => a.timestamp - b.timestamp).map((entry, i) => {
                 const entryPnlPct = price ? ((price / entry.entryPrice) - 1) * 100 : null
                 const pctColor = entryPnlPct == null ? C.muted : entryPnlPct >= 0 ? C.green : C.red
                 return (
                   <div key={i} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: C.surface, borderRadius: 10, padding: '4px 8px',
-                    borderLeft: `2px solid ${pctColor}`, fontSize: 11,
+                    background: C.surface, borderRadius: 8, padding: '6px 10px',
+                    border: `1px solid ${pctColor}40`,
+                    fontSize: 11, gap: 6,
                   }}>
-                    <span style={{ color: C.muted }}>{fmtMC(entry.entryMC)}</span>
-                    <span style={{ color: C.text }}><AmountLabel sol={entry.invested} /></span>
-                    <span style={{ color: pctColor, fontWeight: 700 }}>
+                    <span style={{ color: 'rgba(240,240,250,0.45)', fontSize: 10, minWidth: 16 }}>#{i + 1}</span>
+                    <span style={{ color: C.text, fontWeight: 600, flex: 1 }}>{fmtMC(entry.entryMC)}</span>
+                    <span style={{ color: 'rgba(240,240,250,0.45)' }}><AmountLabel sol={entry.invested} /></span>
+                    <span style={{ color: pctColor, fontWeight: 700, minWidth: 44, textAlign: 'right' }}>
                       {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
                     </span>
                   </div>
@@ -1212,7 +1223,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
   )
 }
 
-const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
+const sL: React.CSSProperties = { color: 'rgba(240,240,250,0.45)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
 
 // ─── Mount + URL watcher ──────────────────────────────────────────────────────
 
