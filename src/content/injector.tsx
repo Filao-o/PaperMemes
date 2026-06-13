@@ -512,10 +512,21 @@ function ResetModal({ onClose }: { onClose: () => void }) {
 
 // ─── DraggableBlock ───────────────────────────────────────────────────────────
 
-function DraggableBlock({ children, defaultPos, style }: {
+function PmLogo({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="28" height="28" rx="7" fill="#111"/>
+      <text x="14" y="20" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900"
+        fontFamily="Roboto, sans-serif" letterSpacing="-0.5">P</text>
+    </svg>
+  )
+}
+
+function DraggableBlock({ children, defaultPos, style, renderHandle }: {
   children: React.ReactNode
-  defaultPos: { x: number; y: number }
+  defaultPos: () => { x: number; y: number }
   style?: React.CSSProperties
+  renderHandle?: (onMouseDown: (e: React.MouseEvent) => void) => React.ReactNode
 }) {
   const [pos, setPos] = React.useState(defaultPos)
   const dragging = React.useRef(false)
@@ -544,17 +555,15 @@ function DraggableBlock({ children, defaultPos, style }: {
 
   return (
     <div style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 2147483647, width: 300, ...style }}>
-      {/* Drag handle */}
-      <div
-        onMouseDown={onMouseDown}
-        style={{
+      {renderHandle ? renderHandle(onMouseDown) : (
+        <div onMouseDown={onMouseDown} style={{
           height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'grab', background: C.surface, borderRadius: '8px 8px 0 0',
           borderBottom: `1px solid ${C.border}`,
-        }}
-      >
-        <span style={{ color: C.dim, fontSize: 10, letterSpacing: 3 }}>⠿⠿⠿</span>
-      </div>
+        }}>
+          <span style={{ color: C.dim, fontSize: 10, letterSpacing: 3 }}>⠿⠿⠿</span>
+        </div>
+      )}
       {children}
     </div>
   )
@@ -588,6 +597,18 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const prevPriceRef = useRef<number | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
+
+  const [clock, setClock] = useState(() => {
+    const d = new Date()
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+  })
+  useEffect(() => {
+    const t = setInterval(() => {
+      const d = new Date()
+      setClock(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)
+    }, 30_000)
+    return () => clearInterval(t)
+  }, [])
 
   useEffect(() => {
     Storage.get().then(setState)
@@ -837,80 +858,95 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       {showReset && <ResetModal onClose={() => setShowReset(false)} />}
 
       {/* Bloc A — Header + Wallet + Config */}
-      <DraggableBlock defaultPos={() => ({ x: window.innerWidth - 310, y: 10 })}>
-        <div style={blockStyle}>
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 8px ${C.green}, 0 0 16px ${C.green}60`, display: 'inline-block' }} />
-              <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
-              <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
-            </div>
+      <DraggableBlock
+        defaultPos={() => ({ x: window.innerWidth - 316, y: 10 })}
+        style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+        renderHandle={onDragStart => (
+          /* White header — sert aussi de zone de drag */
+          <div
+            onMouseDown={onDragStart}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 12px',
+              background: '#ffffff', cursor: 'grab',
+              fontFamily: "'Roboto', sans-serif",
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button
-                onClick={() => setShowReset(true)}
-                title="Réinitialiser le wallet"
-                style={{
-                  background: C.yellow, border: 'none',
-                  boxShadow: `0 0 10px ${C.yellow}60`,
-                  borderRadius: 6, cursor: 'pointer', color: '#000',
-                  fontSize: 14, lineHeight: 1, padding: '3px 7px', fontWeight: 700,
-                }}
-              >↺</button>
+              <PmLogo size={26} />
+              <span style={{ fontWeight: 700, fontSize: 15, color: '#111', letterSpacing: -0.3 }}>PaperMemes</span>
+              <span style={{ color: '#A1A1A1', fontSize: 11 }}>v1.3</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onMouseDown={e => e.stopPropagation()}>
               <button
                 onClick={() => setShowConfig(v => !v)}
                 title="Paramètres"
                 style={{
-                  background: showConfig ? C.yellow : C.surface,
-                  border: `1px solid ${showConfig ? C.yellow : C.border}`,
-                  boxShadow: showConfig ? `0 0 10px ${C.yellow}60` : 'none',
-                  borderRadius: 8, cursor: 'pointer', color: showConfig ? '#000' : C.muted,
-                  fontSize: 14, lineHeight: 1, padding: '3px 7px', transition: 'all 0.15s',
+                  width: 32, height: 32,
+                  background: showConfig ? C.yellow : '#111',
+                  border: 'none', borderRadius: 8, cursor: 'pointer',
+                  color: showConfig ? '#000' : '#fff',
+                  fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s',
                 }}
               >⚙</button>
+              <button
+                onClick={() => setShowReset(true)}
+                title="Réinitialiser le wallet"
+                style={{
+                  width: 32, height: 32,
+                  background: '#111', border: 'none', borderRadius: 8,
+                  cursor: 'pointer', color: '#fff', fontSize: 16,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >↺</button>
             </div>
           </div>
-
-          {/* Wallet */}
-          <div style={{ padding: '8px 12px', borderBottom: showConfig ? `1px solid ${C.border}` : undefined }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
-              <div style={{ color: 'rgba(240,240,250,0.45)', fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase' }}>Wallet Virtuel</div>
-              <CurrencyToggle
-                value={currency}
-                onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
-              />
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
-              {currency === 'SOL' ? (
-                <>{fmtSOL(balance)} <SolIcon size={18} style={{ marginLeft: 2 }} /></>
-              ) : solPrice > 0 ? (
-                `$${(balance * solPrice).toFixed(2)}`
-              ) : (
-                <span style={{ color: C.muted, fontSize: 14 }}>Chargement…</span>
-              )}
-            </div>
-            <div style={{ color: 'rgba(240,240,250,0.45)', fontSize: 12, marginTop: 2, display: 'flex', alignItems: 'center', gap: 3 }}>
-              {currency === 'SOL' ? (
-                solPrice > 0 ? `≈ $${(balance * solPrice).toFixed(2)}` : '...'
-              ) : (
-                <>{fmtSOL(balance)} <SolIcon size={10} style={{ marginLeft: 2 }} /></>
-              )}
-            </div>
+        )}
+      >
+        {/* Dark wallet body */}
+        <div style={{ background: '#111', fontFamily: "'Roboto', sans-serif", padding: '12px 14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <span style={{
+              background: '#fff', color: '#111', fontWeight: 700, fontSize: 12,
+              padding: '3px 10px', borderRadius: 20,
+            }}>Wallet</span>
+            <CurrencyToggle
+              value={currency}
+              onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
+            />
           </div>
-
-          {/* Config Panel */}
-          {showConfig && (
-            <div style={{ padding: '9px 12px' }}>
-              <ConfigPanel
-                buyPresets={buyPresets}
-                tpPresets={tpPresets}
-                slPresets={slPresets}
-                slippage={state.slippage}
-                fees={state.fees}
-              />
-            </div>
-          )}
+          <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            {currency === 'SOL' ? (
+              <>{fmtSOL(balance)} <SolIcon size={22} style={{ marginLeft: 2 }} /></>
+            ) : solPrice > 0 ? (
+              `$${(balance * solPrice).toFixed(2)}`
+            ) : (
+              <span style={{ color: '#A1A1A1', fontSize: 16 }}>Chargement…</span>
+            )}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#A1A1A1', fontSize: 13 }}>
+              {currency === 'SOL'
+                ? solPrice > 0 ? `= $${(balance * solPrice).toFixed(2)}` : '...'
+                : <>{fmtSOL(balance)} <SolIcon size={11} style={{ marginLeft: 2 }} /></>}
+            </span>
+            <span style={{ color: '#A1A1A1', fontSize: 13 }}>{clock}</span>
+          </div>
         </div>
+
+        {/* Config Panel */}
+        {showConfig && (
+          <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: '9px 12px', fontFamily: FONT }}>
+            <ConfigPanel
+              buyPresets={buyPresets}
+              tpPresets={tpPresets}
+              slPresets={slPresets}
+              slippage={state.slippage}
+              fees={state.fees}
+            />
+          </div>
+        )}
       </DraggableBlock>
 
       {/* Bloc B — Token live + Tabs + TradeTabTop / Journal */}
@@ -1305,7 +1341,7 @@ function injectFont() {
   const link = document.createElement('link')
   link.id = 'papermemes-font'
   link.rel = 'stylesheet'
-  link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
+  link.href = 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
   document.head.appendChild(link)
 }
 
