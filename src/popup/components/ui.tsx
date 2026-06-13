@@ -15,7 +15,7 @@ export const C = {
 }
 
 export function fmtSOL(n: number): string {
-  return n.toFixed(n < 0.01 ? 4 : 2)
+  return n.toFixed(2)
 }
 
 export function fmtMC(n: number): string {
