@@ -11,15 +11,16 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
   const isUSD = value === 'USD'
   return (
     <div onClick={onChange} style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', userSelect: 'none' }}>
-      <span style={{ fontSize: 10, fontWeight: 700, color: !isUSD ? C.green : C.muted }}>SOL</span>
+      <span style={{ fontSize: 10, fontWeight: 700, color: !isUSD ? C.yellow : C.muted }}>SOL</span>
       <div style={{ width: 34, height: 18, borderRadius: 9, background: C.surface, border: `1px solid ${C.border}`, position: 'relative' }}>
         <div style={{
           position: 'absolute', top: 3, left: isUSD ? 16 : 3,
-          width: 10, height: 10, borderRadius: '50%', background: C.green,
+          width: 10, height: 10, borderRadius: '50%', background: C.yellow,
+          boxShadow: `0 0 6px ${C.yellow}`,
           transition: 'left 0.18s ease',
         }} />
       </div>
-      <span style={{ fontSize: 10, fontWeight: 700, color: isUSD ? C.green : C.muted }}>USD</span>
+      <span style={{ fontSize: 10, fontWeight: 700, color: isUSD ? C.yellow : C.muted }}>USD</span>
     </div>
   )
 }
@@ -400,8 +401,8 @@ function copyToClipboard(text: string) {
 
 // ─── Widget ───────────────────────────────────────────────────────────────────
 
-const FONT = "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif"
-const BASE = 14 // base font size (12 * 1.15 ≈ 14)
+const FONT = "'Space Grotesk', -apple-system, system-ui, sans-serif"
+const BASE = 14
 
 function fmtPrice(p: number): string {
   if (p >= 1) return p.toFixed(2)
@@ -775,7 +776,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
   return (
     <div style={{
-      position: 'fixed', top: 0, right: 0, width: 290, height: '100vh',
+      position: 'fixed', top: 0, right: 0, width: 300, height: '100vh',
       background: C.bg, borderLeft: `1px solid ${C.border}`,
       fontFamily: FONT, color: C.text,
       display: 'flex', flexDirection: 'column', zIndex: 2147483647, fontSize: BASE,
@@ -784,7 +785,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       {/* 1 — Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.green, boxShadow: `0 0 6px ${C.green}`, display: 'inline-block' }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: C.yellow, boxShadow: `0 0 8px ${C.yellow}, 0 0 16px ${C.yellow}60`, display: 'inline-block' }} />
           <span style={{ fontWeight: 800, fontSize: 13, letterSpacing: 1 }}>PAPERMEMES</span>
           <span style={{ color: C.muted, fontSize: 10 }}>v1.2</span>
         </div>
@@ -802,10 +803,11 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             onClick={() => setShowConfig(v => !v)}
             title="Paramètres"
             style={{
-              background: showConfig ? C.surface : 'transparent',
-              border: `1px solid ${showConfig ? C.green : C.border}`,
-              borderRadius: 6, cursor: 'pointer', color: showConfig ? C.green : C.muted,
-              fontSize: 14, lineHeight: 1, padding: '3px 6px',
+              background: showConfig ? `${C.yellow}12` : 'transparent',
+              border: `1px solid ${showConfig ? C.yellow : C.border}`,
+              boxShadow: showConfig ? `0 0 8px ${C.yellow}40` : 'none',
+              borderRadius: 8, cursor: 'pointer', color: showConfig ? C.yellow : C.muted,
+              fontSize: 14, lineHeight: 1, padding: '3px 6px', transition: 'all 0.15s',
             }}
           >⚙</button>
         </div>
@@ -1098,7 +1100,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
         <div style={sL}>Achat Rapide</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
           {buyPresets.map(amt => (
-            <Btn key={amt} variant="green" size="sm" disabled={buyBlocked || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
+            <Btn key={amt} variant="yellow" size="sm" disabled={buyBlocked || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
               {amt} <SolIcon size={10} style={{ marginLeft: 1 }} />
             </Btn>
           ))}
@@ -1130,7 +1132,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
                 return (
                   <div key={i} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: C.surface, borderRadius: 6, padding: '4px 8px',
+                    background: C.surface, borderRadius: 10, padding: '4px 8px',
                     borderLeft: `2px solid ${pctColor}`, fontSize: 11,
                   }}>
                     <span style={{ color: C.muted }}>{fmtMC(entry.entryMC)}</span>
@@ -1150,7 +1152,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
               { label: 'PNL', sol: livePnL.sol, color: pnlColor(livePnL.sol) },
               { label: 'EARNS', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
             ].map(({ label, sol, color }) => (
-              <div key={label} style={{ background: C.surface, borderRadius: 6, padding: '6px 4px', textAlign: 'center' }}>
+              <div key={label} style={{ background: C.surface, borderRadius: 10, padding: '6px 4px', textAlign: 'center' }}>
                 <div style={{ color: C.muted, fontSize: 9, marginBottom: 2 }}>{label}</div>
                 <div style={{ color: color ?? C.text, fontSize: 11, fontWeight: 700 }}>
                   {sol !== null ? <AmountLabel sol={sol} /> : '—'}
@@ -1213,6 +1215,15 @@ const sL: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: '
 let widgetRoot: ReturnType<typeof createRoot> | null = null
 let lastMint: string | null = null
 
+function injectFont() {
+  if (document.getElementById('papermemes-font')) return
+  const link = document.createElement('link')
+  link.id = 'papermemes-font'
+  link.rel = 'stylesheet'
+  link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
+  document.head.appendChild(link)
+}
+
 async function tryMount() {
   const { terminal, mintAddress: rawMint } = detectTerminal()
 
@@ -1232,6 +1243,7 @@ async function tryMount() {
   if (existing) { widgetRoot?.unmount(); widgetRoot = null; existing.remove() }
 
   if (terminal === 'gmgn') fetchGmgn(mint)
+  injectFont()
 
   const div = document.createElement('div')
   div.id = 'papermemes-root'

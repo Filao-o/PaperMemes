@@ -28,7 +28,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
       <div style={{
         background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
         padding: 20, width: '100%', display: 'flex', flexDirection: 'column', gap: 14,
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "'Space Grotesk', -apple-system, sans-serif",
       }}>
         <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.text }}>Réinitialiser le wallet</div>
         <div>
@@ -277,7 +277,7 @@ export function App() {
       {showReset && <ResetModal onClose={() => setShowReset(false)} />}
       <div style={{
         width: 360, minHeight: 480, background: C.bg, color: C.text,
-        fontFamily: "'JetBrains Mono', monospace", display: 'flex', flexDirection: 'column',
+        fontFamily: "'Space Grotesk', -apple-system, sans-serif", display: 'flex', flexDirection: 'column',
       }}>
         {/* Header */}
         <div style={{

@@ -25,17 +25,17 @@ export function SolIcon({ size = 13, style }: { size?: number; style?: React.CSS
 }
 
 export const C = {
-  bg: '#0a0b0d',
-  surface: '#111318',
-  border: '#1e293b',
-  borderHi: '#2d3f55',
+  bg: '#060608',
+  surface: '#0e0e12',
+  border: '#1c1c26',
+  borderHi: '#2a2a38',
+  yellow: '#EEFF00',
   green: '#00ff88',
   red: '#ff3b5c',
-  yellow: '#f59e0b',
-  text: '#e2e8f0',
-  textSub: '#94a3b8',
-  muted: '#64748b',
-  dim: '#475569',
+  text: '#f0f0fa',
+  textSub: '#8888a8',
+  muted: '#55556a',
+  dim: '#33333f',
 }
 
 export function fmtSOL(n: number): string {
@@ -76,11 +76,11 @@ interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'green' | 'red' | 'dim' | 'yellow'
   size?: 'sm' | 'md'
 }
-const BTN_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  green:  { bg: `${C.green}18`, text: C.green,   border: `${C.green}60` },
-  red:    { bg: `${C.red}18`,   text: C.red,     border: `${C.red}60`   },
-  yellow: { bg: `${C.yellow}18`,text: C.yellow,  border: `${C.yellow}60`},
-  dim:    { bg: C.surface,      text: C.textSub, border: C.border       },
+const BTN_COLORS: Record<string, { bg: string; text: string; border: string; shadow: string }> = {
+  yellow: { bg: `${C.yellow}15`, text: C.yellow,  border: `${C.yellow}55`, shadow: `0 0 10px ${C.yellow}35` },
+  green:  { bg: `${C.green}15`,  text: C.green,   border: `${C.green}55`,  shadow: `0 0 8px ${C.green}30`   },
+  red:    { bg: `${C.red}15`,    text: C.red,     border: `${C.red}55`,    shadow: `0 0 8px ${C.red}30`     },
+  dim:    { bg: C.surface,       text: C.textSub, border: C.border,        shadow: 'none'                   },
 }
 
 export function Btn({ variant = 'dim', size = 'md', style, children, ...rest }: BtnProps) {
@@ -89,10 +89,12 @@ export function Btn({ variant = 'dim', size = 'md', style, children, ...rest }: 
     <button
       style={{
         background: v.bg, color: v.text, border: `1px solid ${v.border}`,
-        borderRadius: 6, padding: size === 'sm' ? '4px 8px' : '6px 12px',
-        fontSize: size === 'sm' ? 10 : 11, fontWeight: 600, cursor: 'pointer',
+        boxShadow: rest.disabled ? 'none' : v.shadow,
+        borderRadius: 8, padding: size === 'sm' ? '5px 8px' : '7px 14px',
+        fontSize: size === 'sm' ? 10 : 11, fontWeight: 700, cursor: 'pointer',
         fontFamily: 'inherit', letterSpacing: 0.5,
-        opacity: rest.disabled ? 0.4 : 1,
+        opacity: rest.disabled ? 0.35 : 1,
+        transition: 'opacity 0.15s',
         ...style,
       }}
       {...rest}
@@ -111,8 +113,8 @@ export function Tabs({ tabs, active, onChange }: TabsProps) {
           key={t}
           onClick={() => onChange(t)}
           style={{
-            flex: 1, background: 'none', border: 'none', borderBottom: active === t ? `2px solid ${C.green}` : '2px solid transparent',
-            color: active === t ? C.green : C.muted, padding: '8px 0', fontSize: 11,
+            flex: 1, background: 'none', border: 'none', borderBottom: active === t ? `2px solid ${C.yellow}` : '2px solid transparent',
+            color: active === t ? C.yellow : C.muted, padding: '8px 0', fontSize: 11,
             fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1,
           }}
         >
