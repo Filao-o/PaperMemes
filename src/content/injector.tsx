@@ -621,10 +621,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     }
 
     poll()
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    let lastPollTime = 0
     observerRef.current = new MutationObserver(() => {
-      if (debounceTimer) clearTimeout(debounceTimer)
-      debounceTimer = setTimeout(poll, 200)
+      const now = Date.now()
+      if (now - lastPollTime >= 100) {
+        lastPollTime = now
+        poll()
+      }
     })
     observerRef.current.observe(document.body, { childList: true, subtree: true, characterData: true })
     intervalRef.current = window.setInterval(poll, 3000)
