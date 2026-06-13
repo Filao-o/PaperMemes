@@ -18,11 +18,16 @@ export function fmtSOL(n: number): string {
   return n.toFixed(2)
 }
 
+const MC_TIERS = [
+  { threshold: 1e9, divisor: 1e8, suffix: 'B' },
+  { threshold: 1e6, divisor: 1e5, suffix: 'M' },
+  { threshold: 1e3, divisor: 100, suffix: 'K' },
+]
+
 export function fmtMC(n: number): string {
-  if (n >= 1e9) return `$${(Math.floor(n / 1e8) / 10).toFixed(1).replace(/\.0$/, '')}B`
-  if (n >= 1e6) return `$${(Math.floor(n / 1e5) / 10).toFixed(1).replace(/\.0$/, '')}M`
-  if (n >= 1e3) return `$${(Math.floor(n / 100) / 10).toFixed(1).replace(/\.0$/, '')}K`
-  return `$${Math.round(n)}`
+  const tier = MC_TIERS.find(t => n >= t.threshold)
+  if (!tier) return `$${Math.round(n)}`
+  return `$${(Math.floor(n / tier.divisor) / 10).toFixed(1).replace(/\.0$/, '')}${tier.suffix}`
 }
 
 export function fmtPct(n: number): string {
@@ -47,14 +52,15 @@ interface BtnProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'green' | 'red' | 'dim' | 'yellow'
   size?: 'sm' | 'md'
 }
+const BTN_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  green:  { bg: `${C.green}18`, text: C.green,   border: `${C.green}60` },
+  red:    { bg: `${C.red}18`,   text: C.red,     border: `${C.red}60`   },
+  yellow: { bg: `${C.yellow}18`,text: C.yellow,  border: `${C.yellow}60`},
+  dim:    { bg: C.surface,      text: C.textSub, border: C.border       },
+}
+
 export function Btn({ variant = 'dim', size = 'md', style, children, ...rest }: BtnProps) {
-  const colors: Record<string, { bg: string; text: string; border: string }> = {
-    green:  { bg: `${C.green}18`, text: C.green,   border: `${C.green}60` },
-    red:    { bg: `${C.red}18`,   text: C.red,     border: `${C.red}60`   },
-    yellow: { bg: `${C.yellow}18`,text: C.yellow,  border: `${C.yellow}60`},
-    dim:    { bg: C.surface,      text: C.textSub, border: C.border       },
-  }
-  const v = colors[variant]
+  const v = BTN_COLORS[variant]
   return (
     <button
       style={{
