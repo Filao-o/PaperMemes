@@ -2,34 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Storage } from '../storage'
 import type { AppState, Trade, CloseEvent, TokenInfo, RiskInfo } from '../types'
-import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Tabs, Btn, Divider } from '../popup/components/ui'
+import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Tabs, Btn, Divider, SolIcon } from '../popup/components/ui'
 import { JournalPanel } from '../popup/components/JournalPanel'
-
-// ─── Solana SVG icon ──────────────────────────────────────────────────────────
-
-function SolIcon({ size = 13, style }: { size?: number; style?: React.CSSProperties }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 313 281" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ display: 'inline', verticalAlign: 'middle', ...style }}>
-      <g clipPath="url(#solClip)">
-        <path d="M311.318 221.057L259.66 276.558C258.537 277.764 257.178 278.725 255.669 279.382C254.159 280.039 252.53 280.378 250.884 280.377H5.99719C4.8287 280.377 3.68568 280.035 2.70855 279.393C1.73143 278.751 0.962771 277.837 0.49702 276.764C0.0312691 275.69 -0.111286 274.504 0.0868712 273.35C0.285028 272.196 0.815265 271.126 1.61243 270.27L53.3099 214.769C54.4299 213.566 55.7843 212.607 57.2893 211.95C58.7943 211.293 60.4178 210.953 62.0595 210.95H306.933C308.101 210.95 309.244 211.292 310.221 211.934C311.199 212.576 311.967 213.49 312.433 214.564C312.899 215.637 313.041 216.824 312.843 217.977C312.645 219.131 312.115 220.201 311.318 221.057ZM259.66 109.294C258.537 108.088 257.178 107.127 255.669 106.47C254.159 105.813 252.53 105.474 250.884 105.475H5.99719C4.8287 105.475 3.68568 105.817 2.70855 106.459C1.73143 107.101 0.962771 108.015 0.49702 109.088C0.0312691 110.162 -0.111286 111.348 0.0868712 112.502C0.285028 113.656 0.815265 114.726 1.61243 115.582L53.3099 171.083C54.4299 172.286 55.7843 173.245 57.2893 173.902C58.7943 174.559 60.4178 174.899 62.0595 174.902H306.933C308.101 174.902 309.244 174.56 310.221 173.918C311.199 173.276 311.967 172.362 312.433 171.288C312.899 170.215 313.041 169.028 312.843 167.875C312.645 166.721 312.115 165.651 311.318 164.795L259.66 109.294ZM5.99719 69.4267H250.884C252.53 69.4275 254.159 69.089 255.669 68.432C257.178 67.7751 258.537 66.8139 259.66 65.6082L311.318 10.1069C312.115 9.25107 312.645 8.18056 312.843 7.02695C313.041 5.87334 312.899 4.68686 312.433 3.6133C311.967 2.53974 311.199 1.62586 310.221 0.983941C309.244 0.342026 308.101 3.95314e-05 306.933 0L62.0595 0C60.4178 0.00279866 58.7943 0.34314 57.2893 0.999953C55.7843 1.65677 54.4299 2.61607 53.3099 3.81847L1.62576 59.3197C0.829361 60.1748 0.299359 61.244 0.100752 62.3964C-0.0978539 63.5488 0.0435698 64.7342 0.507679 65.8073C0.971789 66.8803 1.73841 67.7943 2.71352 68.4372C3.68863 69.0802 4.82984 69.424 5.99719 69.4267Z" fill="url(#solGrad)"/>
-      </g>
-      <defs>
-        <linearGradient id="solGrad" x1="26.415" y1="287.059" x2="283.735" y2="-2.49574" gradientUnits="userSpaceOnUse">
-          <stop offset="0.08" stopColor="#9945FF"/>
-          <stop offset="0.3" stopColor="#8752F3"/>
-          <stop offset="0.5" stopColor="#5497D5"/>
-          <stop offset="0.6" stopColor="#43B4CA"/>
-          <stop offset="0.72" stopColor="#28E0B9"/>
-          <stop offset="0.97" stopColor="#19FB9B"/>
-        </linearGradient>
-        <clipPath id="solClip">
-          <rect width="312.93" height="280.377" fill="white"/>
-        </clipPath>
-      </defs>
-    </svg>
-  )
-}
 
 // ─── Currency toggle ──────────────────────────────────────────────────────────
 
@@ -165,13 +139,16 @@ function parseAge(text: string): string | null {
   return null
 }
 
+let _ageCache: { val: string | null; ts: number } | null = null
 function walkAge(): string | null {
+  if (_ageCache && Date.now() - _ageCache.ts < 5000) return _ageCache.val
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
   let node: Node | null
   while ((node = walker.nextNode())) {
     const age = parseAge((node.textContent ?? '').trim())
-    if (age) return age
+    if (age) { _ageCache = { val: age, ts: Date.now() }; return age }
   }
+  _ageCache = { val: null, ts: Date.now() }
   return null
 }
 
@@ -211,11 +188,11 @@ const photonAdapter: Adapter = {
   getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
 }
 
-const GMGN_CACHE = { price: 0, marketCap: 0, name: null as string | null, ts: 0 }
+const GMGN_CACHE = { price: 0, marketCap: 0, name: null as string | null, ts: 0, mint: '' }
 const GMGN_TTL = 8000
 
 async function fetchGmgn(mint: string) {
-  if (Date.now() - GMGN_CACHE.ts < GMGN_TTL) return
+  if (GMGN_CACHE.mint === mint && Date.now() - GMGN_CACHE.ts < GMGN_TTL) return
   try {
     const res = await fetch(`https://gmgn.ai/defi/quotation/v1/tokens/sol/${mint}`, { headers: { Accept: 'application/json' } })
     if (!res.ok) return
@@ -224,6 +201,7 @@ async function fetchGmgn(mint: string) {
       GMGN_CACHE.price = parseFloat(d.price ?? 0)
       GMGN_CACHE.marketCap = parseFloat(d.market_cap ?? 0)
       GMGN_CACHE.name = d.symbol ?? d.name ?? null
+      GMGN_CACHE.mint = mint
       GMGN_CACHE.ts = Date.now()
     }
   } catch {}
@@ -553,7 +531,6 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const dirRef = useRef<number | null>(null)
   const mcDirRef = useRef<number | null>(null)
   const lastMcRef = useRef<number | null>(null)
-  const lastPriceRef = useRef<number | null>(null)
   const prevPriceRef = useRef<number | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
@@ -584,7 +561,6 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       setCurrentTerminal(terminal)
       setCurrentMint(mintAddress)
       setTokenInfo(null)
-      lastPriceRef.current = null
       prevPriceRef.current = null
       setPriceDir(null)
     }
@@ -608,25 +584,22 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
     const poll = () => {
       const price = adapter.getPrice()
-      const mcRaw = document.querySelector<HTMLElement>('.css-1u0gsx2')?.textContent?.trim() ?? null
       // Pour Padre (pump.fun) : supply = 1 milliard → MC = price × 1e9 (plus fiable que scraping)
       const mcFromPrice = (currentTerminal === 'padre' && price && price > 0) ? Math.round(price * 1e9) : null
-      const mc = mcFromPrice ?? adapter.getMarketCap() ?? (mcRaw ? q(mcRaw) : null)
+      const mc = mcFromPrice ?? adapter.getMarketCap()
       const name = adapter.getTokenName()
       const mint = currentMint ?? adapter.getMintAddress() ?? undefined
       const ext = adapter.getExtended()
 
       if (price && price > 0) {
-        if (price !== lastPriceRef.current) {
-          // Detect direction
-          if (prevPriceRef.current !== null && price !== prevPriceRef.current) {
+        if (price !== prevPriceRef.current) {
+          if (prevPriceRef.current !== null) {
             const dir = price > prevPriceRef.current ? 'up' : 'down'
             setPriceDir(dir)
             if (dirRef.current) clearTimeout(dirRef.current)
             dirRef.current = window.setTimeout(() => setPriceDir(null), 1200)
           }
           prevPriceRef.current = price
-          lastPriceRef.current = price
 
           setTokenInfo({ price, marketCap: mc, tokenName: name, mintAddress: mint ?? null, liquidity: null, holders: ext.holders, age: ext.age, timestamp: Date.now() })
           setPriceStale(false)
@@ -648,8 +621,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     }
 
     poll()
-    observerRef.current = new MutationObserver(poll)
-    observerRef.current.observe(document.body, { childList: true, subtree: true, characterData: true, characterDataOldValue: true })
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null
+    observerRef.current = new MutationObserver(() => {
+      if (debounceTimer) clearTimeout(debounceTimer)
+      debounceTimer = setTimeout(poll, 200)
+    })
+    observerRef.current.observe(document.body, { childList: true, subtree: true, characterData: true })
     intervalRef.current = window.setInterval(poll, 3000)
 
     return () => {
@@ -949,20 +926,15 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
   buyPresets: number[]; tpPresets: number[]; slPresets: number[]
   slippage: number; fees: number
 }) {
-  const pad8 = (arr: number[], sign = 1) => {
+  const pad = (arr: number[], n: number) => {
     const filled = arr.map(v => String(Math.abs(v)))
-    while (filled.length < 8) filled.push('')
-    return filled.slice(0, 8)
-  }
-  const pad4 = (arr: number[]) => {
-    const filled = arr.map(v => String(Math.abs(v)))
-    while (filled.length < 4) filled.push('')
-    return filled.slice(0, 4)
+    while (filled.length < n) filled.push('')
+    return filled.slice(0, n)
   }
 
-  const [buyInputs, setBuyInputs] = useState<string[]>(() => pad8(buyPresets))
-  const [tpInputs, setTpInputs] = useState<string[]>(() => pad4(tpPresets))
-  const [slInputs, setSlInputs] = useState<string[]>(() => pad4(slPresets))
+  const [buyInputs, setBuyInputs] = useState<string[]>(() => pad(buyPresets, 8))
+  const [tpInputs, setTpInputs] = useState<string[]>(() => pad(tpPresets, 4))
+  const [slInputs, setSlInputs] = useState<string[]>(() => pad(slPresets, 4))
   const [slip, setSlip] = useState(String(slippage))
   const [fee, setFee] = useState(String(fees))
   const [saved, setSaved] = useState(false)
@@ -1079,8 +1051,6 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
 
 // ─── Trade Tab ────────────────────────────────────────────────────────────────
 
-function fmtSOLLocal(n: number): string { return n.toFixed(2) }
-
 interface TradeTabProps {
   state: AppState; activeTrade: Trade | null; livePnL: { sol: number; percent: number } | null
   liveValue: number | null; buyPresets: number[]; tpPresets: number[]; slPresets: number[]
@@ -1116,7 +1086,7 @@ function SellInitialsLink({ onSellInitials, invested, AmountLabel }: {
 function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCurStr, currency, price }: TradeTabProps) {
   function AmountLabel({ sol }: { sol: number }) {
     if (currency === 'USD') return <>{fmtCurStr(sol)}</>
-    return <>{fmtSOLLocal(sol)} <SolIcon size={11} style={{ marginLeft: 2 }} /></>
+    return <>{fmtSOL(sol)} <SolIcon size={11} style={{ marginLeft: 2 }} /></>
   }
 
   return (
