@@ -7,19 +7,6 @@ import { JournalPanel } from '../popup/components/JournalPanel'
 
 // ─── Solana SVG icon ──────────────────────────────────────────────────────────
 
-function SolIcon({ size = 13, style }: { size?: number; style?: React.CSSProperties }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 20 16" style={{ display: 'inline', verticalAlign: 'middle', ...style }}>
-      <defs>
-        <linearGradient id="solG" x1="0" y1="16" x2="20" y2="0" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#9945FF" />
-          <stop offset="1" stopColor="#14F195" />
-        </linearGradient>
-      </defs>
-      <path fill="url(#solG)" d="M2.5 13H17l1.5-2H4L2.5 13zm0-4.5H17l1.5-2H4L2.5 8.5zM4 4h13l-1.5-2H2.5L4 4z" />
-    </svg>
-  )
-}
 
 // ─── Currency toggle ──────────────────────────────────────────────────────────
 
@@ -838,7 +825,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         </div>
         <div style={{ fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
           {currency === 'SOL' ? (
-            <><SolIcon size={18} style={{ marginRight: 2 }} />{fmtSOL(balance)}</>
+            <>{fmtSOL(balance)} ≋</>
+
           ) : solPrice > 0 ? (
             `$${(balance * solPrice).toFixed(2)}`
           ) : (
@@ -849,7 +837,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           {currency === 'SOL' ? (
             solPrice > 0 ? `≈ $${(balance * solPrice).toFixed(2)}` : '...'
           ) : (
-            <><SolIcon size={10} style={{ marginRight: 2 }} />{fmtSOL(balance)}</>
+            <>{fmtSOL(balance)} ≋</>
+
           )}
         </div>
       </div>
@@ -1112,7 +1101,8 @@ function SellInitialsLink({ onSellInitials, invested, AmountLabel }: {
 function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPresets, slPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onSetTp, onSetSl, fmtCurStr, currency, price }: TradeTabProps) {
   function AmountLabel({ sol }: { sol: number }) {
     if (currency === 'USD') return <>{fmtCurStr(sol)}</>
-    return <><SolIcon size={11} style={{ marginRight: 2 }} />{fmtSOLLocal(sol)}</>
+    return <>{fmtSOLLocal(sol)} ≋</>
+
   }
 
   return (
@@ -1122,7 +1112,7 @@ function TradeTab({ state, activeTrade, livePnL, liveValue, buyPresets, tpPreset
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
           {buyPresets.map(amt => (
             <Btn key={amt} variant="green" size="sm" disabled={buyBlocked || !hasPrice || state.balance < amt} onClick={() => onBuy(amt)}>
-              {amt}<SolIcon size={10} style={{ marginLeft: 2 }} />
+              {amt} ≋
             </Btn>
           ))}
         </div>
