@@ -8,6 +8,30 @@ interface Props {
   solPrice: number
 }
 
+function CopyTokenName({ trade }: { trade: Trade }) {
+  const [copied, setCopied] = useState(false)
+  function handleCopy() {
+    if (!trade.mintAddress) return
+    navigator.clipboard.writeText(trade.mintAddress).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
+  }
+  return (
+    <span
+      onClick={handleCopy}
+      title={trade.mintAddress ? `Copier CA: ${trade.mintAddress}` : undefined}
+      style={{
+        color: C.text, fontWeight: 700, fontSize: 13,
+        cursor: trade.mintAddress ? 'pointer' : 'default',
+        borderBottom: trade.mintAddress ? `1px dashed ${C.muted}` : 'none',
+      }}
+    >
+      {copied ? <span style={{ color: C.green }}>✓ copié</span> : trade.tokenName}
+    </span>
+  )
+}
+
 export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null)
 
@@ -76,10 +100,10 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
           }}>
             <div style={{ padding: '8px 10px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <span style={{ color: C.text, fontWeight: 700, fontSize: 13 }}>{trade.tokenName}</span>
+                <CopyTokenName trade={trade} />
                 <Badge text={trade.status === 'won' ? 'GAIN' : 'PERTE'} color={color} />
               </div>
-              <Row label="MC Entrée" value={fmtMC(trade.entryMC)} />
+              <Row label="MC Entrée Moy" value={fmtMC(trade.entryMC)} />
               <Row label="Investi" value={`${fmtSOL(trade.invested)} ≋`} />
               {trade.pnlSOL != null && (
                 <Row
@@ -114,9 +138,9 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
               <div style={{ borderTop: `1px solid ${C.border}`, padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {trade.closeEvents.map(ev => (
                   <div key={ev.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: C.muted }}>
+                    <span>{fmtMC(ev.mcAtClose)}</span>
                     <span>Vente {ev.sellPercent.toFixed(0)}%</span>
                     <span style={{ color: C.green }}>+{fmtSOL(ev.solReturned)} ≋</span>
-                    <span>{fmtMC(ev.mcAtClose)}</span>
                   </div>
                 ))}
               </div>
