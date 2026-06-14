@@ -1026,40 +1026,82 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
       {/* Bloc C — TP/SL + Footer (seulement si trade tab et pas config) */}
       {!showConfig && tab === 'trade' && (
-        <DraggableBlock defaultPos={() => ({ x: window.innerWidth - 316, y: 560 })} style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', outline: '3px solid #ffffff' }}>
-          <div style={blockStyle}>
-            <div style={{ padding: '9px 12px' }}>
-              {/* TP/SL */}
-              <div>
-                <div style={sL}>TP / SL</div>
-                {activeTrade ? (
-                  <>
-                    <div style={{ color: C.muted, fontSize: 10, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Take Profit</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5, marginBottom: 9 }}>
-                      {tpPresets.map(pct => (
-                        <Btn key={pct} variant="green" size="sm"
-                          style={{ border: activeTrade.tp === pct ? `2px solid ${C.green}` : undefined }}
-                          onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: activeTrade.tp === pct ? null : pct, tpMC: null } })}>
-                          +{pct}%
-                        </Btn>
-                      ))}
-                    </div>
-                    <div style={{ color: C.muted, fontSize: 10, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 1 }}>Stop Loss</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 5 }}>
-                      {slPresets.map(pct => (
-                        <Btn key={pct} variant="red" size="sm"
-                          style={{ border: activeTrade.sl === pct ? `2px solid ${C.red}` : undefined }}
-                          onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: activeTrade.sl === pct ? null : pct } })}>
-                          {pct}%
-                        </Btn>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '9px 0' }}>Ouvrez une position d'abord</div>
-                )}
-              </div>
+        <DraggableBlock
+          defaultPos={() => ({ x: window.innerWidth - 316, y: 560 })}
+          style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', outline: '3px solid #ffffff' }}
+          renderHandle={onDragStart => (
+            <div onMouseDown={onDragStart} style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 12px', background: '#ffffff', cursor: 'grab',
+              fontFamily: "'Roboto', sans-serif",
+            }}>
+              <span style={{ fontWeight: 700, fontSize: 15, color: '#111' }}>Take Profit / Stop Loss</span>
+              <button
+                onClick={() => setShowConfig(v => !v)}
+                onMouseDown={e => e.stopPropagation()}
+                style={{
+                  width: 32, height: 32, background: showConfig ? C.yellow : '#111',
+                  border: 'none', borderRadius: 8, cursor: 'pointer',
+                  color: showConfig ? '#000' : '#fff', fontSize: 15,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>⚙</button>
             </div>
+          )}
+        >
+          <div style={{ background: C.bg, fontFamily: FONT, color: C.text, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {activeTrade ? (
+              <>
+                {/* TP section */}
+                <div style={{ background: '#ffffff', borderRadius: 12, padding: '10px 10px 12px' }}>
+                  <div style={{ display: 'inline-block', background: '#e8e8e8', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>TP</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+                    {tpPresets.map(pct => (
+                      <button key={pct}
+                        onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: activeTrade.tp === pct ? null : pct, tpMC: null } })}
+                        style={{
+                          background: activeTrade.tp === pct
+                            ? 'linear-gradient(160deg, #5dffaa 0%, #01fd73 45%, #00c057 100%)'
+                            : 'linear-gradient(160deg, #5dffaa 0%, #01fd73 45%, #00c057 100%)',
+                          border: activeTrade.tp === pct ? '2px solid #fff' : '2px solid transparent',
+                          borderRadius: 10, cursor: 'pointer', color: '#000', fontWeight: 700, fontSize: 13,
+                          padding: '10px 4px', fontFamily: "'Roboto', sans-serif",
+                          boxShadow: activeTrade.tp === pct
+                            ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 0 0 2px #01fd73'
+                            : 'inset 0 1px 0 rgba(255,255,255,0.3)',
+                          opacity: activeTrade.tp === pct ? 1 : 0.75,
+                        }}>
+                        +{pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* SL section */}
+                <div style={{ background: '#ffffff', borderRadius: 12, padding: '10px 10px 12px' }}>
+                  <div style={{ display: 'inline-block', background: '#e8e8e8', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>SL</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+                    {slPresets.map(pct => (
+                      <button key={pct}
+                        onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: activeTrade.sl === pct ? null : pct } })}
+                        style={{
+                          background: 'linear-gradient(160deg, #ff5580 0%, #FE0149 45%, #c4003a 100%)',
+                          border: activeTrade.sl === pct ? '2px solid #fff' : '2px solid transparent',
+                          borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 13,
+                          padding: '10px 4px', fontFamily: "'Roboto', sans-serif",
+                          boxShadow: activeTrade.sl === pct
+                            ? 'inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 2px #FE0149'
+                            : 'inset 0 1px 0 rgba(255,255,255,0.25)',
+                          opacity: activeTrade.sl === pct ? 1 : 0.75,
+                        }}>
+                        {pct}%
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '14px 0' }}>Ouvrez une position d'abord</div>
+            )}
 
             {/* Footer */}
             <div style={{ borderTop: `1px solid ${C.border}`, padding: '7px 12px' }}>
