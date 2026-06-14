@@ -1052,16 +1052,14 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             {activeTrade ? (
               <>
                 {/* TP section */}
-                <div style={{ background: '#ffffff', borderRadius: 12, padding: '10px 10px 12px' }}>
-                  <div style={{ display: 'inline-block', background: '#e8e8e8', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>TP</div>
+                <div style={{ background: C.bg, borderRadius: 12, padding: '10px 10px 12px' }}>
+                  <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>TP</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {tpPresets.map(pct => (
                       <button key={pct}
                         onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: activeTrade.tp === pct ? null : pct, tpMC: null } })}
                         style={{
-                          background: activeTrade.tp === pct
-                            ? 'linear-gradient(160deg, #5dffaa 0%, #01fd73 45%, #00c057 100%)'
-                            : 'linear-gradient(160deg, #5dffaa 0%, #01fd73 45%, #00c057 100%)',
+                          background: 'linear-gradient(160deg, #5dffaa 0%, #01fd73 45%, #00c057 100%)',
                           border: activeTrade.tp === pct ? '2px solid #fff' : '2px solid transparent',
                           borderRadius: 10, cursor: 'pointer', color: '#000', fontWeight: 700, fontSize: 13,
                           padding: '10px 4px', fontFamily: "'Roboto', sans-serif",
@@ -1076,9 +1074,11 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                   </div>
                 </div>
 
+                <div style={{ height: 1, background: C.border }} />
+
                 {/* SL section */}
-                <div style={{ background: '#ffffff', borderRadius: 12, padding: '10px 10px 12px' }}>
-                  <div style={{ display: 'inline-block', background: '#e8e8e8', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#555', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>SL</div>
+                <div style={{ background: C.bg, borderRadius: 12, padding: '10px 10px 12px' }}>
+                  <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>SL</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {slPresets.map(pct => (
                       <button key={pct}
