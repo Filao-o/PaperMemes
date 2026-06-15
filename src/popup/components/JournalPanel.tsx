@@ -98,11 +98,16 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
   const hasDetails = trade.closeEvents.length > 0
 
   return (
-    <div style={{ background: C.surface, borderRadius: 8, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
-      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+    <div style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {/* Token name + badge */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
           <CopyTokenName trade={trade} />
-          <Badge text={trade.status === 'won' ? 'WIN' : 'LOSE'} color={color} />
+          <span style={{
+            background: color, color: '#000',
+            borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 800,
+            letterSpacing: 0.5,
+          }}>{trade.status === 'won' ? 'WIN' : 'LOSS'}</span>
         </div>
         <div style={rowStyle}>
           <span style={labelStyle}>MC Ave. Entries</span>
@@ -120,25 +125,23 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
           <span style={labelStyle}>PNL % Total</span>
           <span style={{ ...valueStyle, color: pnlColor(pnlPct) }}>{fmtPct(pnlPct)}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
           <a href={`https://solscan.io/token/${trade.mintAddress}`} target="_blank" rel="noreferrer"
             style={{ color: C.muted, fontSize: 10, textDecoration: 'none' }}>
-            ↗ Solscan
+            Solscan
           </a>
           <span style={{ color: C.dim, fontSize: 10 }}>{fmtTs(trade.openedAt)}</span>
         </div>
       </div>
 
-      {hasDetails && (
-        <button onClick={() => setExpanded(v => !v)} style={{
-          width: '100%', padding: '7px 0', background: expanded ? C.border : 'transparent',
-          border: 'none', borderTop: `1px solid ${C.border}`, color: C.muted,
-          fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-          letterSpacing: 0.5, textTransform: 'uppercase',
-        }}>
-          {expanded ? '▲ Fermer' : '▼ Détails'}
-        </button>
-      )}
+      <button onClick={() => setExpanded(v => !v)} style={{
+        width: '100%', padding: '8px 0', background: expanded ? C.border : 'transparent',
+        border: 'none', borderTop: `1px solid ${C.border}`, color: C.muted,
+        fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+        letterSpacing: 0.5, textTransform: 'uppercase',
+      }}>
+        {expanded ? '▲ Fermer' : '▼ Details'}
+      </button>
 
       {expanded && (
         <div style={{ borderTop: `1px solid ${C.border}` }}>

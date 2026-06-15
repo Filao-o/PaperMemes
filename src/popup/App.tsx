@@ -188,11 +188,12 @@ function FilterBar({ active, onChange }: { active: Filter; onChange: (f: Filter)
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
       {FILTERS.map(f => (
         <button key={f} onClick={() => onChange(f)} style={{
-          padding: '7px 0', borderRadius: 8, fontFamily: 'inherit',
-          background: active === f ? `${C.green}18` : C.surface,
+          padding: '8px 0', borderRadius: 8, fontFamily: 'inherit',
+          background: active === f ? C.green : C.surface,
           border: `1px solid ${active === f ? C.green : C.border}`,
-          color: active === f ? C.green : C.muted,
+          color: active === f ? '#000' : C.muted,
           fontSize: 10, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5,
+          boxShadow: active === f ? `0 0 10px ${C.green}50` : 'none',
         }}>{f}</button>
       ))}
     </div>
