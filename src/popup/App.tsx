@@ -113,12 +113,12 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
 
   return (
     <div style={{
-      background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`,
+      background: C.surface, borderRadius: 10, border: `1px solid ${C.borderHi}`,
       overflow: 'hidden', position: 'relative', height: H,
     }}>
       <span style={{
-        position: 'absolute', top: 8, left: 10, color: C.muted,
-        fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, zIndex: 1,
+        position: 'absolute', top: 8, left: 10, color: C.textSub,
+        fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, zIndex: 1,
       }}>Cumulative PNL Curve</span>
 
       {trades.length < 2 ? (
@@ -168,12 +168,12 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
 function StatCard({ label, value, sub, color }: { label: string; value: React.ReactNode; sub?: React.ReactNode; color?: string }) {
   return (
     <div style={{
-      flex: 1, background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`,
+      flex: 1, background: C.surface, borderRadius: 10, border: `1px solid ${C.borderHi}`,
       padding: '10px 12px',
     }}>
-      <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 5 }}>{label}</div>
-      <div style={{ color: color ?? C.text, fontSize: 16, fontWeight: 700, lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ color: C.muted, fontSize: 10, marginTop: 4 }}>{sub}</div>}
+      <div style={{ color: C.textSub, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>{label}</div>
+      <div style={{ color: color ?? '#ffffff', fontSize: 17, fontWeight: 700, lineHeight: 1 }}>{value}</div>
+      {sub && <div style={{ color: C.muted, fontSize: 10, marginTop: 5 }}>{sub}</div>}
     </div>
   )
 }
@@ -190,7 +190,7 @@ function FilterBar({ active, onChange }: { active: Filter; onChange: (f: Filter)
         <button key={f} onClick={() => onChange(f)} style={{
           padding: '8px 0', borderRadius: 8, fontFamily: 'inherit',
           background: active === f ? C.green : C.surface,
-          border: `1px solid ${active === f ? C.green : C.border}`,
+          border: `1px solid ${active === f ? C.green : C.borderHi}`,
           color: active === f ? '#000' : C.muted,
           fontSize: 10, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5,
           boxShadow: active === f ? `0 0 10px ${C.green}50` : 'none',
@@ -288,8 +288,8 @@ export function App() {
           padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: C.muted, fontSize: 18, lineHeight: 1 }}>≡</span>
-            <span style={{ fontWeight: 800, fontSize: 14, color: C.text, letterSpacing: -0.3 }}>PaperMemes</span>
+            <span style={{ color: '#ffffff', fontSize: 18, lineHeight: 1 }}>≡</span>
+            <span style={{ fontWeight: 800, fontSize: 14, color: '#ffffff', letterSpacing: -0.3 }}>PaperMemes</span>
             <span style={{ color: C.muted, fontSize: 10 }}>v1.5</span>
           </div>
           <button onClick={() => setShowReset(true)} title="Réinitialiser" style={{
@@ -359,8 +359,8 @@ export function App() {
           {/* Trade History */}
           <div>
             <div style={{
-              fontWeight: 800, fontSize: 11, letterSpacing: 2,
-              color: C.textSub, marginBottom: 8, textTransform: 'uppercase',
+              fontWeight: 800, fontSize: 11, letterSpacing: 2.5,
+              color: '#ffffff', marginBottom: 8, textTransform: 'uppercase',
             }}>Trade History</div>
             <FilterBar active={filter} onChange={setFilter} />
           </div>

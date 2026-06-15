@@ -46,8 +46,8 @@ function CopyTokenName({ trade }: { trade: Trade }) {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const rowStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }
-const labelStyle: React.CSSProperties = { color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.8 }
-const valueStyle: React.CSSProperties = { color: C.text, fontSize: 11, fontWeight: 600 }
+const labelStyle: React.CSSProperties = { color: C.textSub, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }
+const valueStyle: React.CSSProperties = { color: '#ffffff', fontSize: 11, fontWeight: 600 }
 
 // ─── Detail section (Entries or Sells) ───────────────────────────────────────
 
@@ -98,7 +98,7 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
   const hasDetails = trade.closeEvents.length > 0
 
   return (
-    <div style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+    <div style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.borderHi}`, overflow: 'hidden' }}>
       <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
         {/* Token name + badge */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
