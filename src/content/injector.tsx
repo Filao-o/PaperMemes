@@ -1086,7 +1086,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
             />
           </div>
-          <div style={{ fontSize: 28, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <div style={{ fontSize: 33, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 2 }}>
             {currency === 'SOL' ? (
               <>{fmtSOL(balance)} <SolIcon size={22} style={{ marginLeft: 2 }} /></>
             ) : solPrice > 0 ? (
@@ -1096,7 +1096,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             )}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#A1A1A1', fontSize: 13 }}>
+            <span style={{ color: '#A1A1A1', fontSize: 15, marginBottom: 4 }}>
               {currency === 'SOL'
                 ? solPrice > 0 ? `= $${(balance * solPrice).toFixed(2)}` : '...'
                 : <>{fmtSOL(balance)} <SolIcon size={11} style={{ marginLeft: 2 }} /></>}
@@ -1162,7 +1162,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 30, color: '#111', lineHeight: 1 }}>
+                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 35, color: '#111', lineHeight: 1, marginTop: 6 }}>
                     {mc != null ? fmtMC(mc) : '—'}
                     {priceStale && !mcDir && <span style={{ fontSize: 11, color: C.yellow, marginLeft: 4 }}>⚠</span>}
                   </div>
