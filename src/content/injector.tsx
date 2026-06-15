@@ -632,16 +632,30 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const POSITIONS_KEY = 'papermemes_block_positions'
   const CONNS_KEY = 'papermemes_block_conns'
 
+  const DEFAULT_POSITIONS = {
+    A: { x: window.innerWidth - 316, y: 10 },
+    B: { x: window.innerWidth - 316, y: 190 },
+    C: { x: window.innerWidth - 316, y: 560 },
+  }
+
   const [positions, setPositions] = useState<Record<BlockId, {x:number;y:number}>>(() => {
     try {
       const saved = localStorage.getItem(POSITIONS_KEY)
-      if (saved) return JSON.parse(saved)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Clamp positions inside viewport
+        const clamped: Record<string, {x:number;y:number}> = {}
+        for (const id of ALL_BLOCKS) {
+          const p = parsed[id] ?? DEFAULT_POSITIONS[id]
+          clamped[id] = {
+            x: Math.max(0, Math.min(p.x, window.innerWidth - 100)),
+            y: Math.max(0, Math.min(p.y, window.innerHeight - 50)),
+          }
+        }
+        return clamped as Record<BlockId, {x:number;y:number}>
+      }
     } catch {}
-    return {
-      A: { x: window.innerWidth - 316, y: 10 },
-      B: { x: window.innerWidth - 316, y: 190 },
-      C: { x: window.innerWidth - 316, y: 560 },
-    }
+    return DEFAULT_POSITIONS
   })
   const [blockConns, setBlockConns] = useState<{upper: BlockId; lower: BlockId}[]>(() => {
     try {
