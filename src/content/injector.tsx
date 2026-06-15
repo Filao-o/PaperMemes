@@ -536,7 +536,7 @@ function MetalBtn({
       style={{
         background: c.bg,
         border: 'none',
-        borderRadius: 6,
+        borderRadius: 200,
         boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
         color: c.text, fontWeight: 600, fontSize: 13,
         padding: '10px 4px',
