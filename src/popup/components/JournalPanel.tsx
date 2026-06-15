@@ -98,7 +98,7 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
   const hasDetails = trade.closeEvents.length > 0
 
   return (
-    <div style={{ background: 'rgb(17, 17, 17)', borderRadius: 10, border: '1px solid #ffffff', overflow: 'hidden' }}>
+    <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)', overflow: 'hidden' }}>
       <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
         {/* Token name + badge */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
@@ -178,19 +178,19 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
-        <div style={{ background: 'rgb(17, 17, 17)', borderRadius: 8, padding: '8px 10px', border: `1px solid ${C.border}` }}>
+        <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.10)' }}>
           <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>PNL Total</div>
           <div style={{ color: pnlColor(totalPnl), fontSize: 14, fontWeight: 700 }}><V sol={totalPnl} size={12} /></div>
           <div style={{ color: C.muted, fontSize: 9 }}>moy. <V sol={totalPnl / closedTrades.length} size={9} /></div>
         </div>
-        <div style={{ background: 'rgb(17, 17, 17)', borderRadius: 8, padding: '8px 10px', border: `1px solid ${C.border}` }}>
+        <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.10)' }}>
           <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Win Rate</div>
           <div style={{ color: winRate != null && winRate >= 50 ? C.green : C.red, fontSize: 14, fontWeight: 700 }}>
             {winRate != null ? `${winRate.toFixed(0)}%` : '—'}
           </div>
           <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {lost}p</div>
         </div>
-        <div style={{ background: 'rgb(17, 17, 17)', borderRadius: 8, padding: '8px 10px', border: `1px solid ${C.border}` }}>
+        <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.10)' }}>
           <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Trades</div>
           <div style={{ color: C.text, fontSize: 14, fontWeight: 700 }}>{closedTrades.length}</div>
           <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {lost}p</div>

@@ -113,7 +113,7 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
 
   return (
     <div style={{
-      background: 'rgb(17, 17, 17)', borderRadius: 10, border: '1px solid #ffffff',
+      background: 'rgba(0,0,0,0.30)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)',
       overflow: 'hidden', position: 'relative', height: H,
     }}>
       <span style={{
@@ -168,7 +168,7 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
 function StatCard({ label, value, sub, color }: { label: string; value: React.ReactNode; sub?: React.ReactNode; color?: string }) {
   return (
     <div style={{
-      flex: 1, background: 'rgb(17, 17, 17)', borderRadius: 10, border: '1px solid #ffffff',
+      flex: 1, background: 'rgba(0,0,0,0.30)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)',
       padding: '10px 12px',
     }}>
       <div style={{ color: C.textSub, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>{label}</div>
@@ -547,7 +547,7 @@ export function App() {
         </div>
 
         {/* ── Wallet ── */}
-        <div style={{ padding: '12px 14px', borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{
               background: '#fff', color: '#111', fontWeight: 700, fontSize: 11,
@@ -643,7 +643,7 @@ export function App() {
 function ActiveTradeRow({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
   return (
     <div style={{
-      background: 'rgb(17, 17, 17)', borderRadius: 10, border: `1px solid ${C.green}50`,
+      background: 'rgba(0,0,0,0.30)', borderRadius: 10, border: `1px solid ${C.green}50`,
       padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
