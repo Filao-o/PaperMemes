@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Storage } from '../storage'
 import type { AppState, Trade, CloseEvent, TokenInfo, RiskInfo } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Tabs, Btn, Divider, SolIcon } from '../popup/components/ui'
-import { JournalPanel } from '../popup/components/JournalPanel'
+import { JournalPanel, TradeCard } from '../popup/components/JournalPanel'
 
 // ─── Currency toggle ──────────────────────────────────────────────────────────
 
