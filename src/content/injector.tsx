@@ -1125,7 +1125,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         )}
       >
         {/* Dark wallet body */}
-        <div style={{ background: '#111', fontFamily: "'Roboto', sans-serif", padding: '12px 14px' }}>
+        <div style={{ background: 'transparent', fontFamily: "'Roboto', sans-serif", padding: '12px 14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{
               background: '#fff', color: '#111', fontWeight: 700, fontSize: 12,
