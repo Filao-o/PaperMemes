@@ -1500,10 +1500,10 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               return (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: '#ffffff', borderRadius: 8, padding: '7px 10px', fontSize: 13,
+                  background: '#111', border: '1px solid #ffffff', borderRadius: 8, padding: '7px 10px', fontSize: 13,
                 }}>
-                  <span style={{ color: '#111', fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
-                    {fmtMC(entry.entryMC)} <span style={{ color: '#A1A1A1' }}>•</span> {fmtSOL(entry.invested)}<SolIcon size={10} fill="#111" style={{ marginLeft: 2 }} />
+                  <span style={{ color: '#ffffff', fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
+                    {fmtMC(entry.entryMC)} <span style={{ color: '#A1A1A1' }}>•</span> {fmtSOL(entry.invested)}<SolIcon size={10} fill="#ffffff" style={{ marginLeft: 2 }} />
                   </span>
                   <span style={{ color: pctColor, fontWeight: 700, fontFamily: "'Roboto', sans-serif", fontSize: 13 }}>
                     {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
