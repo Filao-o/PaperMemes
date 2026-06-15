@@ -1237,7 +1237,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           domRef={refC}
           style={{
             width: 310, borderRadius: 18, overflow: 'hidden',
-            background: 'rgba(0,0,0,0.20)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
             border: '1px solid rgba(255,255,255,0.10)',
           }}
           renderHandle={onDragStart => (
