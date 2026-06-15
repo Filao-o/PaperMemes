@@ -509,21 +509,13 @@ function ResetModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-// ─── Cool Button (variant "cool" from buttonVariants) ────────────────────────
+// ─── Action Button ────────────────────────────────────────────────────────────
 
 type MetalVariant = 'success' | 'error'
 
-const COOL_COLORS: Record<MetalVariant, { bg: string; shadow: string; text: string }> = {
-  success: {
-    bg:     'linear-gradient(to top, rgba(1,253,115,0.85) 0%, #01fd73 100%)',
-    shadow: '0 4px 8px rgba(1,253,115,0.25)',
-    text:   '#000',
-  },
-  error: {
-    bg:     'linear-gradient(to top, rgba(254,1,73,0.85) 0%, #FE0149 100%)',
-    shadow: '0 4px 8px rgba(254,1,73,0.25)',
-    text:   '#fff',
-  },
+const BTN_COLORS: Record<MetalVariant, { bg: string; text: string }> = {
+  success: { bg: '#22c55e', text: '#fff' },
+  error:   { bg: '#ef4444', text: '#fff' },
 }
 
 function MetalBtn({
@@ -535,30 +527,21 @@ function MetalBtn({
   onClick?: () => void
   style?: React.CSSProperties
 }) {
-  const [active, setActive] = React.useState(false)
-  const [hovered, setHovered] = React.useState(false)
-  const c = COOL_COLORS[variant]
+  const c = BTN_COLORS[variant]
 
   return (
     <button
       disabled={disabled}
       onClick={onClick}
-      onMouseDown={() => setActive(true)}
-      onMouseUp={() => setActive(false)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setActive(false); setHovered(false) }}
       style={{
         background: c.bg,
-        border: '1px solid rgba(0,0,0,0.30)',
-        borderBottom: '2px solid rgba(0,0,0,0.40)',
-        borderRadius: 8,
-        boxShadow: `${c.shadow}, inset 0 0 0 1px rgba(255,255,255,0.25)`,
-        color: c.text, fontWeight: 700, fontSize: 13,
+        border: 'none',
+        borderRadius: 6,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+        color: c.text, fontWeight: 600, fontSize: 13,
         padding: '10px 4px',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.4 : 1,
-        filter: active ? 'brightness(0.90)' : hovered ? 'brightness(1.10)' : 'brightness(1)',
-        transition: 'filter 0.2s',
+        opacity: disabled ? 0.6 : 1,
         fontFamily: "'Roboto', sans-serif",
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
         ...style,
