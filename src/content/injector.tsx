@@ -630,12 +630,27 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   stateRef.current = state
 
   // ── Block positions & connections ──────────────────────────────────────────
-  const [positions, setPositions] = useState<Record<BlockId, {x:number;y:number}>>(() => ({
-    A: { x: window.innerWidth - 316, y: 10 },
-    B: { x: window.innerWidth - 316, y: 190 },
-    C: { x: window.innerWidth - 316, y: 560 },
-  }))
-  const [blockConns, setBlockConns] = useState<{upper: BlockId; lower: BlockId}[]>([])
+  const POSITIONS_KEY = 'papermemes_block_positions'
+  const CONNS_KEY = 'papermemes_block_conns'
+
+  const [positions, setPositions] = useState<Record<BlockId, {x:number;y:number}>>(() => {
+    try {
+      const saved = localStorage.getItem(POSITIONS_KEY)
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return {
+      A: { x: window.innerWidth - 316, y: 10 },
+      B: { x: window.innerWidth - 316, y: 190 },
+      C: { x: window.innerWidth - 316, y: 560 },
+    }
+  })
+  const [blockConns, setBlockConns] = useState<{upper: BlockId; lower: BlockId}[]>(() => {
+    try {
+      const saved = localStorage.getItem(CONNS_KEY)
+      if (saved) return JSON.parse(saved)
+    } catch {}
+    return []
+  })
   const [snapPreview, setSnapPreview] = useState<{upper: BlockId; lower: BlockId} | null>(null)
   const refA = useRef<HTMLDivElement>(null)
   const refB = useRef<HTMLDivElement>(null)
@@ -978,7 +993,11 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       const abovePos = prev[above]
       const expectedY = abovePos.y + getH(above)
       if (Math.abs(newPos.y - expectedY) > DISCONNECT_DIST || Math.abs(newPos.x - abovePos.x) > DISCONNECT_DIST) {
-        setBlockConns(c => c.filter(v => !(v.upper === above && v.lower === id)))
+        setBlockConns(c => {
+          const next = c.filter(v => !(v.upper === above && v.lower === id))
+          try { localStorage.setItem(CONNS_KEY, JSON.stringify(next)) } catch {}
+          return next
+        })
       }
     }
 
@@ -1003,13 +1022,27 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     setSnapPreview(preview)
   }
 
+  function savePositions(pos: Record<BlockId, {x:number;y:number}>) {
+    try { localStorage.setItem(POSITIONS_KEY, JSON.stringify(pos)) } catch {}
+  }
+
   function handleBlockDrop(id: BlockId) {
     const preview = snapPreviewRef.current
     if (preview) {
       const up = positionsRef.current[preview.upper]
       const snapY = up.y + getH(preview.upper)
-      setPositions(p => ({ ...p, [preview.lower]: { x: up.x, y: snapY } }))
-      setBlockConns(c => [...c.filter(v => v.lower !== preview.lower), preview])
+      setPositions(p => {
+        const next = { ...p, [preview.lower]: { x: up.x, y: snapY } }
+        savePositions(next)
+        return next
+      })
+      setBlockConns(c => {
+        const next = [...c.filter(v => v.lower !== preview.lower), preview]
+        try { localStorage.setItem(CONNS_KEY, JSON.stringify(next)) } catch {}
+        return next
+      })
+    } else {
+      savePositions(positionsRef.current)
     }
     setSnapPreview(null)
   }
