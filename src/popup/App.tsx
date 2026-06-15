@@ -220,11 +220,117 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
   )
 }
 
+// ─── Performance Calendar ─────────────────────────────────────────────────────
+
+function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => void }) {
+  const today = new Date()
+  const [year, setYear] = useState(today.getFullYear())
+  const [month, setMonth] = useState(today.getMonth())
+
+  // group pnl by day key "YYYY-MM-DD"
+  const dayMap = new Map<string, number>()
+  for (const t of trades) {
+    if (!t.closedAt) continue
+    const d = new Date(t.closedAt)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    dayMap.set(key, (dayMap.get(key) ?? 0) + (t.pnlSOL ?? 0))
+  }
+
+  const firstDay = new Date(year, month, 1)
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  // start week on Monday (0=Mon … 6=Sun)
+  const startOffset = (firstDay.getDay() + 6) % 7
+
+  const cells: (number | null)[] = [
+    ...Array(startOffset).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ]
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const monthName = firstDay.toLocaleString('fr-FR', { month: 'long', year: 'numeric' })
+
+  function dayKey(d: number) {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  }
+
+  const isToday = (d: number) =>
+    d === today.getDate() && month === today.getMonth() && year === today.getFullYear()
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, padding: 16,
+    }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{
+        background: 'rgb(17,17,17)', border: `1px solid ${C.border}`, borderRadius: 14,
+        padding: 18, width: '100%', fontFamily: FONT, display: 'flex', flexDirection: 'column', gap: 14,
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button onClick={() => { const d = new Date(year, month - 1); setYear(d.getFullYear()); setMonth(d.getMonth()) }}
+            style={{ background: 'none', border: 'none', color: C.text, fontSize: 18, cursor: 'pointer', padding: '0 6px' }}>‹</button>
+          <span style={{ fontWeight: 800, fontSize: 13, color: '#fff', textTransform: 'capitalize', letterSpacing: 0.5 }}>{monthName}</span>
+          <button onClick={() => { const d = new Date(year, month + 1); setYear(d.getFullYear()); setMonth(d.getMonth()) }}
+            style={{ background: 'none', border: 'none', color: C.text, fontSize: 18, cursor: 'pointer', padding: '0 6px' }}>›</button>
+        </div>
+
+        {/* Day headers */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, textAlign: 'center' }}>
+          {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
+            <div key={i} style={{ color: C.muted, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, paddingBottom: 4 }}>{d}</div>
+          ))}
+          {cells.map((day, i) => {
+            if (!day) return <div key={i} />
+            const key = dayKey(day)
+            const pnl = dayMap.get(key)
+            const hasTrade = pnl !== undefined
+            const bg = hasTrade ? (pnl! >= 0 ? `${C.green}28` : `${C.red}28`) : 'transparent'
+            const border = hasTrade ? (pnl! >= 0 ? `1px solid ${C.green}60` : `1px solid ${C.red}60`) : `1px solid transparent`
+            const color = hasTrade ? (pnl! >= 0 ? C.green : C.red) : C.dim
+            const todayRing = isToday(day) ? `0 0 0 1.5px #fff` : 'none'
+            return (
+              <div key={i} title={hasTrade ? `${pnl! >= 0 ? '+' : ''}${pnl!.toFixed(3)} SOL` : undefined} style={{
+                borderRadius: 6, background: bg, border, boxShadow: todayRing,
+                padding: '5px 2px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+              }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: isToday(day) ? '#fff' : color }}>{day}</span>
+                {hasTrade && (
+                  <span style={{ fontSize: 7, fontWeight: 700, color, lineHeight: 1 }}>
+                    {pnl! >= 0 ? '+' : ''}{pnl!.toFixed(2)}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+          {[{ color: C.green, label: 'Gain' }, { color: C.red, label: 'Perte' }].map(({ color, label }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ width: 10, height: 10, borderRadius: 3, background: `${color}40`, border: `1px solid ${color}80` }} />
+              <span style={{ color: C.muted, fontSize: 10 }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        <button onClick={onClose} style={{
+          width: '100%', padding: '8px 0', borderRadius: 8,
+          background: 'transparent', border: `1px solid ${C.border}`,
+          color: C.muted, fontWeight: 600, fontSize: 11, cursor: 'pointer', fontFamily: FONT,
+        }}>Fermer</button>
+      </div>
+    </div>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export function App() {
   const [state, setState] = useState<AppState | null>(null)
   const [showReset, setShowReset] = useState(false)
+  const [showCalendar, setShowCalendar] = useState(false)
   const [filter, setFilter] = useState<Filter>('ALL')
 
   useEffect(() => {
@@ -276,6 +382,7 @@ export function App() {
   return (
     <>
       {showReset && <ResetModal onClose={() => setShowReset(false)} />}
+      {showCalendar && <CalendarModal trades={closedTrades} onClose={() => setShowCalendar(false)} />}
       <div style={{
         width: 360, minHeight: 480, background: 'rgb(17, 17, 17)', color: C.text,
         fontFamily: FONT, display: 'flex', flexDirection: 'column',
@@ -284,18 +391,25 @@ export function App() {
         {/* ── Header ── */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 14px', borderBottom: `1px solid ${C.border}`,
+          padding: '10px 14px', background: '#ffffff', borderBottom: '1px solid #e0e0e0',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: '#ffffff', fontSize: 18, lineHeight: 1 }}>≡</span>
-            <span style={{ fontWeight: 800, fontSize: 14, color: '#ffffff', letterSpacing: -0.3 }}>PaperMemes</span>
-            <span style={{ color: C.muted, fontSize: 10 }}>v1.5</span>
+            <span style={{ color: '#000000', fontSize: 18, lineHeight: 1 }}>≡</span>
+            <span style={{ fontWeight: 800, fontSize: 14, color: '#000000', letterSpacing: -0.3 }}>PaperMemes</span>
+            <span style={{ color: '#888888', fontSize: 10 }}>v1.5</span>
           </div>
-          <button onClick={() => setShowReset(true)} title="Réinitialiser" style={{
-            width: 34, height: 34, background: '#1a1a1a', border: `1px solid ${C.border}`,
-            borderRadius: 8, cursor: 'pointer', color: C.text, fontSize: 17,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
-          }}>↺</button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={() => setShowCalendar(true)} title="Calendrier de performances" style={{
+              width: 34, height: 34, background: '#f0f0f0', border: '1px solid #ccc',
+              borderRadius: 8, cursor: 'pointer', color: '#000', fontSize: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+            }}>📅</button>
+            <button onClick={() => setShowReset(true)} title="Réinitialiser" style={{
+              width: 34, height: 34, background: '#f0f0f0', border: '1px solid #ccc',
+              borderRadius: 8, cursor: 'pointer', color: '#000', fontSize: 17,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+            }}>↺</button>
+          </div>
         </div>
 
         {/* ── Wallet ── */}
