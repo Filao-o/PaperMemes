@@ -1610,18 +1610,19 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           {/* Stats: INVEST / LIVE / PNL / EARNS */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)' }}>
             {[
-              { label: 'INVEST.', sol: activeTrade.invested },
-              { label: 'LIVE', sol: liveValue },
+              { label: 'INVEST.', sol: activeTrade.invested, color: undefined },
+              { label: 'LIVE', sol: liveValue, color: undefined },
               { label: 'PNL', sol: livePnL.sol, color: pnlColor(livePnL.sol) },
-              { label: 'EARNS', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
+              { label: 'EARNS', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null, color: undefined },
             ].map(({ label, sol, color }, idx) => (
               <div key={label} style={{
-                background: 'rgba(255,255,255,0.10)', padding: '6px 4px', textAlign: 'center',
+                background: label === 'PNL' && color ? `${color}22` : 'rgba(255,255,255,0.10)',
+                padding: '6px 4px', textAlign: 'center',
                 borderLeft: idx > 0 ? '1px solid rgba(255,255,255,0.10)' : undefined,
               }}>
                 <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
-                <div style={{ color: color ?? '#ffffff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
-                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={10} fill={color ?? '#ffffff'} style={{ marginLeft: 1 }} /></> : '—'}
+                <div style={{ color: '#ffffff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
+                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={10} fill="#ffffff" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
               </div>
             ))}
