@@ -303,7 +303,8 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
   }
 
   const btnNav: React.CSSProperties = {
-    background: 'none', border: 'none', color: C.text, fontSize: 18, cursor: 'pointer', padding: '0 6px',
+    padding: 4, background: 'transparent', border: 'none', cursor: 'pointer',
+    color: 'rgba(255,255,255,0.7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
   }
   const btnToggle = (active: boolean): React.CSSProperties => ({
     flex: 1, padding: '5px 0', borderRadius: 6, fontFamily: FONT,
@@ -320,35 +321,68 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
       zIndex: 9999, padding: 16,
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
-        background: 'rgb(17,17,17)', border: `1px solid ${C.border}`, borderRadius: 14,
-        padding: 18, width: '100%', fontFamily: FONT, display: 'flex', flexDirection: 'column', gap: 12,
+        background: 'rgba(0,0,0,0.20)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+        border: '1px solid rgba(255,255,255,0.10)', borderRadius: 24,
+        padding: 20, width: '100%', fontFamily: FONT, display: 'flex', flexDirection: 'column', gap: 12,
+        color: '#fff',
       }}>
 
-        {/* View toggle */}
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button style={btnToggle(view === 'week')} onClick={() => setView('week')}>Semaine</button>
-          <button style={btnToggle(view === 'month')} onClick={() => setView('month')}>Mois</button>
+        {/* View toggle + settings row */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 4,
+            background: 'rgba(0,0,0,0.20)', borderRadius: 8, padding: 4,
+          }}>
+            <button onClick={() => setView('week')} style={{
+              borderRadius: 6, padding: '4px 16px', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer',
+              background: view === 'week' ? '#ffffff' : 'transparent',
+              color: view === 'week' ? '#000' : 'rgba(255,255,255,0.6)',
+              boxShadow: view === 'week' ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
+              transition: 'all 0.15s',
+            }}>Weekly</button>
+            <button onClick={() => setView('month')} style={{
+              borderRadius: 6, padding: '4px 16px', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer',
+              background: view === 'month' ? '#ffffff' : 'transparent',
+              color: view === 'month' ? '#000' : 'rgba(255,255,255,0.6)',
+              boxShadow: view === 'month' ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
+              transition: 'all 0.15s',
+            }}>Monthly</button>
+          </div>
+          <button onClick={onClose} style={{
+            padding: 8, background: 'transparent', border: 'none', cursor: 'pointer',
+            color: 'rgba(255,255,255,0.7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
 
-        {/* Navigation */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button style={btnNav} onClick={() => {
-            if (view === 'week') {
-              const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(new Date(d))
-            } else {
-              const d = new Date(year, month - 1); setYear(d.getFullYear()); setMonth(d.getMonth())
-            }
-          }}>‹</button>
-          <span style={{ fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'capitalize', letterSpacing: 0.3 }}>
+        {/* Month name + navigation */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0' }}>
+          <span style={{ fontSize: 32, fontWeight: 800, letterSpacing: -1, color: '#fff', textTransform: 'capitalize' }}>
             {view === 'week' ? weekLabel : monthName}
           </span>
-          <button style={btnNav} onClick={() => {
-            if (view === 'week') {
-              const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(new Date(d))
-            } else {
-              const d = new Date(year, month + 1); setYear(d.getFullYear()); setMonth(d.getMonth())
-            }
-          }}>›</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button style={btnNav} onClick={() => {
+              if (view === 'week') {
+                const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(new Date(d))
+              } else {
+                const d = new Date(year, month - 1); setYear(d.getFullYear()); setMonth(d.getMonth())
+              }
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button style={btnNav} onClick={() => {
+              if (view === 'week') {
+                const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(new Date(d))
+              } else {
+                const d = new Date(year, month + 1); setYear(d.getFullYear()); setMonth(d.getMonth())
+              }
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
 
         {/* Day labels + cells */}
@@ -410,16 +444,10 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
           {[{ color: C.green, label: 'Gain' }, { color: C.red, label: 'Perte' }].map(({ color, label }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <div style={{ width: 10, height: 10, borderRadius: 3, background: `${color}40`, border: `1px solid ${color}80` }} />
-              <span style={{ color: C.muted, fontSize: 10 }}>{label}</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>{label}</span>
             </div>
           ))}
         </div>
-
-        <button onClick={onClose} style={{
-          width: '100%', padding: '8px 0', borderRadius: 8,
-          background: 'transparent', border: `1px solid ${C.border}`,
-          color: C.muted, fontWeight: 600, fontSize: 11, cursor: 'pointer', fontFamily: FONT,
-        }}>Fermer</button>
       </div>
     </div>
   )
