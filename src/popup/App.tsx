@@ -113,7 +113,7 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
 
   return (
     <div style={{
-      background: C.surface, borderRadius: 10, border: `1px solid ${C.borderHi}`,
+      background: C.surface, borderRadius: 10, border: '1px solid #ffffff',
       overflow: 'hidden', position: 'relative', height: H,
     }}>
       <span style={{
@@ -168,7 +168,7 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
 function StatCard({ label, value, sub, color }: { label: string; value: React.ReactNode; sub?: React.ReactNode; color?: string }) {
   return (
     <div style={{
-      flex: 1, background: C.surface, borderRadius: 10, border: `1px solid ${C.borderHi}`,
+      flex: 1, background: C.surface, borderRadius: 10, border: '1px solid #ffffff',
       padding: '10px 12px',
     }}>
       <div style={{ color: C.textSub, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>{label}</div>
@@ -189,11 +189,10 @@ function FilterBar({ active, onChange }: { active: Filter; onChange: (f: Filter)
       {FILTERS.map(f => (
         <button key={f} onClick={() => onChange(f)} style={{
           padding: '8px 0', borderRadius: 8, fontFamily: 'inherit',
-          background: active === f ? C.green : C.surface,
-          border: `1px solid ${active === f ? C.green : C.borderHi}`,
-          color: active === f ? '#000' : C.muted,
+          background: '#ffffff',
+          border: '1px solid #ffffff',
+          color: '#000000',
           fontSize: 10, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5,
-          boxShadow: active === f ? `0 0 10px ${C.green}50` : 'none',
         }}>{f}</button>
       ))}
     </div>

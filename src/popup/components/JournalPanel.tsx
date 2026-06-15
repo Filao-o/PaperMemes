@@ -98,7 +98,7 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
   const hasDetails = trade.closeEvents.length > 0
 
   return (
-    <div style={{ background: C.surface, borderRadius: 10, border: `1px solid ${C.borderHi}`, overflow: 'hidden' }}>
+    <div style={{ background: C.surface, borderRadius: 10, border: '1px solid #ffffff', overflow: 'hidden' }}>
       <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
         {/* Token name + badge */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
