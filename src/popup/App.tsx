@@ -379,7 +379,7 @@ export function App() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {[...filteredTrades].reverse().map(t => (
+              {filteredTrades.map(t => (
                 <TradeCard key={t.id} trade={t} currency={currency} solPrice={solPrice} />
               ))}
             </div>
