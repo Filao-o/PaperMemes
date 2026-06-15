@@ -203,7 +203,7 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
         Historique — {closedTrades.length} trade{closedTrades.length > 1 ? 's' : ''}
       </div>
 
-      {closedTrades.map(trade => (
+      {[...closedTrades].reverse().map(trade => (
         <TradeCard key={trade.id} trade={trade} currency={currency} solPrice={solPrice} />
       ))}
     </div>
