@@ -576,7 +576,6 @@ function DraggableBlock({ pos, onPosChange, onDragEnd: onExtEnd, highlightSnap, 
       style={{
         position: 'fixed', left: pos.x, top: pos.y, zIndex: 2147483647, width: 300,
         ...style,
-        outline: highlightSnap ? '3px solid #01fd73' : (style?.outline ?? '3px solid #ffffff'),
         boxShadow: highlightSnap
           ? '0 0 28px rgba(1,253,115,0.55), 0 8px 32px rgba(0,0,0,0.5)'
           : '0 8px 32px rgba(0,0,0,0.5)',
