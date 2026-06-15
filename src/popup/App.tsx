@@ -400,13 +400,13 @@ export function App() {
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={() => setShowCalendar(true)} title="Calendrier de performances" style={{
-              width: 34, height: 34, background: '#f0f0f0', border: '1px solid #ccc',
-              borderRadius: 8, cursor: 'pointer', color: '#000', fontSize: 16,
+              width: 34, height: 34, background: '#000000', border: '1px solid #333',
+              borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 16,
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
             }}>📅</button>
             <button onClick={() => setShowReset(true)} title="Réinitialiser" style={{
-              width: 34, height: 34, background: '#f0f0f0', border: '1px solid #ccc',
-              borderRadius: 8, cursor: 'pointer', color: '#000', fontSize: 17,
+              width: 34, height: 34, background: '#000000', border: '1px solid #333',
+              borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 17,
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
             }}>↺</button>
           </div>
