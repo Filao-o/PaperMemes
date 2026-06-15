@@ -224,8 +224,20 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
 
 function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => void }) {
   const today = new Date()
+  const [view, setView] = useState<'week' | 'month'>('week')
+  // For month view
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
+  // For week view: anchor = Monday of current week
+  const getMonday = (d: Date) => {
+    const day = d.getDay()
+    const diff = (day + 6) % 7
+    const mon = new Date(d)
+    mon.setDate(d.getDate() - diff)
+    mon.setHours(0, 0, 0, 0)
+    return mon
+  }
+  const [weekStart, setWeekStart] = useState(() => getMonday(today))
 
   // group pnl by day key "YYYY-MM-DD"
   const dayMap = new Map<string, number>()
@@ -236,25 +248,70 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
     dayMap.set(key, (dayMap.get(key) ?? 0) + (t.pnlSOL ?? 0))
   }
 
+  function toKey(d: Date) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+
+  function isSameDay(d: Date, d2: Date) {
+    return d.getDate() === d2.getDate() && d.getMonth() === d2.getMonth() && d.getFullYear() === d2.getFullYear()
+  }
+
+  // ── Week view data ──
+  const weekDays = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart)
+    d.setDate(weekStart.getDate() + i)
+    return d
+  })
+  const weekLabel = (() => {
+    const end = weekDays[6]
+    const fmtD = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+    return `${fmtD(weekStart)} – ${fmtD(end)} ${end.getFullYear()}`
+  })()
+
+  // ── Month view data ──
   const firstDay = new Date(year, month, 1)
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-  // start week on Monday (0=Mon … 6=Sun)
   const startOffset = (firstDay.getDay() + 6) % 7
-
-  const cells: (number | null)[] = [
+  const monthCells: (number | null)[] = [
     ...Array(startOffset).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
-  while (cells.length % 7 !== 0) cells.push(null)
-
+  while (monthCells.length % 7 !== 0) monthCells.push(null)
   const monthName = firstDay.toLocaleString('fr-FR', { month: 'long', year: 'numeric' })
 
-  function dayKey(d: number) {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+
+  function DayCell({ pnl, dayNum, isT }: { pnl?: number; dayNum: React.ReactNode; isT: boolean }) {
+    const hasTrade = pnl !== undefined
+    const bg = hasTrade ? (pnl! >= 0 ? `${C.green}28` : `${C.red}28`) : 'transparent'
+    const border = hasTrade ? (pnl! >= 0 ? `1px solid ${C.green}60` : `1px solid ${C.red}60`) : `1px solid transparent`
+    const color = hasTrade ? (pnl! >= 0 ? C.green : C.red) : C.dim
+    return (
+      <div title={hasTrade ? `${pnl! >= 0 ? '+' : ''}${pnl!.toFixed(3)} SOL` : undefined} style={{
+        borderRadius: 6, background: bg, border,
+        boxShadow: isT ? '0 0 0 1.5px #fff' : 'none',
+        padding: '5px 2px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+      }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: isT ? '#fff' : color }}>{dayNum}</span>
+        {hasTrade && (
+          <span style={{ fontSize: 7, fontWeight: 700, color, lineHeight: 1 }}>
+            {pnl! >= 0 ? '+' : ''}{pnl!.toFixed(2)}
+          </span>
+        )}
+      </div>
+    )
   }
 
-  const isToday = (d: number) =>
-    d === today.getDate() && month === today.getMonth() && year === today.getFullYear()
+  const btnNav: React.CSSProperties = {
+    background: 'none', border: 'none', color: C.text, fontSize: 18, cursor: 'pointer', padding: '0 6px',
+  }
+  const btnToggle = (active: boolean): React.CSSProperties => ({
+    flex: 1, padding: '5px 0', borderRadius: 6, fontFamily: FONT,
+    background: active ? '#ffffff' : 'transparent',
+    border: `1px solid ${active ? '#ffffff' : C.border}`,
+    color: active ? '#000' : C.muted,
+    fontWeight: 700, fontSize: 10, cursor: 'pointer', letterSpacing: 0.5,
+  })
 
   return (
     <div style={{
@@ -264,45 +321,54 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
         background: 'rgb(17,17,17)', border: `1px solid ${C.border}`, borderRadius: 14,
-        padding: 18, width: '100%', fontFamily: FONT, display: 'flex', flexDirection: 'column', gap: 14,
+        padding: 18, width: '100%', fontFamily: FONT, display: 'flex', flexDirection: 'column', gap: 12,
       }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button onClick={() => { const d = new Date(year, month - 1); setYear(d.getFullYear()); setMonth(d.getMonth()) }}
-            style={{ background: 'none', border: 'none', color: C.text, fontSize: 18, cursor: 'pointer', padding: '0 6px' }}>‹</button>
-          <span style={{ fontWeight: 800, fontSize: 13, color: '#fff', textTransform: 'capitalize', letterSpacing: 0.5 }}>{monthName}</span>
-          <button onClick={() => { const d = new Date(year, month + 1); setYear(d.getFullYear()); setMonth(d.getMonth()) }}
-            style={{ background: 'none', border: 'none', color: C.text, fontSize: 18, cursor: 'pointer', padding: '0 6px' }}>›</button>
+
+        {/* View toggle */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button style={btnToggle(view === 'week')} onClick={() => setView('week')}>Semaine</button>
+          <button style={btnToggle(view === 'month')} onClick={() => setView('month')}>Mois</button>
         </div>
 
-        {/* Day headers */}
+        {/* Navigation */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button style={btnNav} onClick={() => {
+            if (view === 'week') {
+              const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(new Date(d))
+            } else {
+              const d = new Date(year, month - 1); setYear(d.getFullYear()); setMonth(d.getMonth())
+            }
+          }}>‹</button>
+          <span style={{ fontWeight: 800, fontSize: 12, color: '#fff', textTransform: 'capitalize', letterSpacing: 0.3 }}>
+            {view === 'week' ? weekLabel : monthName}
+          </span>
+          <button style={btnNav} onClick={() => {
+            if (view === 'week') {
+              const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(new Date(d))
+            } else {
+              const d = new Date(year, month + 1); setYear(d.getFullYear()); setMonth(d.getMonth())
+            }
+          }}>›</button>
+        </div>
+
+        {/* Day labels */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, textAlign: 'center' }}>
-          {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
-            <div key={i} style={{ color: C.muted, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, paddingBottom: 4 }}>{d}</div>
+          {DAY_LABELS.map((d, i) => (
+            <div key={i} style={{ color: C.muted, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, paddingBottom: 2 }}>{d}</div>
           ))}
-          {cells.map((day, i) => {
-            if (!day) return <div key={i} />
-            const key = dayKey(day)
-            const pnl = dayMap.get(key)
-            const hasTrade = pnl !== undefined
-            const bg = hasTrade ? (pnl! >= 0 ? `${C.green}28` : `${C.red}28`) : 'transparent'
-            const border = hasTrade ? (pnl! >= 0 ? `1px solid ${C.green}60` : `1px solid ${C.red}60`) : `1px solid transparent`
-            const color = hasTrade ? (pnl! >= 0 ? C.green : C.red) : C.dim
-            const todayRing = isToday(day) ? `0 0 0 1.5px #fff` : 'none'
-            return (
-              <div key={i} title={hasTrade ? `${pnl! >= 0 ? '+' : ''}${pnl!.toFixed(3)} SOL` : undefined} style={{
-                borderRadius: 6, background: bg, border, boxShadow: todayRing,
-                padding: '5px 2px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
-              }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: isToday(day) ? '#fff' : color }}>{day}</span>
-                {hasTrade && (
-                  <span style={{ fontSize: 7, fontWeight: 700, color, lineHeight: 1 }}>
-                    {pnl! >= 0 ? '+' : ''}{pnl!.toFixed(2)}
-                  </span>
-                )}
-              </div>
-            )
-          })}
+
+          {view === 'week' ? (
+            weekDays.map((d, i) => (
+              <DayCell key={i} pnl={dayMap.get(toKey(d))} dayNum={d.getDate()} isT={isSameDay(d, today)} />
+            ))
+          ) : (
+            monthCells.map((day, i) => {
+              if (!day) return <div key={i} />
+              const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+              const isT = day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
+              return <DayCell key={i} pnl={dayMap.get(key)} dayNum={day} isT={isT} />
+            })
+          )}
         </div>
 
         {/* Legend */}
