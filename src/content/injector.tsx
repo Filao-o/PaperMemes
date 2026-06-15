@@ -509,24 +509,20 @@ function ResetModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-// ─── Metal Button ─────────────────────────────────────────────────────────────
+// ─── Cool Button (variant "cool" from buttonVariants) ────────────────────────
 
 type MetalVariant = 'success' | 'error'
 
-const METAL_COLORS: Record<MetalVariant, { outer: string; inner: string; btn: string; text: string; shadow: string }> = {
+const COOL_COLORS: Record<MetalVariant, { bg: string; shadow: string; text: string }> = {
   success: {
-    outer: 'linear-gradient(to bottom, #005A43, #7CCB9B)',
-    inner: 'linear-gradient(to bottom, #E5F8F0, #00352F, #D1F0E6)',
-    btn:   'linear-gradient(to bottom, #9ADBC8, #3E8F7C)',
-    text:  '#FFF7F0',
-    shadow: '0 -1px 0 rgb(6 78 59)',
+    bg:     'linear-gradient(to top, rgba(1,253,115,0.85) 0%, #01fd73 100%)',
+    shadow: '0 4px 8px rgba(1,253,115,0.25)',
+    text:   '#000',
   },
   error: {
-    outer: 'linear-gradient(to bottom, #5A0000, #FFAEB0)',
-    inner: 'linear-gradient(to bottom, #FFDEDE, #680002, #FFE9E9)',
-    btn:   'linear-gradient(to bottom, #F08D8F, #A45253)',
-    text:  '#FFF7F0',
-    shadow: '0 -1px 0 rgb(146 64 14)',
+    bg:     'linear-gradient(to top, rgba(254,1,73,0.85) 0%, #FE0149 100%)',
+    shadow: '0 4px 8px rgba(254,1,73,0.25)',
+    text:   '#fff',
   },
 }
 
@@ -539,47 +535,37 @@ function MetalBtn({
   onClick?: () => void
   style?: React.CSSProperties
 }) {
-  const [pressed, setPressed] = React.useState(false)
-  const c = METAL_COLORS[variant]
-  const EASE = 'all 250ms cubic-bezier(0.1, 0.4, 0.2, 1)'
+  const [active, setActive] = React.useState(false)
+  const [hovered, setHovered] = React.useState(false)
+  const c = COOL_COLORS[variant]
 
   return (
-    <div
+    <button
+      disabled={disabled}
+      onClick={onClick}
+      onMouseDown={() => setActive(true)}
+      onMouseUp={() => setActive(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setActive(false); setHovered(false) }}
       style={{
-        position: 'relative', display: 'inline-flex', borderRadius: 8,
-        padding: 1.25, background: c.outer,
-        transform: pressed ? 'translateY(2.5px) scale(0.99)' : 'translateY(0) scale(1)',
-        boxShadow: pressed ? '0 1px 2px rgba(0,0,0,0.15)' : '0 3px 8px rgba(0,0,0,0.08)',
-        transition: EASE, opacity: disabled ? 0.4 : 1,
+        background: c.bg,
+        border: '1px solid rgba(0,0,0,0.30)',
+        borderBottom: '2px solid rgba(0,0,0,0.40)',
+        borderRadius: 8,
+        boxShadow: `${c.shadow}, inset 0 0 0 1px rgba(255,255,255,0.25)`,
+        color: c.text, fontWeight: 700, fontSize: 13,
+        padding: '10px 4px',
         cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.4 : 1,
+        filter: active ? 'brightness(0.90)' : hovered ? 'brightness(1.10)' : 'brightness(1)',
+        transition: 'filter 0.2s',
+        fontFamily: "'Roboto', sans-serif",
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
         ...style,
       }}
     >
-      <div style={{
-        position: 'absolute', inset: 1, borderRadius: 7,
-        background: c.inner, pointerEvents: 'none',
-      }} />
-      <button
-        disabled={disabled}
-        onClick={onClick}
-        onMouseDown={() => setPressed(true)}
-        onMouseUp={() => setPressed(false)}
-        onMouseLeave={() => setPressed(false)}
-        style={{
-          position: 'relative', zIndex: 1, margin: 1, borderRadius: 6,
-          background: c.btn, border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
-          color: c.text, fontWeight: 700, fontSize: 13,
-          textShadow: c.shadow,
-          padding: '10px 4px', width: '100%',
-          transform: pressed ? 'scale(0.97)' : 'scale(1)',
-          transition: EASE,
-          fontFamily: "'Roboto', sans-serif",
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-        }}
-      >
-        {children}
-      </button>
-    </div>
+      {children}
+    </button>
   )
 }
 
