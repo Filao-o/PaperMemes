@@ -907,6 +907,46 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   function getRef(id: BlockId) { return id === 'A' ? refA : id === 'B' ? refB : refC }
   function getH(id: BlockId) { return getRef(id).current?.getBoundingClientRect().height ?? 0 }
 
+  // Recompute positions of all blocks connected below `changedId` based on current heights
+  function reanchorBelow(changedId: BlockId) {
+    const conns = blockConnsRef.current
+    if (!conns.some(c => c.upper === changedId)) return
+    setPositions(prev => {
+      const next = { ...prev }
+      // Process connections iteratively (handles chains A→B→C)
+      let dirty = true
+      while (dirty) {
+        dirty = false
+        for (const c of conns) {
+          const el = getRef(c.upper).current
+          if (!el) continue
+          const h = el.getBoundingClientRect().height
+          const expectedY = next[c.upper].y + h
+          if (next[c.lower].y !== expectedY || next[c.lower].x !== next[c.upper].x) {
+            next[c.lower] = { x: next[c.upper].x, y: expectedY }
+            dirty = true
+          }
+        }
+      }
+      return next
+    })
+  }
+
+  // Watch each block's height and reanchor connected blocks below it
+  useEffect(() => {
+    const observers: ResizeObserver[] = []
+    for (const id of ALL_BLOCKS) {
+      const el = getRef(id as BlockId).current
+      if (!el) continue
+      const obs = new ResizeObserver(() => {
+        if (blockConnsRef.current.length > 0) reanchorBelow(id as BlockId)
+      })
+      obs.observe(el)
+      observers.push(obs)
+    }
+    return () => observers.forEach(o => o.disconnect())
+  }, [blockConns])
+
   function groupBelow(id: BlockId, conns: {upper: BlockId; lower: BlockId}[]): BlockId[] {
     const g: BlockId[] = [id]
     let changed = true
