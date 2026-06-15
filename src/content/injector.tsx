@@ -440,7 +440,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
       zIndex: 2147483647, padding: 16,
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
-        background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10,
+        background: 'rgb(17, 17, 17)', border: `1px solid ${C.border}`, borderRadius: 10,
         padding: 18, width: 280, display: 'flex', flexDirection: 'column', gap: 14,
       }}>
         <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.yellow }}>RÉINITIALISER LE WALLET</div>
@@ -452,7 +452,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
             {RESET_PRESETS.map(p => (
               <button key={p} onClick={() => { setAmount(p); setCustom('') }} style={{
                 flex: '1 1 auto',
-                background: amount === p && custom === '' ? `${C.yellow}22` : C.bg,
+                background: amount === p && custom === '' ? `${C.yellow}22` : 'rgb(17, 17, 17)',
                 border: `1px solid ${amount === p && custom === '' ? C.yellow : C.border}`,
                 borderRadius: 6, color: amount === p && custom === '' ? C.yellow : C.textSub,
                 fontWeight: 700, fontSize: 12, padding: '6px 4px',
@@ -471,7 +471,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
             onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: C.bg, border: `1px solid ${custom ? C.yellow : C.border}`,
+              background: 'rgb(17, 17, 17)', border: `1px solid ${custom ? C.yellow : C.border}`,
               borderRadius: 6, color: C.text, fontSize: 13, fontWeight: 700,
               padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
             }}
@@ -586,7 +586,7 @@ function DraggableBlock({ pos, onPosChange, onDragEnd: onExtEnd, highlightSnap, 
       {renderHandle ? renderHandle(onMouseDown) : (
         <div onMouseDown={onMouseDown} style={{
           height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'grab', background: C.surface, borderRadius: '8px 8px 0 0',
+          cursor: 'grab', background: 'rgb(17, 17, 17)', borderRadius: '8px 8px 0 0',
           borderBottom: `1px solid ${C.border}`,
         }}>
           <span style={{ color: C.dim, fontSize: 10, letterSpacing: 3 }}>⠿⠿⠿</span>
@@ -1015,7 +1015,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   }
 
   const blockStyle: React.CSSProperties = {
-    background: C.bg, border: `1px solid ${C.border}`, borderTop: 'none',
+    background: 'rgb(17, 17, 17)', border: `1px solid ${C.border}`, borderTop: 'none',
     borderRadius: '0 0 10px 10px', fontFamily: FONT, color: C.text, fontSize: BASE,
   }
 
@@ -1107,7 +1107,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
         {/* Config Panel */}
         {showConfig && (
-          <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: '9px 12px', fontFamily: FONT }}>
+          <div style={{ background: 'rgb(17, 17, 17)', borderTop: `1px solid ${C.border}`, padding: '9px 12px', fontFamily: FONT }}>
             <ConfigPanel
               buyPresets={buyPresets}
               tpPresets={tpPresets}
@@ -1175,7 +1175,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         )}
       >
         {/* Dark body */}
-        <div style={{ background: C.bg, fontFamily: FONT, color: C.text, fontSize: BASE, padding: '10px 12px' }}>
+        <div style={{ background: 'rgb(17, 17, 17)', fontFamily: FONT, color: C.text, fontSize: BASE, padding: '10px 12px' }}>
           <TradeTabTop
             state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
             buyPresets={buyPresets}
@@ -1215,11 +1215,11 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             </div>
           )}
         >
-          <div style={{ background: C.bg, fontFamily: FONT, color: C.text, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ background: 'rgb(17, 17, 17)', fontFamily: FONT, color: C.text, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
             {activeTrade ? (
               <>
                 {/* TP section */}
-                <div style={{ background: C.bg, borderRadius: 12, padding: '10px 10px 12px' }}>
+                <div style={{ background: 'rgb(17, 17, 17)', borderRadius: 12, padding: '10px 10px 12px' }}>
                   <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>TP</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {tpPresets.map(pct => (
@@ -1244,7 +1244,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 <div style={{ height: 1, background: C.border }} />
 
                 {/* SL section */}
-                <div style={{ background: C.bg, borderRadius: 12, padding: '10px 10px 12px' }}>
+                <div style={{ background: 'rgb(17, 17, 17)', borderRadius: 12, padding: '10px 10px 12px' }}>
                   <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>SL</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {slPresets.map(pct => (
@@ -1331,7 +1331,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
 
   const inputStyle = (filled: boolean): React.CSSProperties => ({
     width: '100%', boxSizing: 'border-box',
-    background: C.surface, border: `1px solid ${filled ? C.green : C.border}`,
+    background: 'rgb(17, 17, 17)', border: `1px solid ${filled ? C.green : C.border}`,
     borderRadius: 6, color: C.text, fontSize: 12, fontWeight: 700,
     padding: '7px 4px', textAlign: 'center', outline: 'none', fontFamily: 'inherit',
   })
@@ -1403,7 +1403,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
 
       <button onClick={handleSave} style={{
         width: '100%', padding: '9px 0',
-        background: saved ? C.green : C.surface,
+        background: saved ? C.green : 'rgb(17, 17, 17)',
         border: `1px solid ${C.green}`, borderRadius: 6,
         color: saved ? '#000' : C.green, fontWeight: 700, fontSize: 12,
         cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
