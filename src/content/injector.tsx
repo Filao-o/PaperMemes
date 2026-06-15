@@ -509,6 +509,80 @@ function ResetModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+// ─── Metal Button ─────────────────────────────────────────────────────────────
+
+type MetalVariant = 'success' | 'error'
+
+const METAL_COLORS: Record<MetalVariant, { outer: string; inner: string; btn: string; text: string; shadow: string }> = {
+  success: {
+    outer: 'linear-gradient(to bottom, #005A43, #7CCB9B)',
+    inner: 'linear-gradient(to bottom, #E5F8F0, #00352F, #D1F0E6)',
+    btn:   'linear-gradient(to bottom, #9ADBC8, #3E8F7C)',
+    text:  '#FFF7F0',
+    shadow: '0 -1px 0 rgb(6 78 59)',
+  },
+  error: {
+    outer: 'linear-gradient(to bottom, #5A0000, #FFAEB0)',
+    inner: 'linear-gradient(to bottom, #FFDEDE, #680002, #FFE9E9)',
+    btn:   'linear-gradient(to bottom, #F08D8F, #A45253)',
+    text:  '#FFF7F0',
+    shadow: '0 -1px 0 rgb(146 64 14)',
+  },
+}
+
+function MetalBtn({
+  variant, children, disabled, onClick, style,
+}: {
+  variant: MetalVariant
+  children: React.ReactNode
+  disabled?: boolean
+  onClick?: () => void
+  style?: React.CSSProperties
+}) {
+  const [pressed, setPressed] = React.useState(false)
+  const c = METAL_COLORS[variant]
+  const EASE = 'all 250ms cubic-bezier(0.1, 0.4, 0.2, 1)'
+
+  return (
+    <div
+      style={{
+        position: 'relative', display: 'inline-flex', borderRadius: 8,
+        padding: 1.25, background: c.outer,
+        transform: pressed ? 'translateY(2.5px) scale(0.99)' : 'translateY(0) scale(1)',
+        boxShadow: pressed ? '0 1px 2px rgba(0,0,0,0.15)' : '0 3px 8px rgba(0,0,0,0.08)',
+        transition: EASE, opacity: disabled ? 0.4 : 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        ...style,
+      }}
+    >
+      <div style={{
+        position: 'absolute', inset: 1, borderRadius: 7,
+        background: c.inner, pointerEvents: 'none',
+      }} />
+      <button
+        disabled={disabled}
+        onClick={onClick}
+        onMouseDown={() => setPressed(true)}
+        onMouseUp={() => setPressed(false)}
+        onMouseLeave={() => setPressed(false)}
+        style={{
+          position: 'relative', zIndex: 1, margin: 1, borderRadius: 6,
+          background: c.btn, border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
+          color: c.text, fontWeight: 700, fontSize: 13,
+          textShadow: c.shadow,
+          padding: '10px 4px', width: '100%',
+          transform: pressed ? 'scale(0.97)' : 'scale(1)',
+          transition: EASE,
+          fontFamily: "'Roboto', sans-serif",
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+        }}
+      >
+        {children}
+      </button>
+    </div>
+  )
+}
+
 // ─── Block connection types ───────────────────────────────────────────────────
 
 type BlockId = 'A' | 'B' | 'C'
@@ -1281,20 +1355,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                   <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>TP</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {tpPresets.map(pct => (
-                      <button key={pct}
+                      <MetalBtn key={pct} variant="success"
                         onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: activeTrade.tp === pct ? null : pct, tpMC: null } })}
-                        style={{
-                          background: 'linear-gradient(160deg, #5dffaa 0%, #01fd73 45%, #00c057 100%)',
-                          border: activeTrade.tp === pct ? '2px solid #fff' : '2px solid transparent',
-                          borderRadius: 10, cursor: 'pointer', color: '#000', fontWeight: 700, fontSize: 13,
-                          padding: '10px 4px', fontFamily: "'Roboto', sans-serif",
-                          boxShadow: activeTrade.tp === pct
-                            ? 'inset 0 1px 0 rgba(255,255,255,0.3), 0 0 0 2px #01fd73'
-                            : 'inset 0 1px 0 rgba(255,255,255,0.3)',
-                          opacity: activeTrade.tp === pct ? 1 : 0.75,
-                        }}>
+                        style={{ width: '100%', outline: activeTrade.tp === pct ? '2px solid #fff' : 'none', opacity: activeTrade.tp === pct ? 1 : 0.75 }}
+                      >
                         +{pct}%
-                      </button>
+                      </MetalBtn>
                     ))}
                   </div>
                 </div>
@@ -1306,20 +1372,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                   <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>SL</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {slPresets.map(pct => (
-                      <button key={pct}
+                      <MetalBtn key={pct} variant="error"
                         onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: activeTrade.sl === pct ? null : pct } })}
-                        style={{
-                          background: 'linear-gradient(160deg, #ff5580 0%, #FE0149 45%, #c4003a 100%)',
-                          border: activeTrade.sl === pct ? '2px solid #fff' : '2px solid transparent',
-                          borderRadius: 10, cursor: 'pointer', color: '#fff', fontWeight: 700, fontSize: 13,
-                          padding: '10px 4px', fontFamily: "'Roboto', sans-serif",
-                          boxShadow: activeTrade.sl === pct
-                            ? 'inset 0 1px 0 rgba(255,255,255,0.25), 0 0 0 2px #FE0149'
-                            : 'inset 0 1px 0 rgba(255,255,255,0.25)',
-                          opacity: activeTrade.sl === pct ? 1 : 0.75,
-                        }}>
+                        style={{ width: '100%', outline: activeTrade.sl === pct ? '2px solid #fff' : 'none', opacity: activeTrade.sl === pct ? 1 : 0.75 }}
+                      >
                         {pct}%
-                      </button>
+                      </MetalBtn>
                     ))}
                   </div>
                 </div>
@@ -1499,22 +1557,13 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {buyPresets.map(amt => (
-            <button key={amt}
+            <MetalBtn key={amt} variant="success"
               disabled={buyBlocked || !hasPrice || state.balance < amt}
               onClick={() => onBuy(amt)}
-              style={{
-                background: buyBlocked || !hasPrice || state.balance < amt
-                  ? '#1a2e1f'
-                  : 'linear-gradient(160deg, #5dffaa 0%, #01fd73 45%, #00c057 100%)',
-                border: 'none', borderRadius: 10, cursor: 'pointer',
-                color: '#000', fontWeight: 700, fontSize: 13,
-                padding: '10px 4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                gap: 4, opacity: buyBlocked || !hasPrice || state.balance < amt ? 0.4 : 1,
-                fontFamily: "'Roboto', sans-serif",
-                boxShadow: buyBlocked || !hasPrice || state.balance < amt ? 'none' : 'inset 0 1px 0 rgba(255,255,255,0.3)',
-              }}>
-              {amt} <SolIcon size={11} fill="#000" style={{ marginLeft: 0 }} />
-            </button>
+              style={{ width: '100%' }}
+            >
+              {amt} <SolIcon size={11} fill="#FFF7F0" style={{ marginLeft: 0 }} />
+            </MetalBtn>
           ))}
         </div>
       </div>
@@ -1595,13 +1644,9 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           {/* Sell buttons: 10 / 25 / 50 / 100 */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {[10, 25, 50, 100].map(pct => (
-              <button key={pct} onClick={() => onSell(pct)} style={{
-                background: 'linear-gradient(160deg, #ff5580 0%, #FE0149 45%, #c4003a 100%)',
-                border: 'none', borderRadius: 10, cursor: 'pointer',
-                color: '#fff', fontWeight: 700, fontSize: 14, padding: '10px 4px',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
-                fontFamily: "'Roboto', sans-serif",
-              }}>{pct}%</button>
+              <MetalBtn key={pct} variant="error" onClick={() => onSell(pct)} style={{ width: '100%' }}>
+                {pct}%
+              </MetalBtn>
             ))}
           </div>
 
