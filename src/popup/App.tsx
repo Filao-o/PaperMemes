@@ -512,8 +512,10 @@ export function App() {
       {showReset && <ResetModal onClose={() => setShowReset(false)} />}
       {showCalendar && <CalendarModal trades={closedTrades} onClose={() => setShowCalendar(false)} />}
       <div style={{
-        width: 360, minHeight: 480, background: 'rgb(17, 17, 17)', color: C.text,
-        fontFamily: FONT, display: 'flex', flexDirection: 'column',
+        width: 360, minHeight: 480,
+        background: 'rgba(0,0,0,0.20)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        color: C.text, fontFamily: FONT, display: 'flex', flexDirection: 'column',
       }}>
 
         {/* ── Header ── */}

@@ -1048,8 +1048,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   }
 
   const blockStyle: React.CSSProperties = {
-    background: 'rgb(17, 17, 17)', border: `1px solid ${C.border}`, borderTop: 'none',
-    borderRadius: '0 0 10px 10px', fontFamily: FONT, color: C.text, fontSize: BASE,
+    background: 'rgba(0,0,0,0.20)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+    borderTop: 'none', borderRadius: '0 0 18px 18px', fontFamily: FONT, color: C.text, fontSize: BASE,
   }
 
   return (
@@ -1063,7 +1063,11 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         onDragEnd={() => handleBlockDrop('A')}
         highlightSnap={snapPreview?.upper === 'A' || snapPreview?.lower === 'A'}
         domRef={refA}
-        style={{ width: 310, borderRadius: 18, overflow: 'hidden' }}
+        style={{
+          width: 310, borderRadius: 18, overflow: 'hidden',
+          background: 'rgba(0,0,0,0.20)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255,255,255,0.10)',
+        }}
         renderHandle={onDragStart => (
           /* White header — sert aussi de zone de drag */
           <div
@@ -1228,7 +1232,11 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           onDragEnd={() => handleBlockDrop('C')}
           highlightSnap={snapPreview?.upper === 'C' || snapPreview?.lower === 'C'}
           domRef={refC}
-          style={{ width: 310, borderRadius: 18, overflow: 'hidden' }}
+          style={{
+            width: 310, borderRadius: 18, overflow: 'hidden',
+            background: 'rgba(0,0,0,0.20)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255,255,255,0.10)',
+          }}
           renderHandle={onDragStart => (
             <div onMouseDown={onDragStart} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
