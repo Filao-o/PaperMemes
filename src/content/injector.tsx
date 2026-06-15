@@ -509,7 +509,14 @@ function ResetModal({ onClose }: { onClose: () => void }) {
   )
 }
 
-// ─── DraggableBlock ───────────────────────────────────────────────────────────
+// ─── Block connection types ───────────────────────────────────────────────────
+
+type BlockId = 'A' | 'B' | 'C'
+const SNAP_DIST = 50
+const DISCONNECT_DIST = 70
+const ALL_BLOCKS: BlockId[] = ['A', 'B', 'C']
+
+// ─── DraggableBlock (controlled) ─────────────────────────────────────────────
 
 function PmLogo({ size = 28 }: { size?: number }) {
   return (
@@ -521,22 +528,33 @@ function PmLogo({ size = 28 }: { size?: number }) {
   )
 }
 
-function DraggableBlock({ children, defaultPos, style, renderHandle }: {
+function DraggableBlock({ pos, onPosChange, onDragEnd: onExtEnd, highlightSnap, domRef, children, style, renderHandle }: {
+  pos: { x: number; y: number }
+  onPosChange: (p: { x: number; y: number }) => void
+  onDragEnd?: () => void
+  highlightSnap?: boolean
+  domRef?: React.RefObject<HTMLDivElement>
   children: React.ReactNode
-  defaultPos: () => { x: number; y: number }
   style?: React.CSSProperties
   renderHandle?: (onMouseDown: (e: React.MouseEvent) => void) => React.ReactNode
 }) {
-  const [pos, setPos] = React.useState(defaultPos)
   const dragging = React.useRef(false)
   const offset = React.useRef({ x: 0, y: 0 })
+  const onPosChangeRef = React.useRef(onPosChange)
+  onPosChangeRef.current = onPosChange
+  const onExtEndRef = React.useRef(onExtEnd)
+  onExtEndRef.current = onExtEnd
+  const posRef = React.useRef(pos)
+  posRef.current = pos
 
   React.useEffect(() => {
     function onMove(e: MouseEvent) {
       if (!dragging.current) return
-      setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y })
+      onPosChangeRef.current({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y })
     }
-    function onUp() { dragging.current = false }
+    function onUp() {
+      if (dragging.current) { dragging.current = false; onExtEndRef.current?.() }
+    }
     document.addEventListener('mousemove', onMove, true)
     document.addEventListener('mouseup', onUp, true)
     return () => {
@@ -547,13 +565,24 @@ function DraggableBlock({ children, defaultPos, style, renderHandle }: {
 
   function onMouseDown(e: React.MouseEvent) {
     dragging.current = true
-    offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y }
+    offset.current = { x: e.clientX - posRef.current.x, y: e.clientY - posRef.current.y }
     e.preventDefault()
     e.stopPropagation()
   }
 
   return (
-    <div style={{ position: 'fixed', left: pos.x, top: pos.y, zIndex: 2147483647, width: 300, ...style }}>
+    <div
+      ref={domRef}
+      style={{
+        position: 'fixed', left: pos.x, top: pos.y, zIndex: 2147483647, width: 300,
+        ...style,
+        outline: highlightSnap ? '3px solid #01fd73' : (style?.outline ?? '3px solid #ffffff'),
+        boxShadow: highlightSnap
+          ? '0 0 28px rgba(1,253,115,0.55), 0 8px 32px rgba(0,0,0,0.5)'
+          : '0 8px 32px rgba(0,0,0,0.5)',
+        transition: 'outline 0.1s, box-shadow 0.1s',
+      }}
+    >
       {renderHandle ? renderHandle(onMouseDown) : (
         <div onMouseDown={onMouseDown} style={{
           height: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -599,6 +628,21 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const prevHoldersRef = useRef<number | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
+
+  // ── Block positions & connections ──────────────────────────────────────────
+  const [positions, setPositions] = useState<Record<BlockId, {x:number;y:number}>>(() => ({
+    A: { x: window.innerWidth - 316, y: 10 },
+    B: { x: window.innerWidth - 316, y: 190 },
+    C: { x: window.innerWidth - 316, y: 560 },
+  }))
+  const [blockConns, setBlockConns] = useState<{upper: BlockId; lower: BlockId}[]>([])
+  const [snapPreview, setSnapPreview] = useState<{upper: BlockId; lower: BlockId} | null>(null)
+  const refA = useRef<HTMLDivElement>(null)
+  const refB = useRef<HTMLDivElement>(null)
+  const refC = useRef<HTMLDivElement>(null)
+  const positionsRef = useRef(positions); positionsRef.current = positions
+  const blockConnsRef = useRef(blockConns); blockConnsRef.current = blockConns
+  const snapPreviewRef = useRef(snapPreview); snapPreviewRef.current = snapPreview
 
   const [clock, setClock] = useState(() => {
     const d = new Date()
@@ -859,6 +903,77 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
   const flashLine = priceDir === 'up' ? C.green : priceDir === 'down' ? C.red : 'transparent'
 
+  // ── Connection helpers ─────────────────────────────────────────────────────
+  function getRef(id: BlockId) { return id === 'A' ? refA : id === 'B' ? refB : refC }
+  function getH(id: BlockId) { return getRef(id).current?.getBoundingClientRect().height ?? 0 }
+
+  function groupBelow(id: BlockId, conns: {upper: BlockId; lower: BlockId}[]): BlockId[] {
+    const g: BlockId[] = [id]
+    let changed = true
+    while (changed) {
+      changed = false
+      for (const c of conns) {
+        if (g.includes(c.upper) && !g.includes(c.lower)) { g.push(c.lower); changed = true }
+      }
+    }
+    return g
+  }
+
+  function handleBlockMove(id: BlockId, newPos: {x:number;y:number}) {
+    const conns = blockConnsRef.current
+    const prev = positionsRef.current
+    const dx = newPos.x - prev[id].x
+    const dy = newPos.y - prev[id].y
+    const group = groupBelow(id, conns)
+
+    setPositions(p => {
+      const next = { ...p }
+      for (const bid of group) next[bid] = { x: p[bid].x + dx, y: p[bid].y + dy }
+      return next
+    })
+
+    // Disconnect from block above if dragged too far
+    const above = conns.find(c => c.lower === id)?.upper ?? null
+    if (above !== null) {
+      const abovePos = prev[above]
+      const expectedY = abovePos.y + getH(above)
+      if (Math.abs(newPos.y - expectedY) > DISCONNECT_DIST || Math.abs(newPos.x - abovePos.x) > DISCONNECT_DIST) {
+        setBlockConns(c => c.filter(v => !(v.upper === above && v.lower === id)))
+      }
+    }
+
+    // Snap preview
+    let preview: {upper: BlockId; lower: BlockId} | null = null
+    for (const other of ALL_BLOCKS) {
+      if (group.includes(other)) continue
+      const op = prev[other]
+      const ddx = Math.abs(newPos.x - op.x)
+      if (ddx > 130) continue
+      // other above id
+      const dy1 = Math.abs(newPos.y - (op.y + getH(other)))
+      if (dy1 < SNAP_DIST && !conns.some(c => c.upper === other && c.lower !== id)) {
+        preview = { upper: other, lower: id }; break
+      }
+      // id above other
+      const dy2 = Math.abs((newPos.y + getH(id)) - op.y)
+      if (dy2 < SNAP_DIST && !conns.some(c => c.lower === other && c.upper !== id)) {
+        preview = { upper: id, lower: other }; break
+      }
+    }
+    setSnapPreview(preview)
+  }
+
+  function handleBlockDrop(id: BlockId) {
+    const preview = snapPreviewRef.current
+    if (preview) {
+      const up = positionsRef.current[preview.upper]
+      const snapY = up.y + getH(preview.upper)
+      setPositions(p => ({ ...p, [preview.lower]: { x: up.x, y: snapY } }))
+      setBlockConns(c => [...c.filter(v => v.lower !== preview.lower), preview])
+    }
+    setSnapPreview(null)
+  }
+
   const blockStyle: React.CSSProperties = {
     background: C.bg, border: `1px solid ${C.border}`, borderTop: 'none',
     borderRadius: '0 0 10px 10px', fontFamily: FONT, color: C.text, fontSize: BASE,
@@ -870,8 +985,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
       {/* Bloc A — Header + Wallet + Config */}
       <DraggableBlock
-        defaultPos={() => ({ x: window.innerWidth - 316, y: 10 })}
-        style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', outline: '3px solid #ffffff' }}
+        pos={positions.A}
+        onPosChange={p => handleBlockMove('A', p)}
+        onDragEnd={() => handleBlockDrop('A')}
+        highlightSnap={snapPreview?.upper === 'A' || snapPreview?.lower === 'A'}
+        domRef={refA}
+        style={{ width: 310, borderRadius: 18, overflow: 'hidden' }}
         renderHandle={onDragStart => (
           /* White header — sert aussi de zone de drag */
           <div
@@ -962,8 +1081,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
       {/* Bloc B — Bloc Mid */}
       <DraggableBlock
-        defaultPos={() => ({ x: window.innerWidth - 316, y: 190 })}
-        style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', outline: '3px solid #ffffff' }}
+        pos={positions.B}
+        onPosChange={p => handleBlockMove('B', p)}
+        onDragEnd={() => handleBlockDrop('B')}
+        highlightSnap={snapPreview?.upper === 'B' || snapPreview?.lower === 'B'}
+        domRef={refB}
+        style={{ width: 310, borderRadius: 18, overflow: 'hidden' }}
         renderHandle={onDragStart => (
           <div
             onMouseDown={onDragStart}
@@ -1027,8 +1150,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       {/* Bloc C — TP/SL + Footer (seulement si trade tab et pas config) */}
       {!showConfig && tab === 'trade' && (
         <DraggableBlock
-          defaultPos={() => ({ x: window.innerWidth - 316, y: 560 })}
-          style={{ width: 310, borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', outline: '3px solid #ffffff' }}
+          pos={positions.C}
+          onPosChange={p => handleBlockMove('C', p)}
+          onDragEnd={() => handleBlockDrop('C')}
+          highlightSnap={snapPreview?.upper === 'C' || snapPreview?.lower === 'C'}
+          domRef={refC}
+          style={{ width: 310, borderRadius: 18, overflow: 'hidden' }}
           renderHandle={onDragStart => (
             <div onMouseDown={onDragStart} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
