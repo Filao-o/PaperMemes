@@ -351,25 +351,59 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
           }}>›</button>
         </div>
 
-        {/* Day labels */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, textAlign: 'center' }}>
-          {DAY_LABELS.map((d, i) => (
-            <div key={i} style={{ color: C.muted, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, paddingBottom: 2 }}>{d}</div>
-          ))}
-
-          {view === 'week' ? (
-            weekDays.map((d, i) => (
-              <DayCell key={i} pnl={dayMap.get(toKey(d))} dayNum={d.getDate()} isT={isSameDay(d, today)} />
-            ))
-          ) : (
-            monthCells.map((day, i) => {
+        {/* Day labels + cells */}
+        {view === 'week' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {weekDays.map((d, i) => {
+              const pnl = dayMap.get(toKey(d))
+              const hasTrade = pnl !== undefined
+              const isT = isSameDay(d, today)
+              const color = hasTrade ? (pnl! >= 0 ? C.green : C.red) : C.dim
+              const bg = hasTrade ? (pnl! >= 0 ? `${C.green}18` : `${C.red}18`) : 'transparent'
+              const border = hasTrade
+                ? `1px solid ${pnl! >= 0 ? C.green : C.red}60`
+                : `1px solid ${C.border}`
+              const dayName = d.toLocaleDateString('fr-FR', { weekday: 'long' })
+              const dayLabel = dayName.charAt(0).toUpperCase() + dayName.slice(1)
+              return (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  background: bg, border,
+                  boxShadow: isT ? '0 0 0 1.5px #fff' : 'none',
+                  borderRadius: 8, padding: '10px 14px',
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: isT ? '#fff' : C.textSub }}>{dayLabel}</span>
+                    <span style={{ fontSize: 10, color: C.muted }}>{String(d.getDate()).padStart(2, '0')}/{String(d.getMonth() + 1).padStart(2, '0')}</span>
+                  </div>
+                  {hasTrade ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color }}>{pnl! >= 0 ? '+' : ''}{pnl!.toFixed(3)} SOL</span>
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, color: '#000',
+                        background: color, borderRadius: 4, padding: '1px 6px',
+                      }}>{pnl! >= 0 ? 'GAIN' : 'PERTE'}</span>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 10, color: C.dim }}>—</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, textAlign: 'center' }}>
+            {DAY_LABELS.map((d, i) => (
+              <div key={i} style={{ color: C.muted, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, paddingBottom: 2 }}>{d}</div>
+            ))}
+            {monthCells.map((day, i) => {
               if (!day) return <div key={i} />
               const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
               const isT = day === today.getDate() && month === today.getMonth() && year === today.getFullYear()
               return <DayCell key={i} pnl={dayMap.get(key)} dayNum={day} isT={isT} />
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
 
         {/* Legend */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
