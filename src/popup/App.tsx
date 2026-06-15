@@ -28,7 +28,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
       zIndex: 9999, padding: 20,
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
-        background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12,
+        background: 'rgb(17, 17, 17)', border: `1px solid ${C.border}`, borderRadius: 12,
         padding: 20, width: '100%', display: 'flex', flexDirection: 'column', gap: 14,
         fontFamily: FONT,
       }}>
@@ -39,7 +39,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
             {RESET_PRESETS.map(p => (
               <button key={p} onClick={() => { setAmount(p); setCustom('') }} style={{
                 flex: '1 1 auto',
-                background: amount === p && custom === '' ? `${C.yellow}22` : C.bg,
+                background: amount === p && custom === '' ? `${C.yellow}22` : 'rgb(17, 17, 17)',
                 border: `1px solid ${amount === p && custom === '' ? C.yellow : C.border}`,
                 borderRadius: 6, color: amount === p && custom === '' ? C.yellow : C.textSub,
                 fontWeight: 700, fontSize: 12, padding: '7px 4px', cursor: 'pointer', fontFamily: 'inherit',
@@ -53,7 +53,7 @@ function ResetModal({ onClose }: { onClose: () => void }) {
             onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: C.bg, border: `1px solid ${custom ? C.yellow : C.border}`,
+              background: 'rgb(17, 17, 17)', border: `1px solid ${custom ? C.yellow : C.border}`,
               borderRadius: 6, color: C.text, fontSize: 13, fontWeight: 700,
               padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
             }} />
@@ -113,7 +113,7 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
 
   return (
     <div style={{
-      background: C.surface, borderRadius: 10, border: '1px solid #ffffff',
+      background: 'rgb(17, 17, 17)', borderRadius: 10, border: '1px solid #ffffff',
       overflow: 'hidden', position: 'relative', height: H,
     }}>
       <span style={{
@@ -168,7 +168,7 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
 function StatCard({ label, value, sub, color }: { label: string; value: React.ReactNode; sub?: React.ReactNode; color?: string }) {
   return (
     <div style={{
-      flex: 1, background: C.surface, borderRadius: 10, border: '1px solid #ffffff',
+      flex: 1, background: 'rgb(17, 17, 17)', borderRadius: 10, border: '1px solid #ffffff',
       padding: '10px 12px',
     }}>
       <div style={{ color: C.textSub, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>{label}</div>
@@ -277,7 +277,7 @@ export function App() {
     <>
       {showReset && <ResetModal onClose={() => setShowReset(false)} />}
       <div style={{
-        width: 360, minHeight: 480, background: C.bg, color: C.text,
+        width: 360, minHeight: 480, background: 'rgb(17, 17, 17)', color: C.text,
         fontFamily: FONT, display: 'flex', flexDirection: 'column',
       }}>
 
@@ -395,7 +395,7 @@ export function App() {
 function ActiveTradeRow({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
   return (
     <div style={{
-      background: C.surface, borderRadius: 10, border: `1px solid ${C.green}50`,
+      background: 'rgb(17, 17, 17)', borderRadius: 10, border: `1px solid ${C.green}50`,
       padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
