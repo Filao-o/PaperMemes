@@ -513,7 +513,7 @@ export function App() {
       {showCalendar && <CalendarModal trades={closedTrades} onClose={() => setShowCalendar(false)} />}
       <div style={{
         width: 360, minHeight: 480,
-        background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
         border: '1px solid rgba(255,255,255,0.10)',
         color: C.text, fontFamily: FONT, display: 'flex', flexDirection: 'column',
       }}>
