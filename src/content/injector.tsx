@@ -1323,14 +1323,23 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 <div style={{ background: 'rgba(0,0,0,0)', borderRadius: 12, padding: '10px 10px 12px' }}>
                   <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>TP</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-                    {tpPresets.map(pct => (
-                      <MetalBtn key={pct} variant="success"
-                        onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: activeTrade.tp === pct ? null : pct, tpMC: null } })}
-                        style={{ width: '100%', outline: activeTrade.tp === pct ? '2px solid #fff' : 'none', opacity: activeTrade.tp === pct ? 1 : 0.75 }}
-                      >
-                        +{pct}%
-                      </MetalBtn>
-                    ))}
+                    {tpPresets.map(pct => {
+                      const sel = activeTrade.tp === pct
+                      return (
+                        <button key={pct}
+                          onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: sel ? null : pct, tpMC: null } })}
+                          style={{
+                            borderRadius: 200, padding: '10px 4px', cursor: 'pointer',
+                            fontWeight: 600, fontSize: 13, fontFamily: "'Roboto', sans-serif",
+                            background: sel ? '#22c55e' : 'transparent',
+                            border: `1px solid #22c55e`,
+                            color: '#fff',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                          }}>
+                          +{pct}%
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -1340,14 +1349,23 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 <div style={{ background: 'rgba(0,0,0,0)', borderRadius: 12, padding: '10px 10px 12px' }}>
                   <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>SL</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
-                    {slPresets.map(pct => (
-                      <MetalBtn key={pct} variant="error"
-                        onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: activeTrade.sl === pct ? null : pct } })}
-                        style={{ width: '100%', outline: activeTrade.sl === pct ? '2px solid #fff' : 'none', opacity: activeTrade.sl === pct ? 1 : 0.75 }}
-                      >
-                        {pct}%
-                      </MetalBtn>
-                    ))}
+                    {slPresets.map(pct => {
+                      const sel = activeTrade.sl === pct
+                      return (
+                        <button key={pct}
+                          onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: sel ? null : pct } })}
+                          style={{
+                            borderRadius: 200, padding: '10px 4px', cursor: 'pointer',
+                            fontWeight: 600, fontSize: 13, fontFamily: "'Roboto', sans-serif",
+                            background: sel ? '#ef4444' : 'transparent',
+                            border: `1px solid #ef4444`,
+                            color: '#fff',
+                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                          }}>
+                          {pct}%
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               </>
