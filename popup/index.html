@@ -6,15 +6,22 @@
   <title>PaperMemes</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 360px; min-height: 480px; background: #0a0b0d; color: #e2e8f0; }
-    body { font-family: 'JetBrains Mono', monospace; overflow-x: hidden; }
+    html, body {
+      width: 360px; min-height: 480px; color: #f0f0fa;
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(1,253,115,0.18) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(254,1,73,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 30%, rgba(80,80,200,0.10) 0%, transparent 50%),
+        linear-gradient(160deg, #0d0d1a 0%, #0a0a10 50%, #0d0a0d 100%);
+    }
+    body { font-family: 'Space Grotesk', -apple-system, sans-serif; overflow-x: hidden; }
     #popup-root { width: 360px; }
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
   </style>
   <script type="module" src="./index.js"></script>
 </head>

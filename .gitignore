@@ -1,3 +1,11 @@
-.claude/
+.claude/*.local.json
+.claude/todos/
+.claude/worktrees/
 node_modules/
 package-lock.json
+
+# Build artifacts (rebuild avec npm run build après chaque pull)
+background/service-worker.js
+content/injector.js
+popup/index.js
+chunks/

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PaperMemes – Paper Trading Simulator",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Simulez vos trades de meme coins Solana en paper trading sur Photon, GMGN, Bullx, Axiom & Padre.",
   "permissions": ["storage", "alarms", "scripting", "activeTab", "notifications"],
   "host_permissions": [
@@ -15,7 +15,8 @@
     "https://frontend-api.pump.fun/*",
     "https://api.rugcheck.xyz/*",
     "https://api.dexscreener.com/*",
-    "https://price.jup.ag/*"
+    "https://price.jup.ag/*",
+    "https://api.binance.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
