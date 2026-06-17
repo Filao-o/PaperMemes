@@ -1268,10 +1268,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         <div style={{ background: 'transparent', fontFamily: "'Roboto', sans-serif", padding: '10px 14px 12px' }}>
           {/* Row 1: Wallet pill + toggle */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <span style={{
-              background: '#fff', color: '#111', fontWeight: 700, fontSize: FS.v3,
-              padding: '2px 10px', borderRadius: 20, lineHeight: 1.4,
-            }}>Wallet</span>
+            <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: FS.v3 }}>Wallet</span>
             <CurrencyToggle
               value={currency}
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
@@ -1289,12 +1286,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           </div>
           {/* Row 3: Conversion + clock */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-            <span style={{ color: '#A1A1A1', fontSize: FS.v4 }}>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: FS.v4 }}>
               {currency === 'SOL'
                 ? solPrice > 0 ? `= $${(balance * solPrice).toFixed(2)}` : '...'
                 : <>{fmtSOL(balance)} <SolIcon size={10} style={{ marginLeft: 2 }} /></>}
             </span>
-            <span style={{ color: '#A1A1A1', fontSize: FS.v4 }}>{clock}</span>
+            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: FS.v4 }}>{clock}</span>
           </div>
         </div>
 
