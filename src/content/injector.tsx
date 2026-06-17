@@ -1239,7 +1239,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 title="Paramètres"
                 style={{
                   width: 32, height: 32,
-                  background: showConfig ? C.yellow : '#111',
+                  background: showConfig ? C.green : '#111',
                   border: 'none', borderRadius: 8, cursor: 'pointer',
                   color: showConfig ? '#000' : '#fff',
                   fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1300,6 +1300,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               slPresets={slPresets}
               slippage={state.slippage}
               fees={state.fees}
+              onSaved={() => setShowConfig(false)}
             />
           </div>
         )}
@@ -1403,7 +1404,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 onClick={() => setShowConfig(v => !v)}
                 onMouseDown={e => e.stopPropagation()}
                 style={{
-                  width: 32, height: 32, background: showConfig ? C.yellow : '#111',
+                  width: 32, height: 32, background: showConfig ? C.green : '#111',
                   border: 'none', borderRadius: 8, cursor: 'pointer',
                   color: showConfig ? '#000' : '#fff', fontSize: 15,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1487,9 +1488,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
 // ─── Config Panel ─────────────────────────────────────────────────────────────
 
-function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
+function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved }: {
   buyPresets: number[]; tpPresets: number[]; slPresets: number[]
-  slippage: number; fees: number
+  slippage: number; fees: number; onSaved?: () => void
 }) {
   const pad = (arr: number[], n: number) => {
     const filled = arr.map(v => String(Math.abs(v)))
@@ -1526,7 +1527,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
       ...(isNaN(feeV) ? {} : { fees: feeV }),
     })
     setSaved(true)
-    setTimeout(() => setSaved(false), 1500)
+    setTimeout(() => { setSaved(false); onSaved?.() }, 1000)
   }
 
   const inputStyle = (filled: boolean): React.CSSProperties => ({
@@ -1579,7 +1580,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
             </div>
           ))}
         </div>
-        <div style={{ color: C.muted, fontSize: 10, marginTop: 4 }}>Les valeurs sont automatiquement négatives.</div>
+        <div style={{ color: 'rgba(240,240,250,0.65)', fontSize: 11, marginTop: 5 }}>Les valeurs sont automatiquement négatives.</div>
       </div>
 
       {/* Slippage & Fees */}
@@ -1587,13 +1588,13 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees }: {
         <div style={sL}>Slippage & Fees</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
-            <div style={{ color: C.muted, fontSize: 10, marginBottom: 4 }}>SLIPPAGE (%)</div>
+            <div style={{ color: 'rgba(240,240,250,0.75)', fontSize: 11, marginBottom: 4 }}>SLIPPAGE (%)</div>
             <input type="text" inputMode="decimal" value={slip} placeholder="1"
               onChange={e => numInput(e.target.value, setSlip)}
               style={inputStyle(!!slip)} />
           </div>
           <div>
-            <div style={{ color: C.muted, fontSize: 10, marginBottom: 4 }}>FEES (%)</div>
+            <div style={{ color: 'rgba(240,240,250,0.75)', fontSize: 11, marginBottom: 4 }}>FEES (%)</div>
             <input type="text" inputMode="decimal" value={fee} placeholder="0.25"
               onChange={e => numInput(e.target.value, setFee)}
               style={inputStyle(!!fee)} />
@@ -1756,7 +1757,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
   )
 }
 
-const sL: React.CSSProperties = { color: 'rgba(240,240,250,0.45)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
+const sL: React.CSSProperties = { color: 'rgba(240,240,250,0.80)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
 
 // ─── Mount + URL watcher ──────────────────────────────────────────────────────
 
