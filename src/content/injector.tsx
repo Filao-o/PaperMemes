@@ -415,24 +415,34 @@ function fmtPrice(p: number): string {
 
 // ─── Reset Modal ─────────────────────────────────────────────────────────────
 
-const RESET_PRESETS = [1, 2, 5, 10, 20]
+const SOL_RESET_PRESETS = [1, 2, 5, 10, 20]
+const USD_RESET_PRESETS = [25, 50, 100, 200, 500]
 
 function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; currency: 'SOL' | 'USD'; solPrice: number }) {
-  const [amount, setAmount] = useState<number>(10)
-  const [custom, setCustom] = useState('')
   const [localCurrency, setLocalCurrency] = useState<'SOL' | 'USD'>(currency)
+  const [amount, setAmount] = useState<number>(localCurrency === 'SOL' ? 5 : 100)
+  const [custom, setCustom] = useState('')
   const [confirm, setConfirm] = useState<'full' | 'balance' | null>(null)
 
+  const presets = localCurrency === 'SOL' ? SOL_RESET_PRESETS : USD_RESET_PRESETS
   const activeAmount = custom !== '' ? parseFloat(custom) || 0 : amount
+  const activeAmountSOL = localCurrency === 'USD' && solPrice > 0 ? activeAmount / solPrice : activeAmount
 
-  function fmtAmt(sol: number) {
-    if (localCurrency === 'USD' && solPrice > 0) return `$${(sol * solPrice).toFixed(2)}`
-    return `${sol} SOL`
+  function fmtAmt(amtSOL: number) {
+    if (localCurrency === 'USD' && solPrice > 0) return `$${(amtSOL * solPrice).toFixed(2)}`
+    return `${amtSOL} SOL`
+  }
+
+  function switchCurrency() {
+    const next = localCurrency === 'SOL' ? 'USD' : 'SOL'
+    setLocalCurrency(next)
+    setAmount(next === 'SOL' ? 5 : 100)
+    setCustom('')
   }
 
   function doReset(keepHistory: boolean) {
-    if (activeAmount <= 0) return
-    Storage.set({ balance: activeAmount, activeTrade: null, ...(keepHistory ? {} : { closedTrades: [] }) })
+    if (activeAmountSOL <= 0) return
+    Storage.set({ balance: activeAmountSOL, activeTrade: null, ...(keepHistory ? {} : { closedTrades: [] }) })
     onClose()
   }
 
@@ -458,9 +468,9 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
           <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.red }}>⚠ CONFIRMATION</div>
           <div style={{ color: C.textSub, fontSize: 12, lineHeight: 1.65 }}>
             {isFull ? (
-              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmount)}</span> et <span style={{ color: C.red, fontWeight: 700 }}>tout l'historique sera supprimé</span>. Cette action est irrémédiable.</>
+              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span> et <span style={{ color: C.red, fontWeight: 700 }}>tout l'historique sera supprimé</span>. Cette action est irrémédiable.</>
             ) : (
-              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmount)}</span>. L'historique sera conservé. Cette action est irrémédiable.</>
+              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span>. L'historique sera conservé. Cette action est irrémédiable.</>
             )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -480,21 +490,24 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
     )
   }
 
+  const cur = localCurrency
+  const isUSD = cur === 'USD'
+
   return (
     <div style={overlayStyle} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={cardStyle}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.red }}>RÉINITIALISER LE WALLET</div>
-          <div onClick={() => setLocalCurrency(v => v === 'SOL' ? 'USD' : 'SOL')} style={{
+          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: '#ffffff' }}>RÉINITIALISER LE WALLET</div>
+          <div onClick={switchCurrency} style={{
             display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
             background: '#1a1a1a', border: '1px solid #333', borderRadius: 20, padding: 2,
           }}>
             {(['SOL', 'USD'] as const).map(opt => (
               <div key={opt} style={{
                 padding: '3px 9px', borderRadius: 16, fontSize: 10, fontWeight: 700,
-                background: localCurrency === opt ? '#ffffff' : 'transparent',
-                color: localCurrency === opt ? '#111' : '#A1A1A1',
+                background: cur === opt ? '#ffffff' : 'transparent',
+                color: cur === opt ? '#111' : '#A1A1A1',
               }}>{opt}</div>
             ))}
           </div>
@@ -502,20 +515,22 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
 
         {/* Presets */}
         <div>
-          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Montant (SOL)</div>
+          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+            Montant ({isUSD ? 'USD' : 'SOL'})
+          </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {RESET_PRESETS.map(p => {
+            {presets.map(p => {
               const sel = amount === p && custom === ''
               return (
                 <button key={p} onClick={() => { setAmount(p); setCustom('') }} style={{
                   flex: '1 1 auto',
-                  background: sel ? `${C.red}22` : 'rgba(0,0,0,0)',
-                  border: `1px solid ${sel ? C.red : C.border}`,
-                  borderRadius: 6, color: sel ? C.red : C.textSub,
+                  background: sel ? `${C.green}22` : 'rgba(0,0,0,0)',
+                  border: `1px solid ${sel ? C.green : C.border}`,
+                  borderRadius: 6, color: sel ? C.green : C.textSub,
                   fontWeight: 700, fontSize: 12, padding: '6px 4px',
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}>
-                  {localCurrency === 'USD' && solPrice > 0 ? `$${(p * solPrice).toFixed(0)}` : p}
+                  {isUSD ? `$${p}` : p}
                 </button>
               )
             })}
@@ -524,14 +539,16 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
 
         {/* Custom input */}
         <div>
-          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Montant personnalisé (SOL)</div>
+          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+            Montant personnalisé ({isUSD ? 'USD' : 'SOL'})
+          </div>
           <input
-            type="text" inputMode="decimal" placeholder="ex: 25"
+            type="text" inputMode="decimal" placeholder={isUSD ? 'ex: 250' : 'ex: 25'}
             value={custom}
             onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: 'rgba(0,0,0,0)', border: `1px solid ${custom ? C.red : C.border}`,
+              background: 'rgba(0,0,0,0)', border: `1px solid ${custom ? C.green : C.border}`,
               borderRadius: 6, color: C.text, fontSize: 13, fontWeight: 700,
               padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
             }}
@@ -540,17 +557,17 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
 
         {/* Actions */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button onClick={() => activeAmount > 0 && setConfirm('full')} disabled={activeAmount <= 0} style={{
+          <button onClick={() => activeAmountSOL > 0 && setConfirm('full')} disabled={activeAmountSOL <= 0} style={{
             width: '100%', padding: '9px 0', borderRadius: 6, fontFamily: 'inherit',
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
-            fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
-            opacity: activeAmount > 0 ? 1 : 0.4,
+            fontWeight: 700, fontSize: 12, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
+            opacity: activeAmountSOL > 0 ? 1 : 0.4,
           }}>Reset solde + historique</button>
-          <button onClick={() => activeAmount > 0 && setConfirm('balance')} disabled={activeAmount <= 0} style={{
+          <button onClick={() => activeAmountSOL > 0 && setConfirm('balance')} disabled={activeAmountSOL <= 0} style={{
             width: '100%', padding: '9px 0', borderRadius: 6, fontFamily: 'inherit',
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
-            fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
-            opacity: activeAmount > 0 ? 1 : 0.4,
+            fontWeight: 700, fontSize: 12, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
+            opacity: activeAmountSOL > 0 ? 1 : 0.4,
           }}>Reset solde uniquement</button>
           <button onClick={onClose} style={{
             width: '100%', padding: '7px 0', borderRadius: 6, fontFamily: 'inherit',
@@ -745,8 +762,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         for (const id of ALL_BLOCKS) {
           const p = parsed[id] ?? DEFAULT_POSITIONS[id]
           clamped[id] = {
-            x: Math.max(0, Math.min(p.x, window.innerWidth - 100)),
-            y: Math.max(0, Math.min(p.y, window.innerHeight - 50)),
+            x: Math.max(0, Math.min(p.x, window.innerWidth - 310)),
+            y: Math.max(0, Math.min(p.y, window.innerHeight - 44)),
           }
         }
         return clamped as Record<BlockId, {x:number;y:number}>
@@ -1084,16 +1101,28 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     return g
   }
 
+  function clampPos(pos: {x:number;y:number}, id: BlockId): {x:number;y:number} {
+    const h = Math.max(getH(id), 44)
+    return {
+      x: Math.max(0, Math.min(pos.x, window.innerWidth - 310)),
+      y: Math.max(0, Math.min(pos.y, window.innerHeight - h)),
+    }
+  }
+
   function handleBlockMove(id: BlockId, newPos: {x:number;y:number}) {
     const conns = blockConnsRef.current
     const prev = positionsRef.current
-    const dx = newPos.x - prev[id].x
-    const dy = newPos.y - prev[id].y
+    const clamped = clampPos(newPos, id)
+    const dx = clamped.x - prev[id].x
+    const dy = clamped.y - prev[id].y
     const group = groupBelow(id, conns)
 
     setPositions(p => {
       const next = { ...p }
-      for (const bid of group) next[bid] = { x: p[bid].x + dx, y: p[bid].y + dy }
+      for (const bid of group) {
+        const raw = { x: p[bid].x + dx, y: p[bid].y + dy }
+        next[bid] = bid === id ? clamped : { x: Math.max(0, Math.min(raw.x, window.innerWidth - 310)), y: Math.max(0, raw.y) }
+      }
       return next
     })
 
@@ -1162,10 +1191,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     borderTop: 'none', borderRadius: '0 0 18px 18px', fontFamily: FONT, color: C.text, fontSize: BASE,
   }
 
+  const blocBlur: React.CSSProperties = showReset
+    ? { filter: 'blur(5px)', opacity: 0.35, pointerEvents: 'none', userSelect: 'none' }
+    : {}
+
   return (
     <>
-      {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} />}
-
       {/* Bloc A — Header + Wallet + Config */}
       <DraggableBlock
         pos={positions.A}
@@ -1177,6 +1208,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           width: 310, borderRadius: 18, overflow: 'hidden',
           background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
           border: '1px solid rgba(255,255,255,0.10)',
+          ...blocBlur,
         }}
         renderHandle={onDragStart => (
           /* White header — sert aussi de zone de drag */
@@ -1277,6 +1309,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           width: 310, borderRadius: 18, overflow: 'hidden',
           background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
           border: '1px solid rgba(255,255,255,0.10)',
+          ...blocBlur,
         }}
         renderHandle={onDragStart => (
           <div
@@ -1350,6 +1383,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             width: 310, borderRadius: 18, overflow: 'hidden',
             background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
             border: '1px solid rgba(255,255,255,0.10)',
+            ...blocBlur,
           }}
           renderHandle={onDragStart => (
             <div onMouseDown={onDragStart} style={{
@@ -1438,6 +1472,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           </div>
         </DraggableBlock>
       )}
+
+      {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} />}
     </>
   )
 }
