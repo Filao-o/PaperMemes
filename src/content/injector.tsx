@@ -787,15 +787,18 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const blockConnsRef = useRef(blockConns); blockConnsRef.current = blockConns
   const snapPreviewRef = useRef(snapPreview); snapPreviewRef.current = snapPreview
 
-  const [clock, setClock] = useState(() => {
-    const d = new Date()
-    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-  })
+  const DAY_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+  function fmtClock(d: Date) {
+    const day = DAY_SHORT[d.getDay()]
+    const date = d.getDate()
+    const h = String(d.getHours()).padStart(2, '0')
+    const m = String(d.getMinutes()).padStart(2, '0')
+    return `${day} ${date}, ${h}:${m}`
+  }
+
+  const [clock, setClock] = useState(() => fmtClock(new Date()))
   useEffect(() => {
-    const t = setInterval(() => {
-      const d = new Date()
-      setClock(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`)
-    }, 30_000)
+    const t = setInterval(() => setClock(fmtClock(new Date())), 30_000)
     return () => clearInterval(t)
   }, [])
 
@@ -1262,31 +1265,34 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         )}
       >
         {/* Dark wallet body */}
-        <div style={{ background: 'transparent', fontFamily: "'Roboto', sans-serif", padding: '12px 14px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ background: 'transparent', fontFamily: "'Roboto', sans-serif", padding: '10px 14px 12px' }}>
+          {/* Row 1: Wallet pill + toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
             <span style={{
               background: '#fff', color: '#111', fontWeight: 700, fontSize: FS.v3,
-              padding: '3px 10px', borderRadius: 20,
+              padding: '2px 10px', borderRadius: 20, lineHeight: 1.4,
             }}>Wallet</span>
             <CurrencyToggle
               value={currency}
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
             />
           </div>
-          <div style={{ fontSize: FS.v1, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Row 2: Balance */}
+          <div style={{ fontSize: FS.v1, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 4, lineHeight: 1.1 }}>
             {currency === 'SOL' ? (
-              <>{fmtSOL(balance)} <SolIcon size={22} style={{ marginLeft: 2 }} /></>
+              <>{fmtSOL(balance)} <SolIcon size={28} style={{ marginLeft: 2 }} /></>
             ) : solPrice > 0 ? (
               `$${(balance * solPrice).toFixed(2)}`
             ) : (
-              <span style={{ color: '#A1A1A1', fontSize: 16 }}>Chargement…</span>
+              <span style={{ color: '#A1A1A1', fontSize: FS.v4 }}>Chargement…</span>
             )}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#A1A1A1', fontSize: FS.v4, marginBottom: 4 }}>
+          {/* Row 3: Conversion + clock */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+            <span style={{ color: '#A1A1A1', fontSize: FS.v4 }}>
               {currency === 'SOL'
                 ? solPrice > 0 ? `= $${(balance * solPrice).toFixed(2)}` : '...'
-                : <>{fmtSOL(balance)} <SolIcon size={11} style={{ marginLeft: 2 }} /></>}
+                : <>{fmtSOL(balance)} <SolIcon size={10} style={{ marginLeft: 2 }} /></>}
             </span>
             <span style={{ color: '#A1A1A1', fontSize: FS.v4 }}>{clock}</span>
           </div>
