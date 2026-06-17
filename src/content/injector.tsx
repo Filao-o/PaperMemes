@@ -404,7 +404,7 @@ function copyToClipboard(text: string) {
 
 const FONT = "'Space Grotesk', -apple-system, system-ui, sans-serif"
 const BASE = 14
-const FS = { v1: 37, v2: 17, v3: 14, v4: 13 } as const
+const FS = { v1: 37, v2: 17, v3: 14, v4: 14 } as const
 
 function fmtPrice(p: number): string {
   if (p >= 1) return p.toFixed(2)
@@ -1345,7 +1345,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                     >{tokenInfo.tokenName?.toUpperCase() ?? '—'}</span>
                     {copied && <span style={{ color: '#006622', fontSize: 10, fontFamily: FONT }}>✓</span>}
                   </div>
-                  <div style={{ color: '#555', fontSize: FS.v3, fontFamily: "'Roboto', sans-serif", marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ color: '#555', fontSize: 15, fontFamily: "'Roboto', sans-serif", marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
                     {tokenInfo.age && <span>{tokenInfo.age}</span>}
                     {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
                     {tokenInfo.holders != null && (
@@ -1410,7 +1410,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 style={{
                   width: 32, height: 32, background: showConfig ? C.green : '#111',
                   border: 'none', borderRadius: 8, cursor: 'pointer',
-                  color: showConfig ? '#000' : '#fff', fontSize: FS.v3,
+                  color: showConfig ? '#000' : '#fff', fontSize: 18,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>⚙</button>
             </div>
@@ -1642,7 +1642,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: FS.v3, color: C.text }}>Quick Buy</span>
-          <button onClick={onOpenConfig} onMouseDown={e => e.stopPropagation()} style={{ background: '#ffffff', border: 'none', borderRadius: 6, cursor: 'pointer', color: '#111', fontSize: FS.v3, padding: '2px 7px', lineHeight: 1, fontWeight: 700 }}>⚙</button>
+          <button onClick={onOpenConfig} onMouseDown={e => e.stopPropagation()} style={{ background: '#111', border: 'none', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 18, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontWeight: 700 }}>⚙</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {buyPresets.map(amt => (
@@ -1697,12 +1697,12 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   background: '#111111', borderTop: '3px solid #ffffff', borderRadius: 0,
-                  padding: '7px 10px', fontSize: 13,
+                  padding: '7px 10px', fontSize: 14,
                 }}>
                   <span style={{ color: '#ffffff', fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
                     {fmtMC(entry.entryMC)} <span style={{ color: '#A1A1A1' }}>•</span> {fmtSOL(entry.invested)}<SolIcon size={10} fill="#ffffff" style={{ marginLeft: 2 }} />
                   </span>
-                  <span style={{ color: pctColor, fontWeight: 700, fontFamily: "'Roboto', sans-serif", fontSize: 13 }}>
+                  <span style={{ color: pctColor, fontWeight: 700, fontFamily: "'Roboto', sans-serif", fontSize: 14 }}>
                     {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
                   </span>
                 </div>
@@ -1723,8 +1723,8 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
                 padding: '6px 4px', textAlign: 'center',
                 borderLeft: idx > 0 ? '1px solid rgba(255,255,255,0.10)' : undefined,
               }}>
-                <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: FS.v2, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
-                <div style={{ color: '#ffffff', fontSize: FS.v2, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
+                <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
+                <div style={{ color: '#ffffff', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
                   {sol != null ? <>{fmtSOL(sol)}<SolIcon size={10} fill="#ffffff" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
               </div>
