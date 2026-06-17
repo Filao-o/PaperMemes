@@ -455,8 +455,8 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
   }
 
   const cardStyle: React.CSSProperties = {
-    background: 'rgba(10,8,18,0.92)', border: `1px solid ${C.border}`, borderRadius: 14,
-    padding: 20, width: 290, display: 'flex', flexDirection: 'column', gap: 14,
+    background: 'rgba(10,8,18,0.92)', border: `1px solid ${C.border}`, borderRadius: 16,
+    padding: 26, width: 400, display: 'flex', flexDirection: 'column', gap: 18,
     fontFamily: FONT,
   }
 
@@ -465,24 +465,24 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
     return (
       <div style={overlayStyle} onClick={e => e.target === e.currentTarget && onClose()}>
         <div style={cardStyle}>
-          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.red }}>⚠ CONFIRMATION</div>
-          <div style={{ color: C.textSub, fontSize: 12, lineHeight: 1.65 }}>
+          <div style={{ fontWeight: 800, fontSize: 17, letterSpacing: 0.5, color: C.red }}>⚠ CONFIRMATION</div>
+          <div style={{ color: C.textSub, fontSize: 14, lineHeight: 1.7 }}>
             {isFull ? (
               <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span> et <span style={{ color: C.red, fontWeight: 700 }}>tout l'historique sera supprimé</span>. Cette action est irrémédiable.</>
             ) : (
               <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span>. L'historique sera conservé. Cette action est irrémédiable.</>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <button onClick={() => doReset(!isFull)} style={{
-              width: '100%', padding: '10px 0', borderRadius: 8, fontFamily: 'inherit',
+              width: '100%', padding: '13px 0', borderRadius: 8, fontFamily: 'inherit',
               background: C.red, border: 'none', color: '#fff',
-              fontWeight: 700, fontSize: 12, cursor: 'pointer',
+              fontWeight: 700, fontSize: 14, cursor: 'pointer',
             }}>Confirmer</button>
             <button onClick={() => setConfirm(null)} style={{
-              width: '100%', padding: '8px 0', borderRadius: 8, fontFamily: 'inherit',
+              width: '100%', padding: '11px 0', borderRadius: 8, fontFamily: 'inherit',
               background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
-              fontWeight: 600, fontSize: 11, cursor: 'pointer',
+              fontWeight: 600, fontSize: 13, cursor: 'pointer',
             }}>Retour</button>
           </div>
         </div>
@@ -498,14 +498,14 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
       <div style={cardStyle}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: '#ffffff' }}>RÉINITIALISER LE WALLET</div>
+          <div style={{ fontWeight: 800, fontSize: 17, letterSpacing: 0.5, color: '#ffffff' }}>RÉINITIALISER LE WALLET</div>
           <div onClick={switchCurrency} style={{
             display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
-            background: '#1a1a1a', border: '1px solid #333', borderRadius: 20, padding: 2,
+            background: '#1a1a1a', border: '1px solid #333', borderRadius: 20, padding: 3,
           }}>
             {(['SOL', 'USD'] as const).map(opt => (
               <div key={opt} style={{
-                padding: '3px 9px', borderRadius: 16, fontSize: 10, fontWeight: 700,
+                padding: '4px 12px', borderRadius: 16, fontSize: 12, fontWeight: 700,
                 background: cur === opt ? '#ffffff' : 'transparent',
                 color: cur === opt ? '#111' : '#A1A1A1',
               }}>{opt}</div>
@@ -515,10 +515,10 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
 
         {/* Presets */}
         <div>
-          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+          <div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
             Montant ({isUSD ? 'USD' : 'SOL'})
           </div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {presets.map(p => {
               const sel = amount === p && custom === ''
               return (
@@ -526,8 +526,8 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
                   flex: '1 1 auto',
                   background: sel ? `${C.green}22` : 'rgba(0,0,0,0)',
                   border: `1px solid ${sel ? C.green : C.border}`,
-                  borderRadius: 6, color: sel ? C.green : C.textSub,
-                  fontWeight: 700, fontSize: 12, padding: '6px 4px',
+                  borderRadius: 8, color: sel ? C.green : C.textSub,
+                  fontWeight: 700, fontSize: 14, padding: '9px 6px',
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}>
                   {isUSD ? `$${p}` : p}
@@ -539,7 +539,7 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
 
         {/* Custom input */}
         <div>
-          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+          <div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
             Montant personnalisé ({isUSD ? 'USD' : 'SOL'})
           </div>
           <input
@@ -549,30 +549,30 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
             style={{
               width: '100%', boxSizing: 'border-box',
               background: 'rgba(0,0,0,0)', border: `1px solid ${custom ? C.green : C.border}`,
-              borderRadius: 6, color: C.text, fontSize: 13, fontWeight: 700,
-              padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
+              borderRadius: 8, color: C.text, fontSize: 15, fontWeight: 700,
+              padding: '11px 14px', outline: 'none', fontFamily: 'inherit',
             }}
           />
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button onClick={() => activeAmountSOL > 0 && setConfirm('full')} disabled={activeAmountSOL <= 0} style={{
-            width: '100%', padding: '9px 0', borderRadius: 6, fontFamily: 'inherit',
+            width: '100%', padding: '13px 0', borderRadius: 8, fontFamily: 'inherit',
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
-            fontWeight: 700, fontSize: 12, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
+            fontWeight: 700, fontSize: 14, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmountSOL > 0 ? 1 : 0.4,
           }}>Reset solde + historique</button>
           <button onClick={() => activeAmountSOL > 0 && setConfirm('balance')} disabled={activeAmountSOL <= 0} style={{
-            width: '100%', padding: '9px 0', borderRadius: 6, fontFamily: 'inherit',
+            width: '100%', padding: '13px 0', borderRadius: 8, fontFamily: 'inherit',
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
-            fontWeight: 700, fontSize: 12, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
+            fontWeight: 700, fontSize: 14, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmountSOL > 0 ? 1 : 0.4,
           }}>Reset solde uniquement</button>
           <button onClick={onClose} style={{
-            width: '100%', padding: '7px 0', borderRadius: 6, fontFamily: 'inherit',
+            width: '100%', padding: '11px 0', borderRadius: 8, fontFamily: 'inherit',
             background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
-            fontWeight: 600, fontSize: 11, cursor: 'pointer',
+            fontWeight: 600, fontSize: 13, cursor: 'pointer',
           }}>Annuler</button>
         </div>
       </div>
@@ -1101,35 +1101,42 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     return g
   }
 
-  function clampPos(pos: {x:number;y:number}, id: BlockId): {x:number;y:number} {
-    const h = Math.max(getH(id), 44)
+  function clampPos(pos: {x:number;y:number}, h: number): {x:number;y:number} {
     return {
       x: Math.max(0, Math.min(pos.x, window.innerWidth - 310)),
-      y: Math.max(0, Math.min(pos.y, window.innerHeight - h)),
+      y: Math.max(0, Math.min(pos.y, window.innerHeight - Math.max(h, 44))),
     }
   }
 
   function handleBlockMove(id: BlockId, newPos: {x:number;y:number}) {
     const conns = blockConnsRef.current
-    const prev = positionsRef.current
-    const clamped = clampPos(newPos, id)
-    const dx = clamped.x - prev[id].x
-    const dy = clamped.y - prev[id].y
     const group = groupBelow(id, conns)
+    const targetH = getH(id)
 
+    // dx/dy computed inside updater from CURRENT state to avoid stale-ref desync on fast drags
     setPositions(p => {
+      const clamped = clampPos(newPos, targetH)
+      const dx = clamped.x - p[id].x
+      const dy = clamped.y - p[id].y
       const next = { ...p }
       for (const bid of group) {
-        const raw = { x: p[bid].x + dx, y: p[bid].y + dy }
-        next[bid] = bid === id ? clamped : { x: Math.max(0, Math.min(raw.x, window.innerWidth - 310)), y: Math.max(0, raw.y) }
+        if (bid === id) {
+          next[bid] = clamped
+        } else {
+          next[bid] = {
+            x: Math.max(0, Math.min(p[bid].x + dx, window.innerWidth - 310)),
+            y: Math.max(0, p[bid].y + dy),
+          }
+        }
       }
       return next
     })
 
-    // Disconnect from block above if dragged too far
+    // Disconnect from block above if dragged too far (use ref for approximate check)
+    const cur = positionsRef.current
     const above = conns.find(c => c.lower === id)?.upper ?? null
     if (above !== null) {
-      const abovePos = prev[above]
+      const abovePos = cur[above]
       const expectedY = abovePos.y + getH(above)
       if (Math.abs(newPos.y - expectedY) > DISCONNECT_DIST || Math.abs(newPos.x - abovePos.x) > DISCONNECT_DIST) {
         setBlockConns(c => {
@@ -1144,7 +1151,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     let preview: {upper: BlockId; lower: BlockId} | null = null
     for (const other of ALL_BLOCKS) {
       if (group.includes(other)) continue
-      const op = prev[other]
+      const op = cur[other]
       const ddx = Math.abs(newPos.x - op.x)
       if (ddx > 130) continue
       // other above id
