@@ -199,13 +199,13 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
       overflow: 'hidden', position: 'relative', height: H,
     }}>
       <span style={{
-        position: 'absolute', top: 8, left: 10, color: C.textSub,
-        fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, zIndex: 1,
+        position: 'absolute', top: 8, left: 10, color: 'rgba(255,255,255,0.9)',
+        fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, zIndex: 1,
       }}>Cumulative PNL Curve</span>
 
       {trades.length < 2 ? (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 12 }}>
-          <span style={{ color: C.dim, fontSize: 10 }}>Pas encore de données</span>
+          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11 }}>Pas encore de données</span>
         </div>
       ) : (() => {
         const sorted = [...trades].sort((a, b) => (a.closedAt ?? 0) - (b.closedAt ?? 0))
@@ -253,9 +253,9 @@ function StatCard({ label, value, sub, color }: { label: string; value: React.Re
       flex: 1, background: 'rgba(0,0,0,0.30)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.15)',
       padding: '10px 12px',
     }}>
-      <div style={{ color: C.textSub, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>{label}</div>
+      <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>{label}</div>
       <div style={{ color: color ?? '#ffffff', fontSize: 17, fontWeight: 700, lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ color: C.muted, fontSize: 10, marginTop: 5 }}>{sub}</div>}
+      {sub && <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, marginTop: 5 }}>{sub}</div>}
     </div>
   )
 }
@@ -386,7 +386,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
 
   const btnNav: React.CSSProperties = {
     padding: 4, background: 'transparent', border: 'none', cursor: 'pointer',
-    color: 'rgba(255,255,255,0.7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: 'rgba(255,255,255,0.9)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
   }
   const btnToggle = (active: boolean): React.CSSProperties => ({
     flex: 1, padding: '5px 0', borderRadius: 6, fontFamily: FONT,
@@ -418,21 +418,21 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
             <button onClick={() => setView('week')} style={{
               borderRadius: 6, padding: '4px 16px', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer',
               background: view === 'week' ? '#ffffff' : 'transparent',
-              color: view === 'week' ? '#000' : 'rgba(255,255,255,0.6)',
+              color: view === 'week' ? '#000' : 'rgba(255,255,255,0.9)',
               boxShadow: view === 'week' ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
               transition: 'all 0.15s',
             }}>Weekly</button>
             <button onClick={() => setView('month')} style={{
               borderRadius: 6, padding: '4px 16px', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer',
               background: view === 'month' ? '#ffffff' : 'transparent',
-              color: view === 'month' ? '#000' : 'rgba(255,255,255,0.6)',
+              color: view === 'month' ? '#000' : 'rgba(255,255,255,0.9)',
               boxShadow: view === 'month' ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
               transition: 'all 0.15s',
             }}>Monthly</button>
           </div>
           <button onClick={onClose} style={{
             padding: 8, background: 'transparent', border: 'none', cursor: 'pointer',
-            color: 'rgba(255,255,255,0.7)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'rgba(255,255,255,0.9)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -489,8 +489,8 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
                   borderRadius: 8, padding: '10px 14px',
                 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: isT ? '#fff' : C.textSub }}>{dayLabel}</span>
-                    <span style={{ fontSize: 10, color: C.muted }}>{String(d.getDate()).padStart(2, '0')}/{String(d.getMonth() + 1).padStart(2, '0')}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{dayLabel}</span>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)' }}>{String(d.getDate()).padStart(2, '0')}/{String(d.getMonth() + 1).padStart(2, '0')}</span>
                   </div>
                   {hasTrade ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
@@ -501,7 +501,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
                       }}>{pnl! >= 0 ? 'GAIN' : 'PERTE'}</span>
                     </div>
                   ) : (
-                    <span style={{ fontSize: 10, color: C.dim }}>—</span>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)' }}>—</span>
                   )}
                 </div>
               )
@@ -510,7 +510,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, textAlign: 'center' }}>
             {DAY_LABELS.map((d, i) => (
-              <div key={i} style={{ color: C.muted, fontSize: 9, fontWeight: 700, letterSpacing: 0.5, paddingBottom: 2 }}>{d}</div>
+              <div key={i} style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: 700, letterSpacing: 0.5, paddingBottom: 2 }}>{d}</div>
             ))}
             {monthCells.map((day, i) => {
               if (!day) return <div key={i} />
@@ -526,7 +526,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
           {[{ color: C.green, label: 'Gain' }, { color: C.red, label: 'Perte' }].map(({ color, label }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <div style={{ width: 10, height: 10, borderRadius: 3, background: `${color}40`, border: `1px solid ${color}80` }} />
-              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>{label}</span>
+              <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{label}</span>
             </div>
           ))}
         </div>
@@ -644,7 +644,7 @@ export function App() {
             {fmtBal()}
           </div>
           {fmtSub() && (
-            <div style={{ color: C.muted, fontSize: 12, marginTop: 3 }}>{fmtSub()}</div>
+            <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, marginTop: 3 }}>{fmtSub()}</div>
           )}
         </div>
 
@@ -699,12 +699,12 @@ export function App() {
             activeTrade ? (
               <ActiveTradeRow trade={activeTrade} currency={currency} solPrice={solPrice} />
             ) : (
-              <div style={{ textAlign: 'center', color: C.muted, fontSize: 11, padding: '16px 0' }}>
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.9)', fontSize: 11, padding: '16px 0' }}>
                 Aucune position active
               </div>
             )
           ) : filteredTrades.length === 0 ? (
-            <div style={{ textAlign: 'center', color: C.muted, fontSize: 11, padding: '16px 0' }}>
+            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.9)', fontSize: 11, padding: '16px 0' }}>
               Aucun trade
             </div>
           ) : (
@@ -742,8 +742,8 @@ function ActiveTradeRow({ trade, currency, solPrice }: { trade: Trade; currency:
           { label: 'Investi', val: currency === 'USD' && solPrice > 0 ? `$${(trade.invested * solPrice).toFixed(2)}` : `${fmtSOL(trade.invested)} SOL` },
         ].map(({ label, val }) => (
           <div key={label}>
-            <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</div>
-            <div style={{ color: C.text, fontWeight: 600, fontSize: 11 }}>{val}</div>
+            <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</div>
+            <div style={{ color: C.text, fontWeight: 600, fontSize: 12 }}>{val}</div>
           </div>
         ))}
       </div>

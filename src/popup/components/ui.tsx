@@ -32,9 +32,9 @@ export const C = {
   green: '#01fd73',
   red: '#FE0149',
   text: '#f0f0fa',
-  textSub: '#8888a8',
-  muted: '#55556a',
-  dim: '#33333f',
+  textSub: 'rgba(255,255,255,0.75)',
+  muted: 'rgba(255,255,255,0.6)',
+  dim: 'rgba(255,255,255,0.4)',
 }
 
 export function fmtSOL(n: number): string {
@@ -65,7 +65,7 @@ interface RowProps { label: string; value: React.ReactNode; color?: string }
 export function Row({ label, value, color }: RowProps) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
-      <span style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</span>
+      <span style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</span>
       <span style={{ color: color ?? C.text, fontSize: 12, fontWeight: 600 }}>{value}</span>
     </div>
   )

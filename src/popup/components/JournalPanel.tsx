@@ -46,8 +46,8 @@ function CopyTokenName({ trade }: { trade: Trade }) {
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const rowStyle: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }
-const labelStyle: React.CSSProperties = { color: C.textSub, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }
-const valueStyle: React.CSSProperties = { color: '#ffffff', fontSize: 11, fontWeight: 600 }
+const labelStyle: React.CSSProperties = { color: C.textSub, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }
+const valueStyle: React.CSSProperties = { color: '#ffffff', fontSize: 12, fontWeight: 600 }
 
 // ─── Detail section (Entries or Sells) ───────────────────────────────────────
 
@@ -64,9 +64,9 @@ function DetailSection({ title, color, rows }: {
       </div>
       {rows.map(r => (
         <div key={r.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 12px', borderBottom: `1px solid ${C.border}`, background: `${color}0a` }}>
-          <span style={{ color: C.muted, fontSize: 9 }}>{fmtTs(r.ts)}</span>
-          <span style={{ color: C.text, fontSize: 10, fontWeight: 600 }}>{fmtMC(r.mc)}</span>
-          <span style={{ color, fontSize: 10, fontWeight: 600 }}>{r.amount}</span>
+          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{fmtTs(r.ts)}</span>
+          <span style={{ color: C.text, fontSize: 11, fontWeight: 600 }}>{fmtMC(r.mc)}</span>
+          <span style={{ color, fontSize: 11, fontWeight: 600 }}>{r.amount}</span>
         </div>
       ))}
     </div>
@@ -127,17 +127,17 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
           <a href={`https://solscan.io/token/${trade.mintAddress}`} target="_blank" rel="noreferrer"
-            style={{ color: C.muted, fontSize: 10, textDecoration: 'none' }}>
+            style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, textDecoration: 'none' }}>
             Solscan
           </a>
-          <span style={{ color: C.dim, fontSize: 10 }}>{fmtTs(trade.openedAt)}</span>
+          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11 }}>{fmtTs(trade.openedAt)}</span>
         </div>
       </div>
 
       <button onClick={() => setExpanded(v => !v)} style={{
         width: '100%', padding: '8px 0', background: expanded ? C.border : 'transparent',
-        border: 'none', borderTop: `1px solid ${C.border}`, color: C.muted,
-        fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+        border: 'none', borderTop: `1px solid ${C.border}`, color: 'rgba(255,255,255,0.9)',
+        fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
         letterSpacing: 0.5, textTransform: 'uppercase',
       }}>
         {expanded ? '▲ Fermer' : '▼ Details'}
@@ -179,27 +179,27 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.10)' }}>
-          <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>PNL Total</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>PNL Total</div>
           <div style={{ color: pnlColor(totalPnl), fontSize: 14, fontWeight: 700 }}><V sol={totalPnl} size={12} /></div>
-          <div style={{ color: C.muted, fontSize: 9 }}>moy. <V sol={totalPnl / closedTrades.length} size={9} /></div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>moy. <V sol={totalPnl / closedTrades.length} size={9} /></div>
         </div>
         <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.10)' }}>
-          <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Win Rate</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Win Rate</div>
           <div style={{ color: winRate != null && winRate >= 50 ? C.green : C.red, fontSize: 14, fontWeight: 700 }}>
             {winRate != null ? `${winRate.toFixed(0)}%` : '—'}
           </div>
-          <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {lost}p</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{won}g / {lost}p</div>
         </div>
         <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.10)' }}>
-          <div style={{ color: C.muted, fontSize: 9, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Trades</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Trades</div>
           <div style={{ color: C.text, fontSize: 14, fontWeight: 700 }}>{closedTrades.length}</div>
-          <div style={{ color: C.muted, fontSize: 9 }}>{won}g / {lost}p</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{won}g / {lost}p</div>
         </div>
       </div>
 
       <Divider />
 
-      <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
+      <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
         Historique — {closedTrades.length} trade{closedTrades.length > 1 ? 's' : ''}
       </div>
 
