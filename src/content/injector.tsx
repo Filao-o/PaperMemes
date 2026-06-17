@@ -16,7 +16,7 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
     }}>
       {(['SOL', 'USD'] as const).map(opt => (
         <div key={opt} style={{
-          padding: '4px 11px', borderRadius: 16, fontSize: 11, fontWeight: 700,
+          padding: '4px 11px', borderRadius: 16, fontSize: FS.v3, fontWeight: 700,
           background: value === opt ? '#ffffff' : 'transparent',
           color: value === opt ? '#111' : '#A1A1A1',
           transition: 'all 0.15s',
@@ -404,6 +404,7 @@ function copyToClipboard(text: string) {
 
 const FONT = "'Space Grotesk', -apple-system, system-ui, sans-serif"
 const BASE = 14
+const FS = { v1: 37, v2: 17, v3: 14, v4: 12 } as const
 
 function fmtPrice(p: number): string {
   if (p >= 1) return p.toFixed(2)
@@ -465,8 +466,8 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
     return (
       <div style={overlayStyle} onClick={e => e.target === e.currentTarget && onClose()}>
         <div style={cardStyle}>
-          <div style={{ fontWeight: 800, fontSize: 17, letterSpacing: 0.5, color: C.red }}>⚠ CONFIRMATION</div>
-          <div style={{ color: C.textSub, fontSize: 14, lineHeight: 1.7 }}>
+          <div style={{ fontWeight: 800, fontSize: FS.v3, letterSpacing: 0.5, color: C.red }}>⚠ CONFIRMATION</div>
+          <div style={{ color: C.textSub, fontSize: FS.v2, lineHeight: 1.7 }}>
             {isFull ? (
               <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span> et <span style={{ color: C.red, fontWeight: 700 }}>tout l'historique sera supprimé</span>. Cette action est irrémédiable.</>
             ) : (
@@ -477,12 +478,12 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
             <button onClick={() => doReset(!isFull)} style={{
               width: '100%', padding: '13px 0', borderRadius: 8, fontFamily: 'inherit',
               background: C.red, border: 'none', color: '#fff',
-              fontWeight: 700, fontSize: 14, cursor: 'pointer',
+              fontWeight: 700, fontSize: FS.v3, cursor: 'pointer',
             }}>Confirmer</button>
             <button onClick={() => setConfirm(null)} style={{
               width: '100%', padding: '11px 0', borderRadius: 8, fontFamily: 'inherit',
               background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
-              fontWeight: 600, fontSize: 13, cursor: 'pointer',
+              fontWeight: 600, fontSize: FS.v3, cursor: 'pointer',
             }}>Retour</button>
           </div>
         </div>
@@ -498,7 +499,7 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
       <div style={cardStyle}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 800, fontSize: 17, letterSpacing: 0.5, color: '#ffffff' }}>RÉINITIALISER LE WALLET</div>
+          <div style={{ fontWeight: 800, fontSize: FS.v2, letterSpacing: 0.5, color: '#ffffff' }}>RÉINITIALISER LE WALLET</div>
           <div onClick={switchCurrency} style={{
             display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
             background: '#1a1a1a', border: '1px solid #333', borderRadius: 20, padding: 3,
@@ -515,7 +516,7 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
 
         {/* Presets */}
         <div>
-          <div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+          <div style={{ color: C.muted, fontSize: FS.v3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
             Montant ({isUSD ? 'USD' : 'SOL'})
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -527,7 +528,7 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
                   background: sel ? `${C.green}22` : 'rgba(0,0,0,0)',
                   border: `1px solid ${sel ? C.green : C.border}`,
                   borderRadius: 8, color: sel ? C.green : C.textSub,
-                  fontWeight: 700, fontSize: 14, padding: '9px 6px',
+                  fontWeight: 700, fontSize: FS.v2, padding: '9px 6px',
                   cursor: 'pointer', fontFamily: 'inherit',
                 }}>
                   {isUSD ? `$${p}` : p}
@@ -539,7 +540,7 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
 
         {/* Custom input */}
         <div>
-          <div style={{ color: C.muted, fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+          <div style={{ color: C.muted, fontSize: FS.v3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
             Montant personnalisé ({isUSD ? 'USD' : 'SOL'})
           </div>
           <input
@@ -560,19 +561,19 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
           <button onClick={() => activeAmountSOL > 0 && setConfirm('full')} disabled={activeAmountSOL <= 0} style={{
             width: '100%', padding: '13px 0', borderRadius: 8, fontFamily: 'inherit',
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
-            fontWeight: 700, fontSize: 14, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
+            fontWeight: 700, fontSize: FS.v3, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmountSOL > 0 ? 1 : 0.4,
           }}>Reset solde + historique</button>
           <button onClick={() => activeAmountSOL > 0 && setConfirm('balance')} disabled={activeAmountSOL <= 0} style={{
             width: '100%', padding: '13px 0', borderRadius: 8, fontFamily: 'inherit',
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
-            fontWeight: 700, fontSize: 14, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
+            fontWeight: 700, fontSize: FS.v3, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmountSOL > 0 ? 1 : 0.4,
           }}>Reset solde uniquement</button>
           <button onClick={onClose} style={{
             width: '100%', padding: '11px 0', borderRadius: 8, fontFamily: 'inherit',
             background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
-            fontWeight: 600, fontSize: 13, cursor: 'pointer',
+            fontWeight: 600, fontSize: FS.v3, cursor: 'pointer',
           }}>Annuler</button>
         </div>
       </div>
@@ -609,7 +610,7 @@ function MetalBtn({
         border: 'none',
         borderRadius: 200,
         boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-        color: c.text, fontWeight: 600, fontSize: 13,
+        color: c.text, fontWeight: 600, fontSize: FS.v2,
         padding: '10px 4px',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.6 : 1,
@@ -702,7 +703,7 @@ function DraggableBlock({ pos, onPosChange, onDragEnd: onExtEnd, highlightSnap, 
           cursor: 'grab', background: 'rgba(0,0,0,0)', borderRadius: '8px 8px 0 0',
           borderBottom: `1px solid ${C.border}`,
         }}>
-          <span style={{ color: C.dim, fontSize: 10, letterSpacing: 3 }}>⠿⠿⠿</span>
+          <span style={{ color: C.dim, fontSize: FS.v3, letterSpacing: 3 }}>⠿⠿⠿</span>
         </div>
       )}
       {children}
@@ -1230,8 +1231,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <PmLogo size={26} />
-              <span style={{ fontWeight: 700, fontSize: 15, color: '#111', letterSpacing: -0.3 }}>PaperMemes</span>
-              <span style={{ color: '#A1A1A1', fontSize: 11 }}>v1.3</span>
+              <span style={{ fontWeight: 700, fontSize: FS.v2, color: '#111', letterSpacing: -0.3 }}>PaperMemes</span>
+              <span style={{ color: '#A1A1A1', fontSize: FS.v4 }}>v1.3</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onMouseDown={e => e.stopPropagation()}>
               <button
@@ -1242,7 +1243,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                   background: showConfig ? C.green : '#111',
                   border: 'none', borderRadius: 8, cursor: 'pointer',
                   color: showConfig ? '#000' : '#fff',
-                  fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: FS.v3, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.15s',
                 }}
               >⚙</button>
@@ -1252,7 +1253,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 style={{
                   width: 32, height: 32,
                   background: '#111', border: 'none', borderRadius: 8,
-                  cursor: 'pointer', color: '#fff', fontSize: 16,
+                  cursor: 'pointer', color: '#fff', fontSize: FS.v3,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >↺</button>
@@ -1264,7 +1265,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         <div style={{ background: 'transparent', fontFamily: "'Roboto', sans-serif", padding: '12px 14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
             <span style={{
-              background: '#fff', color: '#111', fontWeight: 700, fontSize: 12,
+              background: '#fff', color: '#111', fontWeight: 700, fontSize: FS.v3,
               padding: '3px 10px', borderRadius: 20,
             }}>Wallet</span>
             <CurrencyToggle
@@ -1272,7 +1273,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
             />
           </div>
-          <div style={{ fontSize: 33, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <div style={{ fontSize: FS.v1, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 2 }}>
             {currency === 'SOL' ? (
               <>{fmtSOL(balance)} <SolIcon size={22} style={{ marginLeft: 2 }} /></>
             ) : solPrice > 0 ? (
@@ -1282,12 +1283,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             )}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ color: '#A1A1A1', fontSize: 15, marginBottom: 4 }}>
+            <span style={{ color: '#A1A1A1', fontSize: FS.v4, marginBottom: 4 }}>
               {currency === 'SOL'
                 ? solPrice > 0 ? `= $${(balance * solPrice).toFixed(2)}` : '...'
                 : <>{fmtSOL(balance)} <SolIcon size={11} style={{ marginLeft: 2 }} /></>}
             </span>
-            <span style={{ color: '#A1A1A1', fontSize: 13 }}>{clock}</span>
+            <span style={{ color: '#A1A1A1', fontSize: FS.v4 }}>{clock}</span>
           </div>
         </div>
 
@@ -1334,14 +1335,14 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span
-                      style={{ fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: 16, color: '#111', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, textDecorationColor: '#A1A1A1' }}
+                      style={{ fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: FS.v2, color: '#111', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, textDecorationColor: '#A1A1A1' }}
                       onMouseDown={e => e.stopPropagation()}
                       onClick={handleCopyCA}
                       title="Copier l'adresse CA"
                     >{tokenInfo.tokenName?.toUpperCase() ?? '—'}</span>
                     {copied && <span style={{ color: '#006622', fontSize: 10, fontFamily: FONT }}>✓</span>}
                   </div>
-                  <div style={{ color: '#555', fontSize: 12, fontFamily: "'Roboto', sans-serif", marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ color: '#555', fontSize: FS.v3, fontFamily: "'Roboto', sans-serif", marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
                     {tokenInfo.age && <span>{tokenInfo.age}</span>}
                     {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
                     {tokenInfo.holders != null && (
@@ -1354,14 +1355,14 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: 35, color: '#111', lineHeight: 1, marginTop: 6 }}>
+                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: FS.v1, color: '#111', lineHeight: 1, marginTop: 6 }}>
                     {mc != null ? fmtMC(mc) : '—'}
-                    {priceStale && !mcDir && <span style={{ fontSize: 11, color: C.yellow, marginLeft: 4 }}>⚠</span>}
+                    {priceStale && !mcDir && <span style={{ fontSize: FS.v3, color: C.yellow, marginLeft: 4 }}>⚠</span>}
                   </div>
                 </div>
               </div>
             ) : (
-              <div style={{ color: '#A1A1A1', fontSize: 12, fontFamily: "'Roboto', sans-serif" }}>Navigue sur un token…</div>
+              <div style={{ color: '#A1A1A1', fontSize: FS.v4, fontFamily: "'Roboto', sans-serif" }}>Navigue sur un token…</div>
             )}
           </div>
         )}
@@ -1399,14 +1400,14 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               padding: '10px 12px', background: '#ffffff', cursor: 'grab',
               fontFamily: "'Roboto', sans-serif",
             }}>
-              <span style={{ fontWeight: 700, fontSize: 15, color: '#111' }}>Take Profit / Stop Loss</span>
+              <span style={{ fontWeight: 700, fontSize: FS.v2, color: '#111' }}>Take Profit / Stop Loss</span>
               <button
                 onClick={() => setShowConfig(v => !v)}
                 onMouseDown={e => e.stopPropagation()}
                 style={{
                   width: 32, height: 32, background: showConfig ? C.green : '#111',
                   border: 'none', borderRadius: 8, cursor: 'pointer',
-                  color: showConfig ? '#000' : '#fff', fontSize: 15,
+                  color: showConfig ? '#000' : '#fff', fontSize: FS.v3,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>⚙</button>
             </div>
@@ -1417,7 +1418,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               <>
                 {/* TP section */}
                 <div style={{ background: 'rgba(0,0,0,0)', borderRadius: 12, padding: '10px 10px 12px' }}>
-                  <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>TP</div>
+                  <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: FS.v3, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>TP</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {tpPresets.map(pct => {
                       const sel = activeTrade.tp === pct
@@ -1426,7 +1427,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                           onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: sel ? null : pct, tpMC: null } })}
                           style={{
                             borderRadius: 200, padding: '10px 4px', cursor: 'pointer',
-                            fontWeight: 600, fontSize: 13, fontFamily: "'Roboto', sans-serif",
+                            fontWeight: 600, fontSize: FS.v3, fontFamily: "'Roboto', sans-serif",
                             background: sel ? '#22c55e' : 'transparent',
                             border: `1px solid #22c55e`,
                             color: '#fff',
@@ -1443,7 +1444,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
                 {/* SL section */}
                 <div style={{ background: 'rgba(0,0,0,0)', borderRadius: 12, padding: '10px 10px 12px' }}>
-                  <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>SL</div>
+                  <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: FS.v3, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>SL</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {slPresets.map(pct => {
                       const sel = activeTrade.sl === pct
@@ -1452,7 +1453,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                           onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: sel ? null : pct } })}
                           style={{
                             borderRadius: 200, padding: '10px 4px', cursor: 'pointer',
-                            fontWeight: 600, fontSize: 13, fontFamily: "'Roboto', sans-serif",
+                            fontWeight: 600, fontSize: FS.v3, fontFamily: "'Roboto', sans-serif",
                             background: sel ? '#ef4444' : 'transparent',
                             border: `1px solid #ef4444`,
                             color: '#fff',
@@ -1466,16 +1467,16 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 </div>
               </>
             ) : (
-              <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '14px 0' }}>Ouvrez une position d'abord</div>
+              <div style={{ textAlign: 'center', color: C.muted, fontSize: FS.v4, padding: '14px 0' }}>Ouvrez une position d'abord</div>
             )}
 
             {/* Footer */}
             <div style={{ borderTop: `1px solid ${C.border}`, padding: '7px 12px' }}>
-              {risk?.isHighRisk && <div style={{ color: C.red, fontSize: 11, marginBottom: 2 }}>■ Score risque élevé : {risk.score}/100</div>}
+              {risk?.isHighRisk && <div style={{ color: C.red, fontSize: FS.v4, marginBottom: 2 }}>■ Score risque élevé : {risk.score}/100</div>}
               {risk?.topHolderPercent != null && risk.topHolderPercent > 20 && (
-                <div style={{ color: C.red, fontSize: 11, marginBottom: 2 }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
+                <div style={{ color: C.red, fontSize: FS.v4, marginBottom: 2 }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
               )}
-              <div style={{ color: C.yellow, fontSize: 10 }}>⚠ TP/SL s'exécutent uniquement si cet onglet reste ouvert.</div>
+              <div style={{ color: C.yellow, fontSize: FS.v4 }}>⚠ TP/SL s'exécutent uniquement si cet onglet reste ouvert.</div>
             </div>
           </div>
         </DraggableBlock>
@@ -1533,7 +1534,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
   const inputStyle = (filled: boolean): React.CSSProperties => ({
     width: '100%', boxSizing: 'border-box',
     background: 'rgba(0,0,0,0)', border: `1px solid ${filled ? C.green : C.border}`,
-    borderRadius: 6, color: C.text, fontSize: 12, fontWeight: 700,
+    borderRadius: 6, color: C.text, fontSize: FS.v3, fontWeight: 700,
     padding: '7px 4px', textAlign: 'center', outline: 'none', fontFamily: 'inherit',
   })
 
@@ -1580,7 +1581,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
             </div>
           ))}
         </div>
-        <div style={{ color: 'rgba(240,240,250,0.65)', fontSize: 11, marginTop: 5 }}>Les valeurs sont automatiquement négatives.</div>
+        <div style={{ color: 'rgba(240,240,250,0.65)', fontSize: FS.v3, marginTop: 5 }}>Les valeurs sont automatiquement négatives.</div>
       </div>
 
       {/* Slippage & Fees */}
@@ -1588,13 +1589,13 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
         <div style={sL}>Slippage & Fees</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
-            <div style={{ color: 'rgba(240,240,250,0.75)', fontSize: 11, marginBottom: 4 }}>SLIPPAGE (%)</div>
+            <div style={{ color: 'rgba(240,240,250,0.75)', fontSize: FS.v2, marginBottom: 4 }}>SLIPPAGE (%)</div>
             <input type="text" inputMode="decimal" value={slip} placeholder="1"
               onChange={e => numInput(e.target.value, setSlip)}
               style={inputStyle(!!slip)} />
           </div>
           <div>
-            <div style={{ color: 'rgba(240,240,250,0.75)', fontSize: 11, marginBottom: 4 }}>FEES (%)</div>
+            <div style={{ color: 'rgba(240,240,250,0.75)', fontSize: FS.v2, marginBottom: 4 }}>FEES (%)</div>
             <input type="text" inputMode="decimal" value={fee} placeholder="0.25"
               onChange={e => numInput(e.target.value, setFee)}
               style={inputStyle(!!fee)} />
@@ -1606,7 +1607,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
         width: '100%', padding: '9px 0',
         background: saved ? C.green : 'rgba(0,0,0,0)',
         border: `1px solid ${C.green}`, borderRadius: 6,
-        color: saved ? '#000' : C.green, fontWeight: 700, fontSize: 12,
+        color: saved ? '#000' : C.green, fontWeight: 700, fontSize: FS.v3,
         cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
       }}>
         {saved ? '✓ Sauvegardé' : 'Sauvegarder'}
@@ -1637,8 +1638,8 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
       {/* ── Quick Buy ── */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 13, color: C.text }}>Quick Buy</span>
-          <button onClick={onOpenConfig} onMouseDown={e => e.stopPropagation()} style={{ background: '#ffffff', border: 'none', borderRadius: 6, cursor: 'pointer', color: '#111', fontSize: 13, padding: '2px 7px', lineHeight: 1, fontWeight: 700 }}>⚙</button>
+          <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: FS.v3, color: C.text }}>Quick Buy</span>
+          <button onClick={onOpenConfig} onMouseDown={e => e.stopPropagation()} style={{ background: '#ffffff', border: 'none', borderRadius: 6, cursor: 'pointer', color: '#111', fontSize: FS.v3, padding: '2px 7px', lineHeight: 1, fontWeight: 700 }}>⚙</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {buyPresets.map(amt => (
@@ -1661,7 +1662,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
 
           {/* Header: Open Trades + PnL% */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 13, color: C.text }}>Open Trades</span>
+            <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: FS.v3, color: C.text }}>Open Trades</span>
             <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 16, color: pnlColor(livePnL.percent) }}>{fmtPct(livePnL.percent)}</span>
           </div>
 
@@ -1674,10 +1675,10 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               : null
             return (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
+                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: FS.v2, fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
                   {multiEntry ? 'Ave. Entries' : 'MC Entry'}
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: 14, fontFamily: "'Roboto', sans-serif" }}>
+                <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: FS.v2, fontFamily: "'Roboto', sans-serif" }}>
                   {multiEntry && avgMC != null ? fmtMC(avgMC) : fmtMC(activeTrade.entryMC)}
                 </span>
               </div>
@@ -1719,8 +1720,8 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
                 padding: '6px 4px', textAlign: 'center',
                 borderLeft: idx > 0 ? '1px solid rgba(255,255,255,0.10)' : undefined,
               }}>
-                <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
-                <div style={{ color: '#ffffff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
+                <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: FS.v2, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
+                <div style={{ color: '#ffffff', fontSize: FS.v2, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
                   {sol != null ? <>{fmtSOL(sol)}<SolIcon size={10} fill="#ffffff" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
               </div>
@@ -1739,7 +1740,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           {/* Sell Inits */}
           <div style={{ textAlign: 'center' }}>
             <span onClick={onSellInitials} style={{
-              color: C.text, fontSize: 12, cursor: 'pointer', fontFamily: "'Roboto', sans-serif",
+              color: C.text, fontSize: FS.v3, cursor: 'pointer', fontFamily: "'Roboto', sans-serif",
               borderBottom: `1px solid ${C.text}`, paddingBottom: 1,
               userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: 3,
             }}>
@@ -1749,7 +1750,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
 
         </div>
       ) : (
-        <div style={{ textAlign: 'center', color: C.muted, fontSize: 12, padding: '14px 0' }}>
+        <div style={{ textAlign: 'center', color: C.muted, fontSize: FS.v4, padding: '14px 0' }}>
           {hasPrice ? 'Aucune position ouverte' : 'Chargement du prix…'}
         </div>
       )}
@@ -1757,7 +1758,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
   )
 }
 
-const sL: React.CSSProperties = { color: 'rgba(240,240,250,0.80)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
+const sL: React.CSSProperties = { color: 'rgba(240,240,250,0.80)', fontSize: FS.v2, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
 
 // ─── Mount + URL watcher ──────────────────────────────────────────────────────
 
