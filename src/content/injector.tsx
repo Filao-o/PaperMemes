@@ -404,7 +404,7 @@ function copyToClipboard(text: string) {
 
 const FONT = "'Space Grotesk', -apple-system, system-ui, sans-serif"
 const BASE = 14
-const FS = { v1: 37, v2: 17, v3: 14, v4: 12 } as const
+const FS = { v1: 37, v2: 17, v3: 14, v4: 13 } as const
 
 function fmtPrice(p: number): string {
   if (p >= 1) return p.toFixed(2)
@@ -1268,7 +1268,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         <div style={{ background: 'transparent', fontFamily: "'Roboto', sans-serif", padding: '10px 14px 12px' }}>
           {/* Row 1: Wallet pill + toggle */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <span style={{ color: 'rgba(255,255,255,0.75)', fontWeight: 700, fontSize: FS.v3 }}>Wallet</span>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: FS.v3 }}>Wallet</span>
             <CurrencyToggle
               value={currency}
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
@@ -1286,12 +1286,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           </div>
           {/* Row 3: Conversion + clock */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: FS.v4 }}>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: FS.v4 }}>
               {currency === 'SOL'
                 ? solPrice > 0 ? `= $${(balance * solPrice).toFixed(2)}` : '...'
                 : <>{fmtSOL(balance)} <SolIcon size={10} style={{ marginLeft: 2 }} /></>}
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: FS.v4 }}>{clock}</span>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: FS.v4 }}>{clock}</span>
           </div>
         </div>
 
@@ -1584,7 +1584,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
             </div>
           ))}
         </div>
-        <div style={{ color: 'rgba(240,240,250,0.65)', fontSize: FS.v3, marginTop: 5 }}>Les valeurs sont automatiquement négatives.</div>
+        <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v3, marginTop: 5 }}>Les valeurs sont automatiquement négatives.</div>
       </div>
 
       {/* Slippage & Fees */}
@@ -1592,13 +1592,13 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
         <div style={sL}>Slippage & Fees</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
-            <div style={{ color: 'rgba(240,240,250,0.75)', fontSize: FS.v2, marginBottom: 4 }}>SLIPPAGE (%)</div>
+            <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, marginBottom: 4 }}>SLIPPAGE (%)</div>
             <input type="text" inputMode="decimal" value={slip} placeholder="1"
               onChange={e => numInput(e.target.value, setSlip)}
               style={inputStyle(!!slip)} />
           </div>
           <div>
-            <div style={{ color: 'rgba(240,240,250,0.75)', fontSize: FS.v2, marginBottom: 4 }}>FEES (%)</div>
+            <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, marginBottom: 4 }}>FEES (%)</div>
             <input type="text" inputMode="decimal" value={fee} placeholder="0.25"
               onChange={e => numInput(e.target.value, setFee)}
               style={inputStyle(!!fee)} />
@@ -1678,10 +1678,10 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               : null
             return (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: FS.v2, fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
+                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: FS.v2, fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
                   {multiEntry ? 'Ave. Entries' : 'MC Entry'}
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.8)', fontWeight: 700, fontSize: FS.v2, fontFamily: "'Roboto', sans-serif" }}>
+                <span style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: FS.v2, fontFamily: "'Roboto', sans-serif" }}>
                   {multiEntry && avgMC != null ? fmtMC(avgMC) : fmtMC(activeTrade.entryMC)}
                 </span>
               </div>
@@ -1723,7 +1723,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
                 padding: '6px 4px', textAlign: 'center',
                 borderLeft: idx > 0 ? '1px solid rgba(255,255,255,0.10)' : undefined,
               }}>
-                <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: FS.v2, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
+                <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: FS.v2, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
                 <div style={{ color: '#ffffff', fontSize: FS.v2, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
                   {sol != null ? <>{fmtSOL(sol)}<SolIcon size={10} fill="#ffffff" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
@@ -1761,7 +1761,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
   )
 }
 
-const sL: React.CSSProperties = { color: 'rgba(240,240,250,0.80)', fontSize: FS.v2, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
+const sL: React.CSSProperties = { color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
 
 // ─── Mount + URL watcher ──────────────────────────────────────────────────────
 
