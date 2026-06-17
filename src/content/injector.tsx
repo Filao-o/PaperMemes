@@ -415,86 +415,140 @@ function fmtPrice(p: number): string {
 
 // ─── Reset Modal ─────────────────────────────────────────────────────────────
 
-const RESET_PRESETS = [2, 5, 10, 15, 50]
+const RESET_PRESETS = [1, 2, 5, 10, 20]
 
-function ResetModal({ onClose }: { onClose: () => void }) {
-  const [amount, setAmount] = useState<number>(50)
+function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; currency: 'SOL' | 'USD'; solPrice: number }) {
+  const [amount, setAmount] = useState<number>(10)
   const [custom, setCustom] = useState('')
+  const [localCurrency, setLocalCurrency] = useState<'SOL' | 'USD'>(currency)
+  const [confirm, setConfirm] = useState<'full' | 'balance' | null>(null)
 
   const activeAmount = custom !== '' ? parseFloat(custom) || 0 : amount
 
-  function handleReset(keepHistory: boolean) {
+  function fmtAmt(sol: number) {
+    if (localCurrency === 'USD' && solPrice > 0) return `$${(sol * solPrice).toFixed(2)}`
+    return `${sol} SOL`
+  }
+
+  function doReset(keepHistory: boolean) {
     if (activeAmount <= 0) return
-    Storage.set({
-      balance: activeAmount,
-      activeTrade: null,
-      ...(keepHistory ? {} : { closedTrades: [] }),
-    })
+    Storage.set({ balance: activeAmount, activeTrade: null, ...(keepHistory ? {} : { closedTrades: [] }) })
     onClose()
   }
 
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed', inset: 0,
+    background: 'rgba(0,0,0,0.72)',
+    backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    zIndex: 2147483647, padding: 16,
+  }
+
+  const cardStyle: React.CSSProperties = {
+    background: 'rgba(10,8,18,0.92)', border: `1px solid ${C.border}`, borderRadius: 14,
+    padding: 20, width: 290, display: 'flex', flexDirection: 'column', gap: 14,
+    fontFamily: FONT,
+  }
+
+  if (confirm !== null) {
+    const isFull = confirm === 'full'
+    return (
+      <div style={overlayStyle} onClick={e => e.target === e.currentTarget && onClose()}>
+        <div style={cardStyle}>
+          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.red }}>⚠ CONFIRMATION</div>
+          <div style={{ color: C.textSub, fontSize: 12, lineHeight: 1.65 }}>
+            {isFull ? (
+              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmount)}</span> et <span style={{ color: C.red, fontWeight: 700 }}>tout l'historique sera supprimé</span>. Cette action est irrémédiable.</>
+            ) : (
+              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmount)}</span>. L'historique sera conservé. Cette action est irrémédiable.</>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button onClick={() => doReset(!isFull)} style={{
+              width: '100%', padding: '10px 0', borderRadius: 8, fontFamily: 'inherit',
+              background: C.red, border: 'none', color: '#fff',
+              fontWeight: 700, fontSize: 12, cursor: 'pointer',
+            }}>Confirmer</button>
+            <button onClick={() => setConfirm(null)} style={{
+              width: '100%', padding: '8px 0', borderRadius: 8, fontFamily: 'inherit',
+              background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
+              fontWeight: 600, fontSize: 11, cursor: 'pointer',
+            }}>Retour</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 2147483647, padding: 16,
-    }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{
-        background: 'rgba(0,0,0,0)', border: `1px solid ${C.border}`, borderRadius: 10,
-        padding: 18, width: 280, display: 'flex', flexDirection: 'column', gap: 14,
-      }}>
-        <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.yellow }}>RÉINITIALISER LE WALLET</div>
+    <div style={overlayStyle} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={cardStyle}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.red }}>RÉINITIALISER LE WALLET</div>
+          <div onClick={() => setLocalCurrency(v => v === 'SOL' ? 'USD' : 'SOL')} style={{
+            display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
+            background: '#1a1a1a', border: '1px solid #333', borderRadius: 20, padding: 2,
+          }}>
+            {(['SOL', 'USD'] as const).map(opt => (
+              <div key={opt} style={{
+                padding: '3px 9px', borderRadius: 16, fontSize: 10, fontWeight: 700,
+                background: localCurrency === opt ? '#ffffff' : 'transparent',
+                color: localCurrency === opt ? '#111' : '#A1A1A1',
+              }}>{opt}</div>
+            ))}
+          </div>
+        </div>
 
         {/* Presets */}
         <div>
           <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Montant (SOL)</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {RESET_PRESETS.map(p => (
-              <button key={p} onClick={() => { setAmount(p); setCustom('') }} style={{
-                flex: '1 1 auto',
-                background: amount === p && custom === '' ? `${C.yellow}22` : 'rgba(0,0,0,0)',
-                border: `1px solid ${amount === p && custom === '' ? C.yellow : C.border}`,
-                borderRadius: 6, color: amount === p && custom === '' ? C.yellow : C.textSub,
-                fontWeight: 700, fontSize: 12, padding: '6px 4px',
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}>{p}</button>
-            ))}
+            {RESET_PRESETS.map(p => {
+              const sel = amount === p && custom === ''
+              return (
+                <button key={p} onClick={() => { setAmount(p); setCustom('') }} style={{
+                  flex: '1 1 auto',
+                  background: sel ? `${C.red}22` : 'rgba(0,0,0,0)',
+                  border: `1px solid ${sel ? C.red : C.border}`,
+                  borderRadius: 6, color: sel ? C.red : C.textSub,
+                  fontWeight: 700, fontSize: 12, padding: '6px 4px',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}>
+                  {localCurrency === 'USD' && solPrice > 0 ? `$${(p * solPrice).toFixed(0)}` : p}
+                </button>
+              )
+            })}
           </div>
         </div>
 
         {/* Custom input */}
         <div>
-          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Montant personnalisé</div>
+          <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Montant personnalisé (SOL)</div>
           <input
             type="text" inputMode="decimal" placeholder="ex: 25"
             value={custom}
             onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: 'rgba(0,0,0,0)', border: `1px solid ${custom ? C.yellow : C.border}`,
+              background: 'rgba(0,0,0,0)', border: `1px solid ${custom ? C.red : C.border}`,
               borderRadius: 6, color: C.text, fontSize: 13, fontWeight: 700,
               padding: '8px 10px', outline: 'none', fontFamily: 'inherit',
             }}
           />
         </div>
 
-        {/* Résumé */}
-        <div style={{ color: C.muted, fontSize: 11, textAlign: 'center' }}>
-          Nouveau solde : <span style={{ color: C.yellow, fontWeight: 700 }}>{activeAmount > 0 ? `${activeAmount} SOL` : '—'}</span>
-        </div>
-
         {/* Actions */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <button onClick={() => handleReset(false)} disabled={activeAmount <= 0} style={{
+          <button onClick={() => activeAmount > 0 && setConfirm('full')} disabled={activeAmount <= 0} style={{
             width: '100%', padding: '9px 0', borderRadius: 6, fontFamily: 'inherit',
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
             fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmount > 0 ? 1 : 0.4,
           }}>Reset solde + historique</button>
-          <button onClick={() => handleReset(true)} disabled={activeAmount <= 0} style={{
+          <button onClick={() => activeAmount > 0 && setConfirm('balance')} disabled={activeAmount <= 0} style={{
             width: '100%', padding: '9px 0', borderRadius: 6, fontFamily: 'inherit',
-            background: `${C.yellow}20`, border: `1px solid ${C.yellow}70`, color: C.yellow,
-            boxShadow: `0 0 10px ${C.yellow}35`,
+            background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
             fontWeight: 700, fontSize: 12, cursor: activeAmount > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmount > 0 ? 1 : 0.4,
           }}>Reset solde uniquement</button>
@@ -1110,7 +1164,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
   return (
     <>
-      {showReset && <ResetModal onClose={() => setShowReset(false)} />}
+      {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} />}
 
       {/* Bloc A — Header + Wallet + Config */}
       <DraggableBlock
