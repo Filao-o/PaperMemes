@@ -16,7 +16,7 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
     }}>
       {(['SOL', 'USD'] as const).map(opt => (
         <div key={opt} style={{
-          padding: '4px 11px', borderRadius: 16,
+          padding: '5px 7px', borderRadius: 16,
           fontSize: 12, fontWeight: 700, lineHeight: 1,
           background: value === opt ? DS.color.bg : 'transparent',
           color: value === opt ? DS.color.textOn : 'rgba(0,0,0,0.45)',
