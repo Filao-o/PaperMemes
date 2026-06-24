@@ -1428,36 +1428,36 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           highlightSnap={snapPreview?.upper === 'C' || snapPreview?.lower === 'C'}
           domRef={refC}
           style={{
-            width: 310, borderRadius: 18, overflow: 'hidden',
-            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.10)',
+            width: 310, borderRadius: 13, overflow: 'hidden',
+            background: DS.color.bg,
+            border: '1px solid rgba(255,255,255,0.12)',
             ...blocBlur,
           }}
           renderHandle={onDragStart => (
             <div onMouseDown={onDragStart} style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 12px', background: '#ffffff', cursor: 'grab',
+              padding: `${DS.pad.y}px ${DS.pad.x}px`, background: DS.color.surface, cursor: 'grab',
               fontFamily: "'Roboto', sans-serif",
             }}>
-              <span style={{ fontWeight: 700, fontSize: FS.v2, color: '#111' }}>Take Profit / Stop Loss</span>
+              <span style={{ ...DS.type.heading, color: DS.color.textOff }}>TP / SL</span>
               <button
                 onClick={() => setShowConfig(v => !v)}
                 onMouseDown={e => e.stopPropagation()}
                 style={{
-                  width: 32, height: 32, background: showConfig ? C.green : '#111',
+                  width: 32, height: 32, background: DS.color.bg,
                   border: 'none', borderRadius: 10, cursor: 'pointer',
-                  color: showConfig ? '#000' : '#fff', fontSize: 18,
+                  color: DS.color.textOn, fontSize: 18,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>⚙</button>
             </div>
           )}
         >
-          <div style={{ background: 'rgba(0,0,0,0)', fontFamily: FONT, color: C.text, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ background: DS.color.bg, fontFamily: FONT, color: C.text, padding: `${DS.pad.y}px ${DS.pad.x}px`, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {activeTrade ? (
               <>
                 {/* TP section */}
-                <div style={{ background: 'rgba(0,0,0,0)', borderRadius: 12, padding: '10px 10px 12px' }}>
-                  <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: FS.v3, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>TP</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span style={{ ...DS.type.subtitle, color: C.text }}>Take Profit</span>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {tpPresets.map(pct => {
                       const sel = activeTrade.tp === pct
@@ -1466,11 +1466,10 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                           onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: sel ? null : pct, tpMC: null } })}
                           style={{
                             borderRadius: 10, padding: '10px 4px', cursor: 'pointer',
-                            fontWeight: 600, fontSize: FS.v3, fontFamily: "'Roboto', sans-serif",
-                            background: sel ? '#22c55e' : 'transparent',
-                            border: `1px solid #22c55e`,
-                            color: '#fff',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif",
+                            background: sel ? C.green : 'transparent',
+                            border: `1px solid ${C.green}`,
+                            color: sel ? DS.color.textOff : C.green,
                           }}>
                           +{pct}%
                         </button>
@@ -1479,11 +1478,11 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                   </div>
                 </div>
 
-                <div style={{ height: 1, background: C.border }} />
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.10)' }} />
 
                 {/* SL section */}
-                <div style={{ background: 'rgba(0,0,0,0)', borderRadius: 12, padding: '10px 10px 12px' }}>
-                  <div style={{ display: 'inline-block', background: '#ffffff', borderRadius: 6, padding: '2px 8px', fontSize: FS.v3, fontWeight: 700, color: '#111', marginBottom: 8, fontFamily: "'Roboto', sans-serif" }}>SL</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <span style={{ ...DS.type.subtitle, color: C.text }}>Stop Loss</span>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {slPresets.map(pct => {
                       const sel = activeTrade.sl === pct
@@ -1492,11 +1491,10 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                           onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: sel ? null : pct } })}
                           style={{
                             borderRadius: 10, padding: '10px 4px', cursor: 'pointer',
-                            fontWeight: 600, fontSize: FS.v3, fontFamily: "'Roboto', sans-serif",
-                            background: sel ? '#ef4444' : 'transparent',
-                            border: `1px solid #ef4444`,
-                            color: '#fff',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                            ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif",
+                            background: sel ? C.red : 'transparent',
+                            border: `1px solid ${C.red}`,
+                            color: sel ? DS.color.textOn : C.red,
                           }}>
                           {pct}%
                         </button>
@@ -1506,16 +1504,20 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 </div>
               </>
             ) : (
-              <div style={{ textAlign: 'center', color: C.muted, fontSize: FS.v4, padding: '14px 0' }}>Ouvrez une position d'abord</div>
+              <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', ...DS.type.subtitle, padding: '14px 0' }}>
+                Ouvrez une position d'abord
+              </div>
             )}
 
             {/* Footer */}
-            <div style={{ borderTop: `1px solid ${C.border}`, padding: '7px 12px' }}>
-              {risk?.isHighRisk && <div style={{ color: C.red, fontSize: FS.v4, marginBottom: 2 }}>■ Score risque élevé : {risk.score}/100</div>}
-              {risk?.topHolderPercent != null && risk.topHolderPercent > 20 && (
-                <div style={{ color: C.red, fontSize: FS.v4, marginBottom: 2 }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {risk?.isHighRisk && (
+                <div style={{ color: C.red, ...DS.type.annex }}>■ Score risque élevé : {risk.score}/100</div>
               )}
-              <div style={{ color: C.yellow, fontSize: FS.v4 }}>⚠ TP/SL s'exécutent uniquement si cet onglet reste ouvert.</div>
+              {risk?.topHolderPercent != null && risk.topHolderPercent > 20 && (
+                <div style={{ color: C.red, ...DS.type.annex }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
+              )}
+              <div style={{ color: C.yellow, ...DS.type.annex }}>⚠ TP/SL actifs uniquement si cet onglet reste ouvert.</div>
             </div>
           </div>
         </DraggableBlock>
