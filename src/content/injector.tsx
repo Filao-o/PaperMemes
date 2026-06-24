@@ -11,14 +11,15 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
   return (
     <div onClick={onChange} style={{
       display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
-      background: '#1a1a1a', border: '1px solid #333',
+      background: '#111', border: '1px solid rgba(255,255,255,0.15)',
       borderRadius: 20, padding: 2, gap: 0, fontFamily: "'Roboto', sans-serif",
     }}>
       {(['SOL', 'USD'] as const).map(opt => (
         <div key={opt} style={{
-          padding: '4px 11px', borderRadius: 16, fontSize: FS.v3, fontWeight: 700,
-          background: value === opt ? '#ffffff' : 'transparent',
-          color: value === opt ? '#111' : '#A1A1A1',
+          padding: '4px 11px', borderRadius: 16,
+          ...DS.type.annex,
+          background: value === opt ? DS.color.bg : 'transparent',
+          color: value === opt ? DS.color.textOn : 'rgba(255,255,255,0.4)',
           transition: 'all 0.15s',
         }}>{opt}</div>
       ))}
@@ -405,6 +406,22 @@ function copyToClipboard(text: string) {
 const FONT = "'Space Grotesk', -apple-system, system-ui, sans-serif"
 const BASE = 14
 const FS = { v1: 37, v2: 17, v3: 14, v4: 14 } as const
+
+// ─── Design System ────────────────────────────────────────────────────────────
+const DS = {
+  color: {
+    bg:      '#000000',
+    surface: '#ffffff',
+    textOn:  '#ffffff',
+    textOff: '#000000',
+  },
+  type: {
+    title:    { fontSize: 38, fontWeight: 900, lineHeight: 1.05 },
+    subtitle: { fontSize: 13, fontWeight: 600, lineHeight: 1 },
+    annex:    { fontSize: 10, fontWeight: 700, lineHeight: 1 },
+  },
+  pad: { x: 12, y: 10 },
+}
 
 function fmtPrice(p: number): string {
   if (p >= 1) return p.toFixed(2)
@@ -1216,26 +1233,25 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         highlightSnap={snapPreview?.upper === 'A' || snapPreview?.lower === 'A'}
         domRef={refA}
         style={{
-          width: 310, borderRadius: 18, overflow: 'hidden',
-          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255,255,255,0.10)',
+          width: 310, borderRadius: '13px 13px 0 0', overflow: 'hidden',
+          background: DS.color.bg,
+          border: '1px solid rgba(255,255,255,0.12)',
           ...blocBlur,
         }}
         renderHandle={onDragStart => (
-          /* White header — sert aussi de zone de drag */
           <div
             onMouseDown={onDragStart}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 12px',
-              background: '#ffffff', cursor: 'grab',
+              padding: `${DS.pad.y}px ${DS.pad.x}px`,
+              background: DS.color.surface, cursor: 'grab',
               fontFamily: "'Roboto', sans-serif",
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <PmLogo size={26} />
-              <span style={{ fontWeight: 700, fontSize: FS.v2, color: '#111', letterSpacing: -0.3 }}>PaperMemes</span>
-              <span style={{ color: '#A1A1A1', fontSize: FS.v4 }}>v1.3</span>
+              <PmLogo size={24} />
+              <span style={{ fontWeight: 800, fontSize: 14, color: DS.color.textOff, letterSpacing: -0.3 }}>papermemes</span>
+              <span style={{ color: '#999', ...DS.type.annex }}>v1.7.8</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onMouseDown={e => e.stopPropagation()}>
               <button
@@ -1243,10 +1259,10 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 title="Paramètres"
                 style={{
                   width: 32, height: 32,
-                  background: showConfig ? C.green : '#111',
+                  background: showConfig ? C.green : DS.color.bg,
                   border: 'none', borderRadius: 8, cursor: 'pointer',
-                  color: showConfig ? '#000' : '#fff',
-                  fontSize: FS.v3, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: showConfig ? DS.color.bg : DS.color.textOn,
+                  fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.15s',
                 }}
               >⚙</button>
@@ -1255,8 +1271,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 title="Réinitialiser le wallet"
                 style={{
                   width: 32, height: 32,
-                  background: '#111', border: 'none', borderRadius: 8,
-                  cursor: 'pointer', color: '#fff', fontSize: FS.v3,
+                  background: DS.color.bg, border: 'none', borderRadius: 8,
+                  cursor: 'pointer', color: DS.color.textOn, fontSize: 18,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >↺</button>
@@ -1265,33 +1281,33 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         )}
       >
         {/* Dark wallet body */}
-        <div style={{ background: 'transparent', fontFamily: "'Roboto', sans-serif", padding: '10px 14px 12px' }}>
-          {/* Row 1: Wallet pill + toggle */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <span style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: FS.v3 }}>Wallet</span>
+        <div style={{ background: DS.color.bg, fontFamily: "'Roboto', sans-serif", padding: `${DS.pad.y}px ${DS.pad.x}px 14px` }}>
+          {/* Row 1: Wallet label + toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ color: DS.color.textOn, ...DS.type.subtitle }}>Wallet</span>
             <CurrencyToggle
               value={currency}
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
             />
           </div>
           {/* Row 2: Balance */}
-          <div style={{ fontSize: FS.v1, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 4, lineHeight: 1.1 }}>
+          <div style={{ ...DS.type.title, color: DS.color.textOn, display: 'flex', alignItems: 'center', gap: 6 }}>
             {currency === 'SOL' ? (
-              <>{fmtSOL(balance)} <SolIcon size={28} style={{ marginLeft: 2 }} /></>
+              <>{fmtSOL(balance)} <SolIcon size={30} style={{ marginLeft: 2 }} /></>
             ) : solPrice > 0 ? (
               `$${(balance * solPrice).toFixed(2)}`
             ) : (
-              <span style={{ color: '#A1A1A1', fontSize: FS.v4 }}>Chargement…</span>
+              <span style={{ color: 'rgba(255,255,255,0.4)', ...DS.type.subtitle }}>Chargement…</span>
             )}
           </div>
           {/* Row 3: Conversion + clock */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: FS.v4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+            <span style={{ color: DS.color.textOn, ...DS.type.subtitle }}>
               {currency === 'SOL'
-                ? solPrice > 0 ? `= $${(balance * solPrice).toFixed(2)}` : '...'
+                ? solPrice > 0 ? `~ $${(balance * solPrice).toFixed(2)}` : '...'
                 : <>{fmtSOL(balance)} <SolIcon size={10} style={{ marginLeft: 2 }} /></>}
             </span>
-            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: FS.v4 }}>{clock}</span>
+            <span style={{ color: DS.color.textOn, ...DS.type.subtitle }}>{clock}</span>
           </div>
         </div>
 
