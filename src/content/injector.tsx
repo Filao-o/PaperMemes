@@ -1668,6 +1668,19 @@ interface TradeTabTopProps {
 }
 
 function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onOpenConfig, fmtCurStr, currency, price }: TradeTabTopProps) {
+  const [pnlFlash, setPnlFlash] = useState<'up' | 'down' | null>(null)
+  const [pnlFlashKey, setPnlFlashKey] = useState(0)
+  const prevPnlRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    const cur = livePnL?.sol ?? null
+    if (cur !== null && prevPnlRef.current !== null && cur !== prevPnlRef.current) {
+      setPnlFlash(cur > prevPnlRef.current ? 'up' : 'down')
+      setPnlFlashKey(k => k + 1)
+    }
+    if (cur !== null) prevPnlRef.current = cur
+  }, [livePnL?.sol])
+
   function AmountLabel({ sol }: { sol: number }) {
     if (currency === 'USD') return <>{fmtCurStr(sol)}</>
     return <>{fmtSOL(sol)} <SolIcon size={11} fill="#fff" style={{ marginLeft: 2 }} /></>
@@ -1760,12 +1773,16 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
             ].map(({ label, sol }) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, lineHeight: 1, color: DS.color.textOff, fontFamily: "'Roboto', sans-serif" }}>{label}</span>
-                <div style={{
-                  background: DS.color.bg, borderRadius: 8, padding: '8px 4px',
-                  width: '100%', textAlign: 'center',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
-                  fontSize: 14, fontWeight: 600, lineHeight: 1, color: DS.color.textOn, fontFamily: "'Roboto', sans-serif",
-                }}>
+                <div
+                  key={label === 'PnL' ? pnlFlashKey : label}
+                  className={label === 'PnL' && pnlFlash ? `pm-flash-${pnlFlash}` : undefined}
+                  style={{
+                    background: DS.color.bg, borderRadius: 8, padding: '8px 4px',
+                    width: '100%', textAlign: 'center',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
+                    fontSize: 14, fontWeight: 600, lineHeight: 1, color: DS.color.textOn, fontFamily: "'Roboto', sans-serif",
+                  }}
+                >
                   {sol != null ? <>{fmtSOL(sol)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
               </div>
@@ -1816,6 +1833,14 @@ function injectFont() {
   link.rel = 'stylesheet'
   link.href = 'https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&family=Roboto:wght@400;700;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap'
   document.head.appendChild(link)
+  const style = document.createElement('style')
+  style.textContent = `
+    @keyframes pm-flash-up   { 0%{background-color:#000} 35%{background-color:#01fd7345} 100%{background-color:#000} }
+    @keyframes pm-flash-down { 0%{background-color:#000} 35%{background-color:#FE014945} 100%{background-color:#000} }
+    .pm-flash-up   { animation: pm-flash-up   0.75s ease; }
+    .pm-flash-down { animation: pm-flash-down 0.75s ease; }
+  `
+  document.head.appendChild(style)
 }
 
 async function tryMount() {
