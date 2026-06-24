@@ -1835,8 +1835,8 @@ function injectFont() {
   document.head.appendChild(link)
   const style = document.createElement('style')
   style.textContent = `
-    @keyframes pm-flash-up   { 0%{background-color:#000} 35%{background-color:#01fd7345} 100%{background-color:#000} }
-    @keyframes pm-flash-down { 0%{background-color:#000} 35%{background-color:#FE014945} 100%{background-color:#000} }
+    @keyframes pm-flash-up   { 0%{color:#fff} 35%{color:#01fd73} 100%{color:#fff} }
+    @keyframes pm-flash-down { 0%{color:#fff} 35%{color:#FE0149} 100%{color:#fff} }
     .pm-flash-up   { animation: pm-flash-up   0.75s ease; }
     .pm-flash-down { animation: pm-flash-down 0.75s ease; }
   `
