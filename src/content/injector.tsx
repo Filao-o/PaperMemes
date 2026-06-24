@@ -11,15 +11,15 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
   return (
     <div onClick={onChange} style={{
       display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
-      background: '#111', border: '1px solid rgba(255,255,255,0.15)',
+      background: DS.color.surface, border: '1px solid rgba(0,0,0,0.15)',
       borderRadius: 20, padding: 2, gap: 0, fontFamily: "'Roboto', sans-serif",
     }}>
       {(['SOL', 'USD'] as const).map(opt => (
         <div key={opt} style={{
           padding: '4px 11px', borderRadius: 16,
-          ...DS.type.annex,
+          fontSize: 12, fontWeight: 700, lineHeight: 1,
           background: value === opt ? DS.color.bg : 'transparent',
-          color: value === opt ? DS.color.textOn : 'rgba(255,255,255,0.4)',
+          color: value === opt ? DS.color.textOn : 'rgba(0,0,0,0.45)',
           transition: 'all 0.15s',
         }}>{opt}</div>
       ))}
@@ -1248,9 +1248,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               fontFamily: "'Roboto', sans-serif",
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <PmLogo size={24} />
-              <span style={{ fontWeight: 800, fontSize: 14, color: DS.color.textOff, letterSpacing: -0.3 }}>papermemes</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <span style={{ fontWeight: 800, fontSize: 14, color: DS.color.textOff, letterSpacing: -0.3, lineHeight: 1 }}>papermemes</span>
               <span style={{ color: '#999', ...DS.type.annex }}>v1.7.8</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onMouseDown={e => e.stopPropagation()}>
@@ -1284,7 +1283,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         <div style={{ background: DS.color.bg, fontFamily: "'Roboto', sans-serif", padding: `${DS.pad.y}px ${DS.pad.x}px 14px` }}>
           {/* Row 1: Wallet label + toggle */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ color: DS.color.textOn, ...DS.type.subtitle }}>Wallet</span>
+            <span style={{ color: DS.color.textOn, fontSize: 15, fontWeight: 600, lineHeight: 1 }}>Wallet</span>
             <CurrencyToggle
               value={currency}
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
@@ -1302,12 +1301,12 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           </div>
           {/* Row 3: Conversion + clock */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-            <span style={{ color: DS.color.textOn, ...DS.type.subtitle }}>
+            <span style={{ color: DS.color.textOn, fontSize: 14, fontWeight: 600, lineHeight: 1 }}>
               {currency === 'SOL'
                 ? solPrice > 0 ? `~ $${(balance * solPrice).toFixed(2)}` : '...'
                 : <>{fmtSOL(balance)} <SolIcon size={10} style={{ marginLeft: 2 }} /></>}
             </span>
-            <span style={{ color: DS.color.textOn, ...DS.type.subtitle }}>{clock}</span>
+            <span style={{ color: DS.color.textOn, fontSize: 14, fontWeight: 600, lineHeight: 1 }}>{clock}</span>
           </div>
         </div>
 
