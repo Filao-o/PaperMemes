@@ -1372,8 +1372,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             }}
           >
             {tokenInfo ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span
                       style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.heading, color: DS.color.textOff, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'rgba(0,0,0,0.3)' }}
@@ -1383,21 +1383,21 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                     >{tokenInfo.tokenName?.toUpperCase() ?? '—'}</span>
                     {copied && <span style={{ color: '#006622', ...DS.type.annex, fontFamily: FONT }}>✓</span>}
                   </div>
-                  <div style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.title, color: DS.color.textOff }}>
-                    {mc != null ? fmtMC(mc) : '—'}
-                    {priceStale && !mcDir && <span style={{ ...DS.type.subtitle, color: C.yellow, marginLeft: 4 }}>⚠</span>}
+                  <div style={{ color: 'rgba(0,0,0,0.5)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif", display: 'flex', alignItems: 'center', gap: 5 }}>
+                    {tokenInfo.age && <span>{tokenInfo.age}</span>}
+                    {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
+                    {tokenInfo.holders != null && (
+                      <span style={{
+                        fontWeight: 700,
+                        color: holdersDir === 'up' ? '#00a854' : holdersDir === 'down' ? '#d9363e' : 'rgba(0,0,0,0.5)',
+                        transition: 'color 0.2s',
+                      }}>{tokenInfo.holders.toLocaleString()} Holders</span>
+                    )}
                   </div>
                 </div>
-                <div style={{ color: 'rgba(0,0,0,0.5)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif", display: 'flex', alignItems: 'center', gap: 5 }}>
-                  {tokenInfo.age && <span>{tokenInfo.age}</span>}
-                  {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
-                  {tokenInfo.holders != null && (
-                    <span style={{
-                      fontWeight: 700,
-                      color: holdersDir === 'up' ? '#00a854' : holdersDir === 'down' ? '#d9363e' : 'rgba(0,0,0,0.5)',
-                      transition: 'color 0.2s',
-                    }}>{tokenInfo.holders.toLocaleString()} Holders</span>
-                  )}
+                <div style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.title, color: DS.color.textOff, lineHeight: 1 }}>
+                  {mc != null ? fmtMC(mc) : '—'}
+                  {priceStale && !mcDir && <span style={{ ...DS.type.subtitle, color: C.yellow, marginLeft: 4 }}>⚠</span>}
                 </div>
               </div>
             ) : (
@@ -1689,7 +1689,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               onClick={() => onBuy(amt)}
               style={{ width: '100%' }}
             >
-              {amt} <SolIcon size={11} fill="#FFF7F0" style={{ marginLeft: 0 }} />
+              <span>{amt}</span><SolIcon size={11} fill="#FFF7F0" />
             </MetalBtn>
           ))}
         </div>
@@ -1759,7 +1759,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               { label: 'Earns',  sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
             ].map(({ label, sol }) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1, color: DS.color.textOff, fontFamily: "'Roboto', sans-serif" }}>{label}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1, color: DS.color.textOff, fontFamily: "'Roboto', sans-serif" }}>{label}</span>
                 <div style={{
                   background: DS.color.bg, borderRadius: 8, padding: '6px 4px',
                   width: '100%', textAlign: 'center',
