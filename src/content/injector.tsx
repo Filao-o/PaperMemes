@@ -16,7 +16,7 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
     }}>
       {(['SOL', 'USD'] as const).map(opt => (
         <div key={opt} style={{
-          padding: '5px 7px', borderRadius: 16,
+          padding: '5px 7px', borderRadius: 10,
           fontSize: 12, fontWeight: 700, lineHeight: 1,
           background: value === opt ? DS.color.bg : 'transparent',
           color: value === opt ? DS.color.textOn : 'rgba(0,0,0,0.45)',
@@ -626,7 +626,7 @@ function MetalBtn({
       style={{
         background: c.bg,
         border: 'none',
-        borderRadius: 200,
+        borderRadius: 10,
         boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
         color: c.text, fontWeight: 600, fontSize: FS.v2,
         padding: '10px 4px',
@@ -1282,7 +1282,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 style={{
                   width: 32, height: 32,
                   background: showConfig ? C.green : DS.color.bg,
-                  border: 'none', borderRadius: 8, cursor: 'pointer',
+                  border: 'none', borderRadius: 10, cursor: 'pointer',
                   color: showConfig ? DS.color.bg : DS.color.textOn,
                   fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.15s',
@@ -1372,8 +1372,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             }}
           >
             {tokenInfo ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span
                       style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.heading, color: DS.color.textOff, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'rgba(0,0,0,0.3)' }}
@@ -1383,23 +1383,21 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                     >{tokenInfo.tokenName?.toUpperCase() ?? '—'}</span>
                     {copied && <span style={{ color: '#006622', ...DS.type.annex, fontFamily: FONT }}>✓</span>}
                   </div>
-                  <div style={{ color: 'rgba(0,0,0,0.5)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif", marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    {tokenInfo.age && <span>{tokenInfo.age}</span>}
-                    {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
-                    {tokenInfo.holders != null && (
-                      <span style={{
-                        fontWeight: 700,
-                        color: holdersDir === 'up' ? '#00a854' : holdersDir === 'down' ? '#d9363e' : 'rgba(0,0,0,0.5)',
-                        transition: 'color 0.2s',
-                      }}>{tokenInfo.holders.toLocaleString()} Holders</span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
                   <div style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.title, color: DS.color.textOff }}>
                     {mc != null ? fmtMC(mc) : '—'}
                     {priceStale && !mcDir && <span style={{ ...DS.type.subtitle, color: C.yellow, marginLeft: 4 }}>⚠</span>}
                   </div>
+                </div>
+                <div style={{ color: 'rgba(0,0,0,0.5)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif", display: 'flex', alignItems: 'center', gap: 5 }}>
+                  {tokenInfo.age && <span>{tokenInfo.age}</span>}
+                  {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
+                  {tokenInfo.holders != null && (
+                    <span style={{
+                      fontWeight: 700,
+                      color: holdersDir === 'up' ? '#00a854' : holdersDir === 'down' ? '#d9363e' : 'rgba(0,0,0,0.5)',
+                      transition: 'color 0.2s',
+                    }}>{tokenInfo.holders.toLocaleString()} Holders</span>
+                  )}
                 </div>
               </div>
             ) : (
@@ -1447,7 +1445,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 onMouseDown={e => e.stopPropagation()}
                 style={{
                   width: 32, height: 32, background: showConfig ? C.green : '#111',
-                  border: 'none', borderRadius: 8, cursor: 'pointer',
+                  border: 'none', borderRadius: 10, cursor: 'pointer',
                   color: showConfig ? '#000' : '#fff', fontSize: 18,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>⚙</button>
@@ -1467,7 +1465,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                         <button key={pct}
                           onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, tp: sel ? null : pct, tpMC: null } })}
                           style={{
-                            borderRadius: 200, padding: '10px 4px', cursor: 'pointer',
+                            borderRadius: 10, padding: '10px 4px', cursor: 'pointer',
                             fontWeight: 600, fontSize: FS.v3, fontFamily: "'Roboto', sans-serif",
                             background: sel ? '#22c55e' : 'transparent',
                             border: `1px solid #22c55e`,
@@ -1493,7 +1491,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                         <button key={pct}
                           onClick={() => state.activeTrade && Storage.set({ activeTrade: { ...state.activeTrade, sl: sel ? null : pct } })}
                           style={{
-                            borderRadius: 200, padding: '10px 4px', cursor: 'pointer',
+                            borderRadius: 10, padding: '10px 4px', cursor: 'pointer',
                             fontWeight: 600, fontSize: FS.v3, fontFamily: "'Roboto', sans-serif",
                             background: sel ? '#ef4444' : 'transparent',
                             border: `1px solid #ef4444`,
@@ -1680,7 +1678,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
           <span style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.subtitle, color: C.text }}>Quick Buy</span>
-          <button onClick={onOpenConfig} onMouseDown={e => e.stopPropagation()} style={{ background: '#111', border: 'none', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 18, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontWeight: 700 }}>⚙</button>
+          <button onClick={onOpenConfig} onMouseDown={e => e.stopPropagation()} style={{ background: DS.color.surface, border: '1px solid rgba(0,0,0,0.12)', borderRadius: 10, cursor: 'pointer', color: DS.color.textOff, fontSize: 18, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontWeight: 700 }}>⚙</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {buyPresets.map(amt => (
@@ -1751,22 +1749,22 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           </div>
 
           {/* Stats: INVEST / LIVE / PNL / EARNS */}
-          <div style={{ background: DS.color.surface, borderRadius: 10, padding: '8px 6px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          <div style={{ background: DS.color.surface, borderRadius: 10, padding: '9px 7px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {[
-              { label: 'Invest.', sol: activeTrade.invested, color: undefined },
-              { label: 'Live',    sol: liveValue, color: undefined },
-              { label: 'PnL',    sol: livePnL.sol, color: pnlColor(livePnL.sol) },
-              { label: 'Earns',  sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null, color: undefined },
-            ].map(({ label, sol, color }) => (
+              { label: 'Invest.', sol: activeTrade.invested },
+              { label: 'Live',    sol: liveValue },
+              { label: 'PnL',    sol: livePnL.sol },
+              { label: 'Earns',  sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
+            ].map(({ label, sol }) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                <span style={{ ...DS.type.annex, color: DS.color.textOff, fontFamily: "'Roboto', sans-serif" }}>{label}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1, color: DS.color.textOff, fontFamily: "'Roboto', sans-serif" }}>{label}</span>
                 <div style={{
-                  background: DS.color.bg, borderRadius: 8, padding: '5px 4px',
+                  background: DS.color.bg, borderRadius: 8, padding: '6px 4px',
                   width: '100%', textAlign: 'center',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
-                  ...DS.type.subtitle, color: DS.color.textOn, fontFamily: "'Roboto', sans-serif",
+                  fontSize: 14, fontWeight: 600, lineHeight: 1, color: DS.color.textOn, fontFamily: "'Roboto', sans-serif",
                 }}>
-                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={9} fill="#fff" style={{ marginLeft: 1 }} /></> : '—'}
+                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
               </div>
             ))}
