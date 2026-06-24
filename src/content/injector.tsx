@@ -417,6 +417,7 @@ const DS = {
   },
   type: {
     title:    { fontSize: 38, fontWeight: 900, lineHeight: 1.05 },
+    heading:  { fontSize: 20, fontWeight: 700, lineHeight: 1 },
     subtitle: { fontSize: 13, fontWeight: 600, lineHeight: 1 },
     annex:    { fontSize: 10, fontWeight: 700, lineHeight: 1 },
   },
@@ -1355,17 +1356,17 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         highlightSnap={snapPreview?.upper === 'B' || snapPreview?.lower === 'B'}
         domRef={refB}
         style={{
-          width: 310, borderRadius: 18, overflow: 'hidden',
-          background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-          border: '1px solid rgba(255,255,255,0.10)',
+          width: 310, borderRadius: 13, overflow: 'hidden',
+          background: DS.color.bg,
+          border: '1px solid rgba(255,255,255,0.12)',
           ...blocBlur,
         }}
         renderHandle={onDragStart => (
           <div
             onMouseDown={onDragStart}
             style={{
-              cursor: 'grab', background: '#ffffff',
-              padding: '10px 14px',
+              cursor: 'grab', background: DS.color.surface,
+              padding: `${DS.pad.y}px ${DS.pad.x}px`,
               borderBottom: `7px solid ${flashLine}`,
               transition: 'border-color 0.25s ease',
             }}
@@ -1375,40 +1376,40 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span
-                      style={{ fontFamily: "'Roboto Mono', monospace", fontWeight: 700, fontSize: FS.v2, color: '#111', cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2, textDecorationColor: '#A1A1A1' }}
+                      style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.heading, color: DS.color.textOff, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'rgba(0,0,0,0.3)' }}
                       onMouseDown={e => e.stopPropagation()}
                       onClick={handleCopyCA}
                       title="Copier l'adresse CA"
                     >{tokenInfo.tokenName?.toUpperCase() ?? '—'}</span>
-                    {copied && <span style={{ color: '#006622', fontSize: 10, fontFamily: FONT }}>✓</span>}
+                    {copied && <span style={{ color: '#006622', ...DS.type.annex, fontFamily: FONT }}>✓</span>}
                   </div>
-                  <div style={{ color: '#555', fontSize: 15, fontFamily: "'Roboto', sans-serif", marginTop: 2, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <div style={{ color: 'rgba(0,0,0,0.5)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif", marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
                     {tokenInfo.age && <span>{tokenInfo.age}</span>}
                     {tokenInfo.age && tokenInfo.holders != null && <span>•</span>}
                     {tokenInfo.holders != null && (
                       <span style={{
                         fontWeight: 700,
-                        color: holdersDir === 'up' ? C.green : holdersDir === 'down' ? C.red : '#555',
+                        color: holdersDir === 'up' ? '#00a854' : holdersDir === 'down' ? '#d9363e' : 'rgba(0,0,0,0.5)',
                         transition: 'color 0.2s',
-                      }}>{tokenInfo.holders.toLocaleString()} holders</span>
+                      }}>{tokenInfo.holders.toLocaleString()} Holders</span>
                     )}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 900, fontSize: FS.v1, color: '#111', lineHeight: 1, marginTop: 6 }}>
+                  <div style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.title, color: DS.color.textOff }}>
                     {mc != null ? fmtMC(mc) : '—'}
-                    {priceStale && !mcDir && <span style={{ fontSize: FS.v3, color: C.yellow, marginLeft: 4 }}>⚠</span>}
+                    {priceStale && !mcDir && <span style={{ ...DS.type.subtitle, color: C.yellow, marginLeft: 4 }}>⚠</span>}
                   </div>
                 </div>
               </div>
             ) : (
-              <div style={{ color: '#A1A1A1', fontSize: FS.v4, fontFamily: "'Roboto', sans-serif" }}>Navigue sur un token…</div>
+              <div style={{ color: 'rgba(0,0,0,0.35)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif" }}>Navigue sur un token…</div>
             )}
           </div>
         )}
       >
         {/* Dark body */}
-        <div style={{ background: 'rgba(0,0,0,0)', fontFamily: FONT, color: C.text, fontSize: BASE, padding: '10px 12px' }}>
+        <div style={{ background: DS.color.bg, fontFamily: FONT, color: C.text, fontSize: BASE, padding: `${DS.pad.y}px ${DS.pad.x}px` }}>
           <TradeTabTop
             state={state} activeTrade={activeTrade} livePnL={livePnL} liveValue={liveValue}
             buyPresets={buyPresets}
@@ -1678,7 +1679,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
       {/* ── Quick Buy ── */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: FS.v3, color: C.text }}>Quick Buy</span>
+          <span style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.subtitle, color: C.text }}>Quick Buy</span>
           <button onClick={onOpenConfig} onMouseDown={e => e.stopPropagation()} style={{ background: '#111', border: 'none', borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 18, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontWeight: 700 }}>⚙</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
@@ -1702,8 +1703,8 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
 
           {/* Header: Open Trades + PnL% */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: FS.v3, color: C.text }}>Open Trades</span>
-            <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 16, color: pnlColor(livePnL.percent) }}>{fmtPct(livePnL.percent)}</span>
+            <span style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.subtitle, color: C.text }}>PnL (%)</span>
+            <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 15, color: pnlColor(livePnL.percent) }}>{fmtPct(livePnL.percent)}</span>
           </div>
 
           {/* MC Entry / Ave. Entries */}
@@ -1715,10 +1716,10 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               : null
             return (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: FS.v2, fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
-                  {multiEntry ? 'Ave. Entries' : 'MC Entry'}
+                <span style={{ color: 'rgba(255,255,255,0.9)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif" }}>
+                  MC Entry{multiEntry ? ' or Ave. Entries' : ''}
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, fontSize: FS.v2, fontFamily: "'Roboto', sans-serif" }}>
+                <span style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif" }}>
                   {multiEntry && avgMC != null ? fmtMC(avgMC) : fmtMC(activeTrade.entryMC)}
                 </span>
               </div>
@@ -1733,13 +1734,15 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               return (
                 <div key={i} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: '#111111', borderTop: '3px solid #ffffff', borderRadius: 0,
-                  padding: '7px 10px', fontSize: 14,
+                  background: '#111', borderRadius: 6, padding: '7px 10px',
                 }}>
-                  <span style={{ color: '#ffffff', fontWeight: 600, fontFamily: "'Roboto', sans-serif" }}>
-                    {fmtMC(entry.entryMC)} <span style={{ color: '#A1A1A1' }}>•</span> {fmtSOL(entry.invested)}<SolIcon size={10} fill="#ffffff" style={{ marginLeft: 2 }} />
+                  <span style={{ color: '#ffffff', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif", display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: -1 }}>——</span>
+                    {fmtMC(entry.entryMC)}
+                    <span style={{ color: 'rgba(255,255,255,0.35)' }}>•</span>
+                    {fmtSOL(entry.invested)}<SolIcon size={10} fill="#ffffff" style={{ marginLeft: 2 }} />
                   </span>
-                  <span style={{ color: pctColor, fontWeight: 700, fontFamily: "'Roboto', sans-serif", fontSize: 14 }}>
+                  <span style={{ color: pctColor, ...DS.type.subtitle, fontWeight: 700, fontFamily: "'Roboto', sans-serif" }}>
                     {entryPnlPct != null ? fmtPct(entryPnlPct) : '—'}
                   </span>
                 </div>
@@ -1748,21 +1751,22 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           </div>
 
           {/* Stats: INVEST / LIVE / PNL / EARNS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)' }}>
+          <div style={{ background: DS.color.surface, borderRadius: 10, padding: '8px 6px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {[
-              { label: 'INVEST.', sol: activeTrade.invested, color: undefined },
-              { label: 'LIVE', sol: liveValue, color: undefined },
-              { label: 'PNL', sol: livePnL.sol, color: pnlColor(livePnL.sol) },
-              { label: 'EARNS', sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null, color: undefined },
-            ].map(({ label, sol, color }, idx) => (
-              <div key={label} style={{
-                background: label === 'PNL' && color ? `${color}22` : 'rgba(255,255,255,0.10)',
-                padding: '6px 4px', textAlign: 'center',
-                borderLeft: idx > 0 ? '1px solid rgba(255,255,255,0.10)' : undefined,
-              }}>
-                <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: 700, letterSpacing: 0.5, marginBottom: 3, fontFamily: "'Roboto', sans-serif" }}>{label}</div>
-                <div style={{ color: '#ffffff', fontSize: 18, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: "'Roboto', sans-serif" }}>
-                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={10} fill="#ffffff" style={{ marginLeft: 1 }} /></> : '—'}
+              { label: 'Invest.', sol: activeTrade.invested, color: undefined },
+              { label: 'Live',    sol: liveValue, color: undefined },
+              { label: 'PnL',    sol: livePnL.sol, color: pnlColor(livePnL.sol) },
+              { label: 'Earns',  sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null, color: undefined },
+            ].map(({ label, sol, color }) => (
+              <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                <span style={{ ...DS.type.annex, color: DS.color.textOff, fontFamily: "'Roboto', sans-serif" }}>{label}</span>
+                <div style={{
+                  background: DS.color.bg, borderRadius: 8, padding: '5px 4px',
+                  width: '100%', textAlign: 'center',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
+                  ...DS.type.subtitle, color: DS.color.textOn, fontFamily: "'Roboto', sans-serif",
+                }}>
+                  {sol != null ? <>{fmtSOL(sol)}<SolIcon size={9} fill="#fff" style={{ marginLeft: 1 }} /></> : '—'}
                 </div>
               </div>
             ))}
@@ -1780,11 +1784,11 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           {/* Sell Inits */}
           <div style={{ textAlign: 'center' }}>
             <span onClick={onSellInitials} style={{
-              color: C.text, fontSize: FS.v3, cursor: 'pointer', fontFamily: "'Roboto', sans-serif",
-              borderBottom: `1px solid ${C.text}`, paddingBottom: 1,
-              userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: 3,
+              color: C.text, ...DS.type.subtitle, cursor: 'pointer', fontFamily: "'Roboto', sans-serif",
+              borderBottom: `1px solid rgba(255,255,255,0.5)`, paddingBottom: 2,
+              userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: 4,
             }}>
-              Sell Inits. — {fmtSOL(activeTrade.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 0 }} />
+              Sell Inits <span style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: -1 }}>——</span> {fmtSOL(activeTrade.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 0 }} />
             </span>
           </div>
 
