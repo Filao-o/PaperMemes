@@ -418,7 +418,7 @@ const DS = {
   type: {
     title:    { fontSize: 38, fontWeight: 900, lineHeight: 1.05 },
     heading:  { fontSize: 20, fontWeight: 700, lineHeight: 1 },
-    subtitle: { fontSize: 13, fontWeight: 600, lineHeight: 1 },
+    subtitle: { fontSize: 15, fontWeight: 600, lineHeight: 1 },
     annex:    { fontSize: 10, fontWeight: 700, lineHeight: 1 },
   },
   pad: { x: 12, y: 10 },
