@@ -1759,9 +1759,9 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               { label: 'Earns',  sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
             ].map(({ label, sol }) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1, color: DS.color.textOff, fontFamily: "'Roboto', sans-serif" }}>{label}</span>
+                <span style={{ fontSize: 15, fontWeight: 700, lineHeight: 1, color: DS.color.textOff, fontFamily: "'Roboto', sans-serif" }}>{label}</span>
                 <div style={{
-                  background: DS.color.bg, borderRadius: 8, padding: '6px 4px',
+                  background: DS.color.bg, borderRadius: 8, padding: '8px 4px',
                   width: '100%', textAlign: 'center',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2,
                   fontSize: 14, fontWeight: 600, lineHeight: 1, color: DS.color.textOn, fontFamily: "'Roboto', sans-serif",
