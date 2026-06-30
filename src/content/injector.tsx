@@ -4,6 +4,7 @@ import { Storage } from '../storage'
 import type { AppState, Trade, CloseEvent, TokenInfo, RiskInfo } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Tabs, Btn, Divider, SolIcon } from '../popup/components/ui'
 import { JournalPanel, TradeCard } from '../popup/components/JournalPanel'
+import { t as tr, type Lang } from '../i18n'
 
 // ─── Currency toggle ──────────────────────────────────────────────────────────
 
@@ -459,7 +460,7 @@ function fmtPrice(p: number): string {
 const SOL_RESET_PRESETS = [1, 2, 5, 10, 20]
 const USD_RESET_PRESETS = [25, 50, 100, 200, 500]
 
-function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; currency: 'SOL' | 'USD'; solPrice: number }) {
+function ResetModal({ onClose, currency, solPrice, lang }: { onClose: () => void; currency: 'SOL' | 'USD'; solPrice: number; lang: Lang }) {
   const [localCurrency, setLocalCurrency] = useState<'SOL' | 'USD'>(currency)
   const [amount, setAmount] = useState<number>(localCurrency === 'SOL' ? 5 : 100)
   const [custom, setCustom] = useState('')
@@ -506,12 +507,12 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
     return (
       <div style={overlayStyle} onClick={e => e.target === e.currentTarget && onClose()}>
         <div style={cardStyle}>
-          <div style={{ fontWeight: 800, fontSize: FS.v3, letterSpacing: 0.5, color: C.red }}>⚠ CONFIRMATION</div>
+          <div style={{ fontWeight: 800, fontSize: FS.v3, letterSpacing: 0.5, color: C.red }}>{tr(lang, 'reset.warn_title')}</div>
           <div style={{ color: C.textSub, fontSize: FS.v2, lineHeight: 1.7 }}>
             {isFull ? (
-              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span> et <span style={{ color: C.red, fontWeight: 700 }}>tout l'historique sera supprimé</span>. Cette action est irrémédiable.</>
+              <>{tr(lang, 'reset.warn_before')}<span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span>{tr(lang, 'reset.warn_full_mid')}<span style={{ color: C.red, fontWeight: 700 }}>{tr(lang, 'reset.warn_full_red')}</span>{tr(lang, 'reset.warn_suffix')}</>
             ) : (
-              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span>. L'historique sera conservé. Cette action est irrémédiable.</>
+              <>{tr(lang, 'reset.warn_before')}<span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span>{tr(lang, 'reset.warn_bal_mid')}</>
             )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -519,12 +520,12 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
               width: '100%', padding: '13px 0', borderRadius: 8, fontFamily: 'inherit',
               background: C.red, border: 'none', color: '#fff',
               fontWeight: 700, fontSize: FS.v3, cursor: 'pointer',
-            }}>Confirmer</button>
+            }}>{tr(lang, 'reset.confirm')}</button>
             <button onClick={() => setConfirm(null)} style={{
               width: '100%', padding: '11px 0', borderRadius: 8, fontFamily: 'inherit',
               background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
               fontWeight: 600, fontSize: FS.v3, cursor: 'pointer',
-            }}>Retour</button>
+            }}>{tr(lang, 'reset.back')}</button>
           </div>
         </div>
       </div>
@@ -539,7 +540,7 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
       <div style={cardStyle}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 800, fontSize: FS.v2, letterSpacing: 0.5, color: '#ffffff' }}>RÉINITIALISER LE WALLET</div>
+          <div style={{ fontWeight: 800, fontSize: FS.v2, letterSpacing: 0.5, color: '#ffffff' }}>{tr(lang, 'reset.title')}</div>
           <div onClick={switchCurrency} style={{
             display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
             background: '#1a1a1a', border: '1px solid #333', borderRadius: 20, padding: 3,
@@ -557,7 +558,7 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
         {/* Presets */}
         <div>
           <div style={{ color: C.muted, fontSize: FS.v3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-            Montant ({isUSD ? 'USD' : 'SOL'})
+            {tr(lang, 'reset.amount')} ({isUSD ? 'USD' : 'SOL'})
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {presets.map(p => {
@@ -581,10 +582,10 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
         {/* Custom input */}
         <div>
           <div style={{ color: C.muted, fontSize: FS.v3, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-            Montant personnalisé ({isUSD ? 'USD' : 'SOL'})
+            {tr(lang, 'reset.custom')} ({isUSD ? 'USD' : 'SOL'})
           </div>
           <input
-            type="text" inputMode="decimal" placeholder={isUSD ? 'ex: 250' : 'ex: 25'}
+            type="text" inputMode="decimal" placeholder={isUSD ? tr(lang, 'reset.placeholder_usd') : tr(lang, 'reset.placeholder_sol')}
             value={custom}
             onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
             style={{
@@ -603,18 +604,18 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
             fontWeight: 700, fontSize: FS.v3, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmountSOL > 0 ? 1 : 0.4,
-          }}>Reset solde + historique</button>
+          }}>{tr(lang, 'reset.btn_full')}</button>
           <button onClick={() => activeAmountSOL > 0 && setConfirm('balance')} disabled={activeAmountSOL <= 0} style={{
             width: '100%', padding: '13px 0', borderRadius: 8, fontFamily: 'inherit',
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
             fontWeight: 700, fontSize: FS.v3, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmountSOL > 0 ? 1 : 0.4,
-          }}>Reset solde uniquement</button>
+          }}>{tr(lang, 'reset.btn_balance')}</button>
           <button onClick={onClose} style={{
             width: '100%', padding: '11px 0', borderRadius: 8, fontFamily: 'inherit',
             background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
             fontWeight: 600, fontSize: FS.v3, cursor: 'pointer',
-          }}>Annuler</button>
+          }}>{tr(lang, 'reset.cancel')}</button>
         </div>
       </div>
     </div>
@@ -778,7 +779,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     balance: 50, activeTrade: null, closedTrades: [],
     tpPresets: [10, 20, 50, 100], slPresets: [-10, -20, -50, -100],
     buyPresets: [0.1, 0.5, 1, 5], currency: 'SOL', solPrice: 0,
-    slippage: 1, fees: 0.25,
+    slippage: 1, fees: 0.25, selectedPlatform: null, language: 'fr',
   })
   const [solPriceLocal, setSolPriceLocal] = useState(0)
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
@@ -849,20 +850,23 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const blockConnsRef = useRef(blockConns); blockConnsRef.current = blockConns
   const snapPreviewRef = useRef(snapPreview); snapPreviewRef.current = snapPreview
 
-  const DAY_SHORT = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
-  function fmtClock(d: Date) {
-    const day = DAY_SHORT[d.getDay()]
+  const lang = (state.language ?? 'fr') as Lang
+
+  function fmtClock(d: Date, l: Lang) {
+    const dayShort = tr(l, 'cal.day_short').split(',')
+    const day = dayShort[d.getDay()]
     const date = d.getDate()
     const h = String(d.getHours()).padStart(2, '0')
     const m = String(d.getMinutes()).padStart(2, '0')
     return `${day} ${date}, ${h}:${m}`
   }
 
-  const [clock, setClock] = useState(() => fmtClock(new Date()))
+  const [clock, setClock] = useState(() => fmtClock(new Date(), 'fr'))
   useEffect(() => {
-    const t = setInterval(() => setClock(fmtClock(new Date())), 30_000)
-    return () => clearInterval(t)
-  }, [])
+    setClock(fmtClock(new Date(), lang))
+    const timer = setInterval(() => setClock(fmtClock(new Date(), lang)), 30_000)
+    return () => clearInterval(timer)
+  }, [lang])
 
   useEffect(() => {
     Storage.get().then(setState)
@@ -994,13 +998,16 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     const { percent: pnlPct } = getLivePnL(trade, price)
     if (trade.tp && pnlPct >= trade.tp) {
       doSell(100, price, mc, trade, stateRef.current)
-      chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: 'Take Profit !', body: `${trade.tokenName} +${pnlPct.toFixed(1)}%` } })
+      const notifLang = (stateRef.current.language ?? 'fr') as Lang
+      chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: tr(notifLang, 'notif.tp'), body: `${trade.tokenName} +${pnlPct.toFixed(1)}%` } })
     } else if (trade.tpMC && mc >= trade.tpMC) {
       doSell(100, price, mc, trade, stateRef.current)
-      chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: 'Take Profit MC !', body: `${trade.tokenName} MC ${fmtMC(mc)}` } })
+      const notifLang = (stateRef.current.language ?? 'fr') as Lang
+      chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: tr(notifLang, 'notif.tp_mc'), body: `${trade.tokenName} MC ${fmtMC(mc)}` } })
     } else if (trade.sl && pnlPct <= trade.sl) {
       doSell(100, price, mc, trade, stateRef.current)
-      chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: 'Stop Loss déclenché', body: `${trade.tokenName} ${pnlPct.toFixed(1)}%` } })
+      const notifLang = (stateRef.current.language ?? 'fr') as Lang
+      chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: tr(notifLang, 'notif.sl'), body: `${trade.tokenName} ${pnlPct.toFixed(1)}%` } })
     }
   }
 
@@ -1302,7 +1309,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onMouseDown={e => e.stopPropagation()}>
               <button
                 onClick={() => setShowConfig(v => !v)}
-                title="Paramètres"
+                title={tr(lang, 'w.settings')}
                 style={{
                   width: 32, height: 32,
                   background: showConfig ? C.green : DS.color.bg,
@@ -1314,7 +1321,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               >⚙</button>
               <button
                 onClick={() => setShowReset(true)}
-                title="Réinitialiser le wallet"
+                title={tr(lang, 'w.reset_wallet')}
                 style={{
                   width: 32, height: 32,
                   background: DS.color.bg, border: 'none', borderRadius: 8,
@@ -1330,7 +1337,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         <div style={{ background: DS.color.bg, fontFamily: "'Roboto', sans-serif", padding: `${DS.pad.y}px ${DS.pad.x}px 14px` }}>
           {/* Row 1: Wallet label + toggle */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-            <span style={{ color: DS.color.textOn, fontSize: 15, fontWeight: 600, lineHeight: 1 }}>Wallet</span>
+            <span style={{ color: DS.color.textOn, fontSize: 15, fontWeight: 600, lineHeight: 1 }}>{tr(lang, 'w.wallet')}</span>
             <CurrencyToggle
               value={currency}
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
@@ -1343,7 +1350,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             ) : solPrice > 0 ? (
               `$${(balance * solPrice).toFixed(2)}`
             ) : (
-              <span style={{ color: 'rgba(255,255,255,0.4)', ...DS.type.subtitle }}>Chargement…</span>
+              <span style={{ color: 'rgba(255,255,255,0.4)', ...DS.type.subtitle }}>{tr(lang, 'w.loading')}</span>
             )}
           </div>
           {/* Row 3: Conversion + clock */}
@@ -1367,6 +1374,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               slippage={state.slippage}
               fees={state.fees}
               onSaved={() => setShowConfig(false)}
+              lang={lang}
             />
           </div>
         )}
@@ -1403,7 +1411,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                       style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.heading, color: DS.color.textOff, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3, textDecorationColor: 'rgba(0,0,0,0.3)' }}
                       onMouseDown={e => e.stopPropagation()}
                       onClick={handleCopyCA}
-                      title="Copier l'adresse CA"
+                      title={tr(lang, 'w.copy_ca')}
                     >{tokenInfo.tokenName?.toUpperCase() ?? '—'}</span>
                     {copied && <span style={{ color: '#006622', ...DS.type.annex, fontFamily: FONT }}>✓</span>}
                   </div>
@@ -1425,7 +1433,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                 </div>
               </div>
             ) : (
-              <div style={{ color: 'rgba(0,0,0,0.35)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif" }}>Navigue sur un token…</div>
+              <div style={{ color: 'rgba(0,0,0,0.35)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif" }}>{tr(lang, 'w.navigate')}</div>
             )}
           </div>
         )}
@@ -1439,6 +1447,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
             fmtCurStr={fmtCurStr} currency={currency} solPrice={solPrice} price={price}
             onOpenConfig={() => setShowConfig(v => !v)}
+            lang={lang}
           />
         </div>
       </DraggableBlock>
@@ -1463,7 +1472,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               padding: `${DS.pad.y}px ${DS.pad.x}px`, background: DS.color.surface, cursor: 'grab',
               fontFamily: "'Roboto', sans-serif",
             }}>
-              <span style={{ ...DS.type.heading, color: DS.color.textOff }}>TP / SL</span>
+              <span style={{ ...DS.type.heading, color: DS.color.textOff }}>{tr(lang, 'w.tp_sl')}</span>
               <button
                 onClick={() => setShowConfig(v => !v)}
                 onMouseDown={e => e.stopPropagation()}
@@ -1481,7 +1490,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               <>
                 {/* TP section */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <span style={{ ...DS.type.subtitle, color: C.text }}>Take Profit</span>
+                  <span style={{ ...DS.type.subtitle, color: C.text }}>{tr(lang, 'w.take_profit')}</span>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {tpPresets.map(pct => {
                       const sel = activeTrade.tp === pct
@@ -1506,7 +1515,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
                 {/* SL section */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <span style={{ ...DS.type.subtitle, color: C.text }}>Stop Loss</span>
+                  <span style={{ ...DS.type.subtitle, color: C.text }}>{tr(lang, 'w.stop_loss')}</span>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
                     {slPresets.map(pct => {
                       const sel = activeTrade.sl === pct
@@ -1529,34 +1538,34 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               </>
             ) : (
               <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.4)', ...DS.type.subtitle, padding: '14px 0' }}>
-                Ouvrez une position d'abord
+                {tr(lang, 'w.open_first')}
               </div>
             )}
 
             {/* Footer */}
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 3 }}>
               {risk?.isHighRisk && (
-                <div style={{ color: C.red, ...DS.type.annex }}>■ Score risque élevé : {risk.score}/100</div>
+                <div style={{ color: C.red, ...DS.type.annex }}>{tr(lang, 'w.risk_score', { score: risk.score })}</div>
               )}
               {risk?.topHolderPercent != null && risk.topHolderPercent > 20 && (
-                <div style={{ color: C.red, ...DS.type.annex }}>■ Top holder : {risk.topHolderPercent.toFixed(0)}% du supply</div>
+                <div style={{ color: C.red, ...DS.type.annex }}>{tr(lang, 'w.top_holder', { pct: risk.topHolderPercent.toFixed(0) })}</div>
               )}
-              <div style={{ color: C.yellow, ...DS.type.annex }}>⚠ TP/SL actifs uniquement si cet onglet reste ouvert.</div>
+              <div style={{ color: C.yellow, ...DS.type.annex }}>{tr(lang, 'w.tp_warning')}</div>
             </div>
           </div>
         </DraggableBlock>
       )}
 
-      {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} />}
+      {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} lang={lang} />}
     </>
   )
 }
 
 // ─── Config Panel ─────────────────────────────────────────────────────────────
 
-function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved }: {
+function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved, lang }: {
   buyPresets: number[]; tpPresets: number[]; slPresets: number[]
-  slippage: number; fees: number; onSaved?: () => void
+  slippage: number; fees: number; onSaved?: () => void; lang: Lang
 }) {
   const pad = (arr: number[], n: number) => {
     const filled = arr.map(v => String(Math.abs(v)))
@@ -1606,9 +1615,9 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-      {/* Boutons d'achat */}
+      {/* Quick buy */}
       <div>
-        <div style={sL}>Achat rapide (SOL)</div>
+        <div style={sL}>{tr(lang, 'cfg.quick_buy')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {buyInputs.map((val, i) => (
             <input key={i} type="text" inputMode="decimal" value={val} placeholder="—"
@@ -1620,7 +1629,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
 
       {/* Take Profit */}
       <div>
-        <div style={sL}>Take Profit (%)</div>
+        <div style={sL}>{tr(lang, 'cfg.tp_pct')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {tpInputs.map((val, i) => (
             <div key={i} style={{ position: 'relative' }}>
@@ -1635,7 +1644,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
 
       {/* Stop Loss */}
       <div>
-        <div style={sL}>Stop Loss (%)</div>
+        <div style={sL}>{tr(lang, 'cfg.sl_pct')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
           {slInputs.map((val, i) => (
             <div key={i} style={{ position: 'relative' }}>
@@ -1646,21 +1655,21 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
             </div>
           ))}
         </div>
-        <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v3, marginTop: 5 }}>Les valeurs sont automatiquement négatives.</div>
+        <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v3, marginTop: 5 }}>{tr(lang, 'cfg.sl_auto')}</div>
       </div>
 
       {/* Slippage & Fees */}
       <div>
-        <div style={sL}>Slippage & Fees</div>
+        <div style={sL}>{tr(lang, 'cfg.slippage')}</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div>
-            <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, marginBottom: 4 }}>SLIPPAGE (%)</div>
+            <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, marginBottom: 4 }}>{tr(lang, 'cfg.slip_lbl')}</div>
             <input type="text" inputMode="decimal" value={slip} placeholder="1"
               onChange={e => numInput(e.target.value, setSlip)}
               style={inputStyle(!!slip)} />
           </div>
           <div>
-            <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, marginBottom: 4 }}>FEES (%)</div>
+            <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, marginBottom: 4 }}>{tr(lang, 'cfg.fees_lbl')}</div>
             <input type="text" inputMode="decimal" value={fee} placeholder="0.25"
               onChange={e => numInput(e.target.value, setFee)}
               style={inputStyle(!!fee)} />
@@ -1675,7 +1684,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
         color: saved ? '#000' : C.green, fontWeight: 700, fontSize: FS.v3,
         cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
       }}>
-        {saved ? '✓ Sauvegardé' : 'Sauvegarder'}
+        {saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}
       </button>
     </div>
   )
@@ -1689,9 +1698,10 @@ interface TradeTabTopProps {
   hasPrice: boolean; buyBlocked: boolean; onBuy: (a: number) => void; onSell: (p: number) => void
   onSellInitials: () => void; onOpenConfig: () => void
   fmtCurStr: (sol: number) => string; currency: 'SOL' | 'USD'; solPrice: number; price: number | null
+  lang: Lang
 }
 
-function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onOpenConfig, fmtCurStr, currency, price }: TradeTabTopProps) {
+function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onOpenConfig, fmtCurStr, currency, price, lang }: TradeTabTopProps) {
   const [pnlFlash, setPnlFlash] = useState<'up' | 'down' | null>(null)
   const [pnlFlashKey, setPnlFlashKey] = useState(0)
   const prevPnlRef = useRef<number | null>(null)
@@ -1716,7 +1726,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
       {/* ── Quick Buy ── */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <span style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.subtitle, color: C.text }}>Quick Buy</span>
+          <span style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.subtitle, color: C.text }}>{tr(lang, 'w.quick_buy')}</span>
           <button onClick={onOpenConfig} onMouseDown={e => e.stopPropagation()} style={{ background: DS.color.surface, border: '1px solid rgba(0,0,0,0.12)', borderRadius: 10, cursor: 'pointer', color: DS.color.textOff, fontSize: 18, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, fontWeight: 700 }}>⚙</button>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
@@ -1740,7 +1750,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
 
           {/* Header: Open Trades + PnL% */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.subtitle, color: C.text }}>PnL (%)</span>
+            <span style={{ fontFamily: "'Roboto', sans-serif", ...DS.type.subtitle, color: C.text }}>{tr(lang, 'w.pnl_pct')}</span>
             <span style={{ fontFamily: "'Roboto', sans-serif", fontWeight: 700, fontSize: 15, color: pnlColor(livePnL.percent) }}>{fmtPct(livePnL.percent)}</span>
           </div>
 
@@ -1754,7 +1764,7 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
             return (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: 'rgba(255,255,255,0.9)', ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif" }}>
-                  MC Entry{multiEntry ? ' or Ave. Entries' : ''}
+                  {multiEntry ? tr(lang, 'w.mc_entry_avg') : tr(lang, 'w.mc_entry')}
                 </span>
                 <span style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 700, ...DS.type.subtitle, fontFamily: "'Roboto', sans-serif" }}>
                   {multiEntry && avgMC != null ? fmtMC(avgMC) : fmtMC(activeTrade.entryMC)}
@@ -1790,10 +1800,10 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
           {/* Stats: INVEST / LIVE / PNL / EARNS */}
           <div style={{ background: DS.color.surface, borderRadius: 10, padding: '9px 7px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
             {[
-              { label: 'Invest.', sol: activeTrade.invested },
-              { label: 'Live',    sol: liveValue },
-              { label: 'PnL',    sol: livePnL.sol },
-              { label: 'Earns',  sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
+              { label: tr(lang, 'w.invest'),  sol: activeTrade.invested },
+              { label: tr(lang, 'w.live'),    sol: liveValue },
+              { label: tr(lang, 'w.pnl'),     sol: livePnL.sol },
+              { label: tr(lang, 'w.earns'),   sol: activeTrade.closeEvents.length > 0 ? activeTrade.closeEvents.reduce((s, e) => s + e.solReturned, 0) : null },
             ].map(({ label, sol }) => (
               <div key={label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, lineHeight: 1, color: DS.color.textOff, fontFamily: "'Roboto', sans-serif" }}>{label}</span>
@@ -1829,14 +1839,14 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
               borderBottom: `1px solid rgba(255,255,255,0.5)`, paddingBottom: 2,
               userSelect: 'none', display: 'inline-flex', alignItems: 'center', gap: 4,
             }}>
-              Sell Inits <span style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: -1 }}>——</span> {fmtSOL(activeTrade.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 0 }} />
+              {tr(lang, 'w.sell_inits')} <span style={{ color: 'rgba(255,255,255,0.35)', letterSpacing: -1 }}>——</span> {fmtSOL(activeTrade.invested)}<SolIcon size={10} fill="#fff" style={{ marginLeft: 0 }} />
             </span>
           </div>
 
         </div>
       ) : (
         <div style={{ textAlign: 'center', color: C.muted, fontSize: FS.v4, padding: '14px 0' }}>
-          {hasPrice ? 'Aucune position ouverte' : 'Chargement du prix…'}
+          {hasPrice ? tr(lang, 'w.no_position') : tr(lang, 'w.loading_price')}
         </div>
       )}
     </div>

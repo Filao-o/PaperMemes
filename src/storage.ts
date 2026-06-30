@@ -12,6 +12,7 @@ const DEFAULTS: AppState = {
   slippage: 1,
   fees: 0.25,
   selectedPlatform: null,
+  language: 'fr' as 'en' | 'fr' | 'es',
 }
 
 export const Storage = {

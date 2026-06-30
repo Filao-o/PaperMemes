@@ -48,6 +48,7 @@ export interface AppState {
   slippage: number
   fees: number
   selectedPlatform: 'padre' | 'axiom' | 'gmgn' | null
+  language: 'en' | 'fr' | 'es'
 }
 
 export interface TokenInfo {

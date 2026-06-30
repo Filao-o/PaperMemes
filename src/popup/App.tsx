@@ -3,6 +3,7 @@ import { Storage } from '../storage'
 import type { AppState, Trade } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, SolIcon } from './components/ui'
 import { TradeCard } from './components/JournalPanel'
+import { t as tr, type Lang, LANG_LABELS } from '../i18n'
 
 const FONT = "'Space Grotesk', -apple-system, sans-serif"
 
@@ -11,7 +12,7 @@ const FONT = "'Space Grotesk', -apple-system, sans-serif"
 const SOL_RESET_PRESETS = [1, 2, 5, 10, 20]
 const USD_RESET_PRESETS = [25, 50, 100, 200, 500]
 
-function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; currency: 'SOL' | 'USD'; solPrice: number }) {
+function ResetModal({ onClose, currency, solPrice, lang }: { onClose: () => void; currency: 'SOL' | 'USD'; solPrice: number; lang: Lang }) {
   const [localCurrency, setLocalCurrency] = useState<'SOL' | 'USD'>(currency)
   const [amount, setAmount] = useState(localCurrency === 'SOL' ? 5 : 100)
   const [custom, setCustom] = useState('')
@@ -58,12 +59,12 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
     return (
       <div style={overlayStyle} onClick={e => e.target === e.currentTarget && onClose()}>
         <div style={cardStyle}>
-          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.red }}>⚠ CONFIRMATION</div>
+          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: C.red }}>{tr(lang, 'reset.warn_title')}</div>
           <div style={{ color: C.textSub, fontSize: 12, lineHeight: 1.65 }}>
             {isFull ? (
-              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span> et <span style={{ color: C.red, fontWeight: 700 }}>tout l'historique sera supprimé</span>. Cette action est irrémédiable.</>
+              <>{tr(lang, 'reset.warn_before')}<span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span>{tr(lang, 'reset.warn_full_mid')}<span style={{ color: C.red, fontWeight: 700 }}>{tr(lang, 'reset.warn_full_red')}</span>{tr(lang, 'reset.warn_suffix')}</>
             ) : (
-              <>Ton solde sera réinitialisé à <span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span>. L'historique sera conservé. Cette action est irrémédiable.</>
+              <>{tr(lang, 'reset.warn_before')}<span style={{ color: '#fff', fontWeight: 700 }}>{fmtAmt(activeAmountSOL)}</span>{tr(lang, 'reset.warn_bal_mid')}</>
             )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -71,12 +72,12 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
               width: '100%', padding: '10px 0', borderRadius: 8, fontFamily: 'inherit',
               background: C.red, border: 'none', color: '#fff',
               fontWeight: 700, fontSize: 12, cursor: 'pointer',
-            }}>Confirmer</button>
+            }}>{tr(lang, 'reset.confirm')}</button>
             <button onClick={() => setConfirm(null)} style={{
               width: '100%', padding: '8px 0', borderRadius: 8, fontFamily: 'inherit',
               background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
               fontWeight: 600, fontSize: 11, cursor: 'pointer',
-            }}>Retour</button>
+            }}>{tr(lang, 'reset.back')}</button>
           </div>
         </div>
       </div>
@@ -90,7 +91,7 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
       <div style={cardStyle}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: '#ffffff' }}>RÉINITIALISER LE WALLET</div>
+          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: 0.5, color: '#ffffff' }}>{tr(lang, 'reset.title')}</div>
           <div onClick={switchCurrency} style={{
             display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none',
             background: '#1a1a1a', border: '1px solid #333', borderRadius: 20, padding: 2,
@@ -108,7 +109,7 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
         {/* Presets */}
         <div>
           <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-            Montant ({isUSD ? 'USD' : 'SOL'})
+            {tr(lang, 'reset.amount')} ({isUSD ? 'USD' : 'SOL'})
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {presets.map(p => {
@@ -131,9 +132,9 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
         {/* Custom input */}
         <div>
           <div style={{ color: C.muted, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-            Montant personnalisé ({isUSD ? 'USD' : 'SOL'})
+            {tr(lang, 'reset.custom')} ({isUSD ? 'USD' : 'SOL'})
           </div>
-          <input type="text" inputMode="decimal" placeholder={isUSD ? 'ex: 250' : 'ex: 25'} value={custom}
+          <input type="text" inputMode="decimal" placeholder={isUSD ? tr(lang, 'reset.placeholder_usd') : tr(lang, 'reset.placeholder_sol')} value={custom}
             onChange={e => { if (e.target.value === '' || /^\d*\.?\d*$/.test(e.target.value)) setCustom(e.target.value) }}
             style={{
               width: '100%', boxSizing: 'border-box',
@@ -150,18 +151,18 @@ function ResetModal({ onClose, currency, solPrice }: { onClose: () => void; curr
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
             fontWeight: 700, fontSize: 12, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmountSOL > 0 ? 1 : 0.4,
-          }}>Reset solde + historique</button>
+          }}>{tr(lang, 'reset.btn_full')}</button>
           <button onClick={() => activeAmountSOL > 0 && setConfirm('balance')} disabled={activeAmountSOL <= 0} style={{
             width: '100%', padding: '10px 0', borderRadius: 6, fontFamily: 'inherit',
             background: `${C.red}18`, border: `1px solid ${C.red}60`, color: C.red,
             fontWeight: 700, fontSize: 12, cursor: activeAmountSOL > 0 ? 'pointer' : 'not-allowed',
             opacity: activeAmountSOL > 0 ? 1 : 0.4,
-          }}>Reset solde uniquement</button>
+          }}>{tr(lang, 'reset.btn_balance')}</button>
           <button onClick={onClose} style={{
             width: '100%', padding: '8px 0', borderRadius: 6, fontFamily: 'inherit',
             background: 'transparent', border: `1px solid ${C.border}`, color: C.muted,
             fontWeight: 600, fontSize: 11, cursor: 'pointer',
-          }}>Annuler</button>
+          }}>{tr(lang, 'reset.cancel')}</button>
         </div>
       </div>
     </div>
@@ -188,7 +189,7 @@ function smoothPath(pts: [number, number][]): string {
   return d
 }
 
-function PnlCurve({ trades }: { trades: Trade[] }) {
+function PnlCurve({ trades, lang }: { trades: Trade[]; lang: Lang }) {
   const W = 332
   const H = 80
   const PAD = { x: 8, top: 24, bottom: 8 }
@@ -201,16 +202,16 @@ function PnlCurve({ trades }: { trades: Trade[] }) {
       <span style={{
         position: 'absolute', top: 8, left: 10, color: 'rgba(255,255,255,0.9)',
         fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.5, zIndex: 1,
-      }}>Cumulative PNL Curve</span>
+      }}>{tr(lang, 'pnl.title')}</span>
 
       {trades.length < 2 ? (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 12 }}>
-          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11 }}>Pas encore de données</span>
+          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11 }}>{tr(lang, 'pnl.no_data')}</span>
         </div>
       ) : (() => {
         const sorted = [...trades].sort((a, b) => (a.closedAt ?? 0) - (b.closedAt ?? 0))
-        const cumulative = sorted.reduce<number[]>((acc, t) => {
-          acc.push((acc[acc.length - 1] ?? 0) + (t.pnlSOL ?? 0))
+        const cumulative = sorted.reduce<number[]>((acc, tr_) => {
+          acc.push((acc[acc.length - 1] ?? 0) + (tr_.pnlSOL ?? 0))
           return acc
         }, [])
         const min = Math.min(0, ...cumulative)
@@ -265,7 +266,13 @@ function StatCard({ label, value, sub, color }: { label: string; value: React.Re
 type Filter = 'ALL' | 'Active' | 'Gain' | 'Loss'
 const FILTERS: Filter[] = ['ALL', 'Active', 'Gain', 'Loss']
 
-function FilterBar({ active, onChange }: { active: Filter; onChange: (f: Filter) => void }) {
+function FilterBar({ active, onChange, lang }: { active: Filter; onChange: (f: Filter) => void; lang: Lang }) {
+  const labels: Record<Filter, string> = {
+    ALL: tr(lang, 'filter.all'),
+    Active: tr(lang, 'filter.active'),
+    Gain: tr(lang, 'filter.gain'),
+    Loss: tr(lang, 'filter.loss'),
+  }
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
       {FILTERS.map(f => (
@@ -275,7 +282,7 @@ function FilterBar({ active, onChange }: { active: Filter; onChange: (f: Filter)
           border: '1px solid #ffffff',
           color: '#000000',
           fontSize: 10, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5,
-        }}>{f}</button>
+        }}>{labels[f]}</button>
       ))}
     </div>
   )
@@ -304,13 +311,11 @@ function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: (
 
 // ─── Performance Calendar ─────────────────────────────────────────────────────
 
-function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => void }) {
+function CalendarModal({ trades, onClose, lang }: { trades: Trade[]; onClose: () => void; lang: Lang }) {
   const today = new Date()
   const [view, setView] = useState<'week' | 'month'>('week')
-  // For month view
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
-  // For week view: anchor = Monday of current week
   const getMonday = (d: Date) => {
     const day = d.getDay()
     const diff = (day + 6) % 7
@@ -321,13 +326,15 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
   }
   const [weekStart, setWeekStart] = useState(() => getMonday(today))
 
-  // group pnl by day key "YYYY-MM-DD"
+  const calLocale = tr(lang, 'cal.locale')
+  const DAY_LABELS = tr(lang, 'cal.days').split(',')
+
   const dayMap = new Map<string, number>()
-  for (const t of trades) {
-    if (!t.closedAt) continue
-    const d = new Date(t.closedAt)
+  for (const trade of trades) {
+    if (!trade.closedAt) continue
+    const d = new Date(trade.closedAt)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    dayMap.set(key, (dayMap.get(key) ?? 0) + (t.pnlSOL ?? 0))
+    dayMap.set(key, (dayMap.get(key) ?? 0) + (trade.pnlSOL ?? 0))
   }
 
   function toKey(d: Date) {
@@ -338,7 +345,6 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
     return d.getDate() === d2.getDate() && d.getMonth() === d2.getMonth() && d.getFullYear() === d2.getFullYear()
   }
 
-  // ── Week view data ──
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart)
     d.setDate(weekStart.getDate() + i)
@@ -350,7 +356,6 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
     return `${fmtD(weekStart)} – ${fmtD(end)} ${end.getFullYear()}`
   })()
 
-  // ── Month view data ──
   const firstDay = new Date(year, month, 1)
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const startOffset = (firstDay.getDay() + 6) % 7
@@ -359,9 +364,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
   while (monthCells.length % 7 !== 0) monthCells.push(null)
-  const monthName = firstDay.toLocaleString('fr-FR', { month: 'long', year: 'numeric' })
-
-  const DAY_LABELS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+  const monthName = firstDay.toLocaleString(calLocale, { month: 'long', year: 'numeric' })
 
   function DayCell({ pnl, dayNum, isT }: { pnl?: number; dayNum: React.ReactNode; isT: boolean }) {
     const hasTrade = pnl !== undefined
@@ -388,13 +391,6 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
     padding: 4, background: 'transparent', border: 'none', cursor: 'pointer',
     color: 'rgba(255,255,255,0.9)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
   }
-  const btnToggle = (active: boolean): React.CSSProperties => ({
-    flex: 1, padding: '5px 0', borderRadius: 6, fontFamily: FONT,
-    background: active ? '#ffffff' : 'transparent',
-    border: `1px solid ${active ? '#ffffff' : C.border}`,
-    color: active ? '#000' : C.muted,
-    fontWeight: 700, fontSize: 10, cursor: 'pointer', letterSpacing: 0.5,
-  })
 
   return (
     <div style={{
@@ -409,7 +405,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
         color: '#fff',
       }}>
 
-        {/* View toggle + settings row */}
+        {/* View toggle + close */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 4,
@@ -421,14 +417,14 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
               color: view === 'week' ? '#000' : 'rgba(255,255,255,0.9)',
               boxShadow: view === 'week' ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
               transition: 'all 0.15s',
-            }}>Weekly</button>
+            }}>{tr(lang, 'cal.weekly')}</button>
             <button onClick={() => setView('month')} style={{
               borderRadius: 6, padding: '4px 16px', fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer',
               background: view === 'month' ? '#ffffff' : 'transparent',
               color: view === 'month' ? '#000' : 'rgba(255,255,255,0.9)',
               boxShadow: view === 'month' ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
               transition: 'all 0.15s',
-            }}>Monthly</button>
+            }}>{tr(lang, 'cal.monthly')}</button>
           </div>
           <button onClick={onClose} style={{
             padding: 8, background: 'transparent', border: 'none', cursor: 'pointer',
@@ -440,7 +436,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
           </button>
         </div>
 
-        {/* Month name + navigation */}
+        {/* Month/week label + navigation */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '8px 0' }}>
           <span style={{ fontSize: 32, fontWeight: 800, letterSpacing: -1, color: '#fff', textTransform: 'capitalize' }}>
             {view === 'week' ? weekLabel : monthName}
@@ -479,7 +475,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
               const border = hasTrade
                 ? `1px solid ${pnl! >= 0 ? C.green : C.red}60`
                 : `1px solid ${C.border}`
-              const dayName = d.toLocaleDateString('fr-FR', { weekday: 'long' })
+              const dayName = d.toLocaleDateString(calLocale, { weekday: 'long' })
               const dayLabel = dayName.charAt(0).toUpperCase() + dayName.slice(1)
               return (
                 <div key={i} style={{
@@ -498,7 +494,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
                       <span style={{
                         fontSize: 9, fontWeight: 700, color: '#000',
                         background: color, borderRadius: 4, padding: '1px 6px',
-                      }}>{pnl! >= 0 ? 'GAIN' : 'PERTE'}</span>
+                      }}>{pnl! >= 0 ? tr(lang, 'cal.gain_badge') : tr(lang, 'cal.loss_badge')}</span>
                     </div>
                   ) : (
                     <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)' }}>—</span>
@@ -523,7 +519,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
 
         {/* Legend */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-          {[{ color: C.green, label: 'Gain' }, { color: C.red, label: 'Perte' }].map(({ color, label }) => (
+          {[{ color: C.green, label: tr(lang, 'cal.gain') }, { color: C.red, label: tr(lang, 'cal.loss') }].map(({ color, label }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <div style={{ width: 10, height: 10, borderRadius: 3, background: `${color}40`, border: `1px solid ${color}80` }} />
               <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{label}</span>
@@ -545,8 +541,9 @@ const PLATFORMS: { id: Platform; label: string; logo: string; url: string }[] = 
   { id: 'padre', label: 'Padre', logo: 'https://coin-images.coingecko.com/coins/images/36079/large/padre.jpg?1762307301',                                                                          url: 'https://trade.padre.gg/trenches' },
 ]
 
-function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
+function PlatformSelector({ onSelect, lang }: { onSelect: (p: Platform) => void; lang: Lang }) {
   const [hovered, setHovered] = React.useState<Platform | null>(null)
+  const subtitle = tr(lang, 'platform.subtitle').split('\n')
 
   return (
     <div style={{
@@ -567,14 +564,31 @@ function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
       {/* Body */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '32px 20px', gap: 28,
+        padding: '32px 20px', gap: 22,
       }}>
+        {/* Language selector */}
+        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+          {(Object.entries(LANG_LABELS) as [Lang, string][]).map(([l, label]) => (
+            <button
+              key={l}
+              onClick={() => Storage.set({ language: l })}
+              style={{
+                padding: '4px 14px', borderRadius: 20, cursor: 'pointer', fontFamily: FONT,
+                background: lang === l ? '#ffffff' : 'transparent',
+                border: `1px solid ${lang === l ? '#ffffff' : 'rgba(255,255,255,0.25)'}`,
+                color: lang === l ? '#000000' : 'rgba(255,255,255,0.55)',
+                fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
+              }}
+            >{label}</button>
+          ))}
+        </div>
+
         <div style={{ textAlign: 'center' }}>
           <div style={{ color: '#ffffff', fontSize: 18, fontWeight: 800, letterSpacing: -0.5, marginBottom: 6 }}>
-            Choisir une plateforme
+            {tr(lang, 'platform.title')}
           </div>
           <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, lineHeight: 1.6 }}>
-            Sélectionne la plateforme que tu utilises.<br />Ce choix peut être modifié à tout moment.
+            {subtitle[0]}<br />{subtitle[1]}
           </div>
         </div>
 
@@ -638,18 +652,20 @@ export function App() {
 
   if (!state) return null
 
+  const lang = (state.language ?? 'fr') as Lang
+
   if (state.selectedPlatform === null) {
-    return <PlatformSelector onSelect={p => Storage.set({ selectedPlatform: p })} />
+    return <PlatformSelector onSelect={p => Storage.set({ selectedPlatform: p })} lang={lang} />
   }
 
   const { balance, activeTrade, closedTrades, currency, solPrice } = state
 
-  const totalPnl = closedTrades.reduce((s, t) => s + (t.pnlSOL ?? 0), 0)
-  const won = closedTrades.filter(t => t.status === 'won').length
+  const totalPnl = closedTrades.reduce((s, trade) => s + (trade.pnlSOL ?? 0), 0)
+  const won = closedTrades.filter(trade => trade.status === 'won').length
   const lost = closedTrades.length - won
   const winRate = closedTrades.length > 0 ? (won / closedTrades.length) * 100 : null
-  const best = closedTrades.reduce<Trade | null>((b, t) =>
-    !b || (t.pnlPercent ?? -Infinity) > (b.pnlPercent ?? -Infinity) ? t : b, null)
+  const best = closedTrades.reduce<Trade | null>((b, trade) =>
+    !b || (trade.pnlPercent ?? -Infinity) > (b.pnlPercent ?? -Infinity) ? trade : b, null)
   const avgPnl = closedTrades.length > 0 ? totalPnl / closedTrades.length : null
 
   function fmtBal(): React.ReactNode {
@@ -669,15 +685,15 @@ export function App() {
   }
 
   const filteredTrades = filter === 'Gain'
-    ? closedTrades.filter(t => t.status === 'won')
+    ? closedTrades.filter(trade => trade.status === 'won')
     : filter === 'Loss'
-    ? closedTrades.filter(t => t.status === 'lost')
+    ? closedTrades.filter(trade => trade.status === 'lost')
     : closedTrades
 
   return (
     <>
-      {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} />}
-      {showCalendar && <CalendarModal trades={closedTrades} onClose={() => setShowCalendar(false)} />}
+      {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} lang={lang} />}
+      {showCalendar && <CalendarModal trades={closedTrades} onClose={() => setShowCalendar(false)} lang={lang} />}
       <div style={{
         width: 360, minHeight: 480,
         background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
@@ -700,7 +716,7 @@ export function App() {
             }}>{state.selectedPlatform}</span>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => setShowCalendar(true)} title="Calendrier de performances" style={{
+            <button onClick={() => setShowCalendar(true)} title="Calendar" style={{
               width: 34, height: 34, background: '#000000', border: '1px solid #333',
               borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 16,
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
@@ -709,12 +725,12 @@ export function App() {
                 <path d="M216 64C229.3 64 240 74.7 240 88L240 128L400 128L400 88C400 74.7 410.7 64 424 64C437.3 64 448 74.7 448 88L448 128L480 128C515.3 128 544 156.7 544 192L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 192C96 156.7 124.7 128 160 128L192 128L192 88C192 74.7 202.7 64 216 64zM216 176L160 176C151.2 176 144 183.2 144 192L144 240L496 240L496 192C496 183.2 488.8 176 480 176L216 176zM144 288L144 480C144 488.8 151.2 496 160 496L480 496C488.8 496 496 488.8 496 480L496 288L144 288z"/>
               </svg>
             </button>
-            <button onClick={() => setShowReset(true)} title="Réinitialiser" style={{
+            <button onClick={() => setShowReset(true)} title="Reset" style={{
               width: 34, height: 34, background: '#000000', border: '1px solid #333',
               borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 17,
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
             }}>↺</button>
-            <button onClick={() => Storage.set({ selectedPlatform: null })} title="Changer de plateforme" style={{
+            <button onClick={() => Storage.set({ selectedPlatform: null })} title="Change platform" style={{
               width: 34, height: 34, background: '#000000', border: '1px solid #333',
               borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 14,
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
@@ -732,7 +748,7 @@ export function App() {
             <span style={{
               background: '#fff', color: '#111', fontWeight: 700, fontSize: 11,
               padding: '3px 10px', borderRadius: 20,
-            }}>Solde Wallet</span>
+            }}>{tr(lang, 'wallet.label')}</span>
             <CurrencyToggle
               value={currency}
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
@@ -749,37 +765,37 @@ export function App() {
         {/* ── Content ── */}
         <div style={{ flex: 1, padding: '10px 14px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
 
-          <PnlCurve trades={closedTrades} />
+          <PnlCurve trades={closedTrades} lang={lang} />
 
           {/* Stats row 1 */}
           <div style={{ display: 'flex', gap: 8 }}>
             <StatCard
-              label="PNL Total"
+              label={tr(lang, 'stats.pnl')}
               value={<>{totalPnl >= 0 ? '+' : ''}{fmtPnlNode(totalPnl)}</>}
               color={pnlColor(totalPnl)}
-              sub={avgPnl != null ? <>moy. {fmtSOL(avgPnl)} $</> : undefined}
+              sub={avgPnl != null ? <>{tr(lang, 'stats.avg')} {fmtSOL(avgPnl)} $</> : undefined}
             />
             <StatCard
-              label="Win Rate"
+              label={tr(lang, 'stats.winrate')}
               value={winRate != null ? `${winRate.toFixed(0)}%` : '—'}
               color={winRate != null ? (winRate >= 50 ? C.green : C.red) : C.muted}
-              sub={closedTrades.length > 0 ? `${won}W/${lost}L` : 'Aucun trade'}
+              sub={closedTrades.length > 0 ? `${won}W/${lost}L` : tr(lang, 'stats.no_trade')}
             />
           </div>
 
           {/* Stats row 2 */}
           <div style={{ display: 'flex', gap: 8 }}>
             <StatCard
-              label="Trades"
+              label={tr(lang, 'stats.trades')}
               value={closedTrades.length}
               color={C.text}
-              sub={activeTrade ? '1 position active' : 'No Position'}
+              sub={activeTrade ? tr(lang, 'stats.active_pos') : tr(lang, 'stats.no_pos')}
             />
             <StatCard
-              label="Best"
+              label={tr(lang, 'stats.best')}
               value={best ? fmtPct(best.pnlPercent ?? 0) : '—'}
               color={best ? C.green : C.muted}
-              sub={best ? best.tokenName : 'Aucun trade'}
+              sub={best ? best.tokenName : tr(lang, 'stats.no_trade')}
             />
           </div>
 
@@ -788,27 +804,27 @@ export function App() {
             <div style={{
               fontWeight: 800, fontSize: 11, letterSpacing: 2.5,
               color: '#ffffff', marginBottom: 8, textTransform: 'uppercase',
-            }}>Trade History</div>
-            <FilterBar active={filter} onChange={setFilter} />
+            }}>{tr(lang, 'history.title')}</div>
+            <FilterBar active={filter} onChange={setFilter} lang={lang} />
           </div>
 
           {/* Trade List */}
           {filter === 'Active' ? (
             activeTrade ? (
-              <ActiveTradeRow trade={activeTrade} currency={currency} solPrice={solPrice} />
+              <ActiveTradeRow trade={activeTrade} currency={currency} solPrice={solPrice} lang={lang} />
             ) : (
               <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.9)', fontSize: 11, padding: '16px 0' }}>
-                Aucune position active
+                {tr(lang, 'history.no_active')}
               </div>
             )
           ) : filteredTrades.length === 0 ? (
             <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.9)', fontSize: 11, padding: '16px 0' }}>
-              Aucun trade
+              {tr(lang, 'history.no_trade')}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {filteredTrades.map(t => (
-                <TradeCard key={t.id} trade={t} currency={currency} solPrice={solPrice} />
+              {filteredTrades.map(trade => (
+                <TradeCard key={trade.id} trade={trade} currency={currency} solPrice={solPrice} />
               ))}
             </div>
           )}
@@ -820,7 +836,7 @@ export function App() {
 
 // ─── Active trade row (filter Active) ────────────────────────────────────────
 
-function ActiveTradeRow({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
+function ActiveTradeRow({ trade, currency, solPrice, lang }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number; lang: Lang }) {
   return (
     <div style={{
       background: 'rgba(0,0,0,0.30)', borderRadius: 10, border: `1px solid ${C.green}50`,
@@ -831,13 +847,13 @@ function ActiveTradeRow({ trade, currency, solPrice }: { trade: Trade; currency:
         <span style={{
           background: `${C.green}22`, color: C.green, border: `1px solid ${C.green}60`,
           borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 700,
-        }}>ACTIF</span>
+        }}>{tr(lang, 'trade.active')}</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4 }}>
         {[
-          { label: 'Terminal', val: trade.terminal },
-          { label: 'MC Entrée', val: fmtMC(trade.entryMC) },
-          { label: 'Investi', val: currency === 'USD' && solPrice > 0 ? `$${(trade.invested * solPrice).toFixed(2)}` : `${fmtSOL(trade.invested)} SOL` },
+          { label: tr(lang, 'trade.terminal'), val: trade.terminal },
+          { label: tr(lang, 'trade.entry_mc'), val: fmtMC(trade.entryMC) },
+          { label: tr(lang, 'trade.invested'), val: currency === 'USD' && solPrice > 0 ? `$${(trade.invested * solPrice).toFixed(2)}` : `${fmtSOL(trade.invested)} SOL` },
         ].map(({ label, val }) => (
           <div key={label}>
             <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</div>
