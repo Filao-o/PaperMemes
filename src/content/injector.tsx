@@ -233,7 +233,11 @@ const gmgnAdapter: Adapter = {
   getMintAddress(href = window.location.href) {
     return href.match(/gmgn\.ai\/sol\/token\/([A-Za-z0-9]{32,44})/)?.[1] ?? null
   },
-  getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
+  getExtended() {
+    const el = document.querySelector<HTMLElement>('[data-testid="token-detail-holders-count"]')
+    const holders = el ? parseInt((el.textContent ?? '').replace(/,/g, '').trim(), 10) || null : null
+    return { liquidity: null, holders, age: walkAge() }
+  },
 }
 
 const bullxAdapter: Adapter = {
