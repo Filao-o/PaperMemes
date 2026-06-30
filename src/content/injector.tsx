@@ -1899,11 +1899,20 @@ async function tryMount() {
   }, 100)
 }
 
+function scheduleRetry() {
+  let attempts = 0
+  const id = setInterval(() => {
+    if (document.getElementById('papermemes-root') || ++attempts > 10) { clearInterval(id); return }
+    tryMount()
+  }, 500)
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => { tryMount(); setupUrlWatcher() })
+  document.addEventListener('DOMContentLoaded', () => { tryMount(); setupUrlWatcher(); scheduleRetry() })
 } else {
   tryMount()
   setupUrlWatcher()
+  scheduleRetry()
 }
 
 function setupUrlWatcher() {
