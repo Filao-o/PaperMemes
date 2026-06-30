@@ -535,6 +535,90 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
   )
 }
 
+// ─── Platform Selector ────────────────────────────────────────────────────────
+
+type Platform = 'padre' | 'axiom' | 'gmgn'
+
+const PLATFORMS: { id: Platform; label: string; desc: string }[] = [
+  { id: 'padre', label: 'Padre', desc: 'Padre Terminal' },
+  { id: 'axiom', label: 'AXIOM', desc: 'AXIOM Trade' },
+  { id: 'gmgn', label: 'GMGN', desc: 'GMGN.ai' },
+]
+
+function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
+  const [hovered, setHovered] = React.useState<Platform | null>(null)
+
+  return (
+    <div style={{
+      width: 360, minHeight: 480, fontFamily: FONT,
+      background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+      border: '1px solid rgba(255,255,255,0.10)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '10px 14px', background: '#ffffff', borderBottom: '1px solid #e0e0e0',
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <span style={{ fontWeight: 800, fontSize: 14, color: '#000000', letterSpacing: -0.3 }}>PaperMemes</span>
+        <span style={{ color: '#888888', fontSize: 10 }}>v1.5</span>
+      </div>
+
+      {/* Body */}
+      <div style={{
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '32px 20px', gap: 24,
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ color: '#ffffff', fontSize: 18, fontWeight: 800, letterSpacing: -0.5, marginBottom: 6 }}>
+            Choisir une plateforme
+          </div>
+          <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, lineHeight: 1.6 }}>
+            Sélectionne la plateforme que tu utilises.<br />Ce choix peut être modifié à tout moment.
+          </div>
+        </div>
+
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {PLATFORMS.map(({ id, label, desc }) => {
+            const isHovered = hovered === id
+            return (
+              <button
+                key={id}
+                onClick={() => onSelect(id)}
+                onMouseEnter={() => setHovered(id)}
+                onMouseLeave={() => setHovered(null)}
+                style={{
+                  width: '100%', padding: '16px 20px', borderRadius: 12, cursor: 'pointer',
+                  background: isHovered ? '#ffffff' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${isHovered ? '#ffffff' : 'rgba(255,255,255,0.15)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  fontFamily: FONT, transition: 'all 0.15s',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
+                  <span style={{
+                    fontSize: 15, fontWeight: 800, letterSpacing: -0.3,
+                    color: isHovered ? '#000000' : '#ffffff',
+                  }}>{label}</span>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600,
+                    color: isHovered ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)',
+                  }}>{desc}</span>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke={isHovered ? '#000' : 'rgba(255,255,255,0.4)'}
+                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export function App() {
@@ -556,6 +640,10 @@ export function App() {
   }, [])
 
   if (!state) return null
+
+  if (state.selectedPlatform === null) {
+    return <PlatformSelector onSelect={p => Storage.set({ selectedPlatform: p })} />
+  }
 
   const { balance, activeTrade, closedTrades, currency, solPrice } = state
 
@@ -609,6 +697,10 @@ export function App() {
             <span style={{ color: '#000000', fontSize: 18, lineHeight: 1 }}>≡</span>
             <span style={{ fontWeight: 800, fontSize: 14, color: '#000000', letterSpacing: -0.3 }}>PaperMemes</span>
             <span style={{ color: '#888888', fontSize: 10 }}>v1.5</span>
+            <span style={{
+              background: '#000', color: '#fff', fontSize: 9, fontWeight: 700,
+              padding: '2px 7px', borderRadius: 20, letterSpacing: 0.5, textTransform: 'uppercase',
+            }}>{state.selectedPlatform}</span>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button onClick={() => setShowCalendar(true)} title="Calendrier de performances" style={{
@@ -625,6 +717,15 @@ export function App() {
               borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 17,
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
             }}>↺</button>
+            <button onClick={() => Storage.set({ selectedPlatform: null })} title="Changer de plateforme" style={{
+              width: 34, height: 34, background: '#000000', border: '1px solid #333',
+              borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 14,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+              </svg>
+            </button>
           </div>
         </div>
 

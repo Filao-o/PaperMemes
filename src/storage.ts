@@ -11,6 +11,7 @@ const DEFAULTS: AppState = {
   solPrice: 0,
   slippage: 1,
   fees: 0.25,
+  selectedPlatform: null,
 }
 
 export const Storage = {

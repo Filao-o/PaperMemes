@@ -47,6 +47,7 @@ export interface AppState {
   solPrice: number
   slippage: number
   fees: number
+  selectedPlatform: 'padre' | 'axiom' | 'gmgn' | null
 }
 
 export interface TokenInfo {
