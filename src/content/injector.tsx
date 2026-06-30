@@ -267,7 +267,7 @@ const bullxAdapter: Adapter = {
   getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
 }
 
-let axiomLastMC = 0
+const axiomMCCache = { value: 0, mint: '' }
 
 const axiomAdapter: Adapter = {
   getPrice() {
@@ -282,14 +282,19 @@ const axiomAdapter: Adapter = {
     return null
   },
   getMarketCap() {
-    // Axiom: MC value has the 'text-primaryLightBlue' Tailwind class
-    const el = document.querySelector<HTMLElement>('[class*="primaryLightBlue"]')
-    if (el) { const n = q(el.textContent); if (n && n > 0) { axiomLastMC = n; return n } }
+    const mint = window.location.href.match(/axiom\.trade\/meme\/([A-Za-z0-9]{32,44})/)?.[1] ?? ''
+    if (axiomMCCache.mint !== mint) axiomMCCache.value = 0
+
+    // Iterate ALL primaryLightBlue elements — MC >= $1K distinguishes it from token prices
+    for (const el of document.querySelectorAll<HTMLElement>('[class*="primaryLightBlue"]')) {
+      const n = q(el.textContent)
+      if (n && n >= 1000) { axiomMCCache.value = n; axiomMCCache.mint = mint; return n }
+    }
     // Fallback: text node matching $X.xK/M/B pattern
     const walked = dt(/^\$[\d,.]+[KMB]$/i)
-    if (walked) { const n = q(walked.textContent); if (n && n > 0) { axiomLastMC = n; return n } }
-    // DOM momentarily unavailable (rapid re-render): return last known value
-    if (axiomLastMC > 0) return axiomLastMC
+    if (walked) { const n = q(walked.textContent); if (n && n >= 1000) { axiomMCCache.value = n; axiomMCCache.mint = mint; return n } }
+    // DOM momentarily unavailable: return last known value for same token
+    if (axiomMCCache.value > 0 && axiomMCCache.mint === mint) return axiomMCCache.value
     return null
   },
   getTokenName() {
