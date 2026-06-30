@@ -540,9 +540,9 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
 type Platform = 'padre' | 'axiom' | 'gmgn'
 
 const PLATFORMS: { id: Platform; label: string; logo: string; url: string }[] = [
-  { id: 'gmgn',  label: 'GMGN',  logo: 'https://gmgn.ai/favicon.ico',                   url: 'https://gmgn.ai' },
-  { id: 'axiom', label: 'AXIOM', logo: 'https://axiom.trade/favicon.ico',                url: 'https://axiom.trade' },
-  { id: 'padre', label: 'Padre', logo: 'https://trade.padre.gg/favicon.ico',             url: 'https://trade.padre.gg/trenches' },
+  { id: 'gmgn',  label: 'GMGN',  logo: 'https://play-lh.googleusercontent.com/fvxA2z_aZcjhD6mcqc5pLe8dx1GkR-yZf9RQL-Nbr_mC53QgSz5yAcho2S70cQh-l2Y2SopnyBJZpQhZXv8F=w240-h480-rw', url: 'https://gmgn.ai' },
+  { id: 'axiom', label: 'AXIOM', logo: 'https://axiom.trade/favicon.ico',                                                                                                                          url: 'https://axiom.trade' },
+  { id: 'padre', label: 'Padre', logo: 'https://coin-images.coingecko.com/coins/images/36079/large/padre.jpg?1762307301',                                                                          url: 'https://trade.padre.gg/trenches' },
 ]
 
 function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
