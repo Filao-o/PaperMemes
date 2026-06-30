@@ -267,6 +267,8 @@ const bullxAdapter: Adapter = {
   getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
 }
 
+let axiomLastMC = 0
+
 const axiomAdapter: Adapter = {
   getPrice() {
     const title = fromTitle(); if (title.price) return title.price
@@ -282,10 +284,12 @@ const axiomAdapter: Adapter = {
   getMarketCap() {
     // Axiom: MC value has the 'text-primaryLightBlue' Tailwind class
     const el = document.querySelector<HTMLElement>('[class*="primaryLightBlue"]')
-    if (el) { const n = q(el.textContent); if (n && n > 0) return n }
+    if (el) { const n = q(el.textContent); if (n && n > 0) { axiomLastMC = n; return n } }
     // Fallback: text node matching $X.xK/M/B pattern
     const walked = dt(/^\$[\d,.]+[KMB]$/i)
-    if (walked) { const n = q(walked.textContent); if (n && n > 0) return n }
+    if (walked) { const n = q(walked.textContent); if (n && n > 0) { axiomLastMC = n; return n } }
+    // DOM momentarily unavailable (rapid re-render): return last known value
+    if (axiomLastMC > 0) return axiomLastMC
     return null
   },
   getTokenName() {
