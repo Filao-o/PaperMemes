@@ -539,10 +539,10 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
 
 type Platform = 'padre' | 'axiom' | 'gmgn'
 
-const PLATFORMS: { id: Platform; label: string; desc: string }[] = [
-  { id: 'padre', label: 'Padre', desc: 'Padre Terminal' },
-  { id: 'axiom', label: 'AXIOM', desc: 'AXIOM Trade' },
-  { id: 'gmgn', label: 'GMGN', desc: 'GMGN.ai' },
+const PLATFORMS: { id: Platform; label: string; desc: string; url: string }[] = [
+  { id: 'padre', label: 'Padre', desc: 'Padre Terminal', url: 'https://padre.so' },
+  { id: 'axiom', label: 'AXIOM', desc: 'AXIOM Trade', url: 'https://axiom.trade' },
+  { id: 'gmgn', label: 'GMGN', desc: 'GMGN.ai', url: 'https://gmgn.ai' },
 ]
 
 function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
@@ -579,12 +579,12 @@ function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
         </div>
 
         <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {PLATFORMS.map(({ id, label, desc }) => {
+          {PLATFORMS.map(({ id, label, desc, url }) => {
             const isHovered = hovered === id
             return (
               <button
                 key={id}
-                onClick={() => onSelect(id)}
+                onClick={() => { onSelect(id); chrome.tabs.create({ url }) }}
                 onMouseEnter={() => setHovered(id)}
                 onMouseLeave={() => setHovered(null)}
                 style={{
