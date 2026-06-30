@@ -29,10 +29,10 @@
     {
       "matches": [
         "https://photon-sol.tinyastro.io/*",
-        "https://gmgn.ai/sol/token/*",
-        "https://bullx.io/terminal*",
-        "https://neo.bullx.io/terminal*",
-        "https://axiom.trade/meme/*",
+        "https://gmgn.ai/*",
+        "https://bullx.io/*",
+        "https://neo.bullx.io/*",
+        "https://axiom.trade/*",
         "https://padre.gg/*",
         "https://trade.padre.gg/*"
       ],
