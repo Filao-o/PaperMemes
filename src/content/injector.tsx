@@ -901,12 +901,6 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     const adapter = ADAPTERS[currentTerminal]
     if (!adapter) return
 
-    if (currentTerminal === 'gmgn' && currentMint) {
-      fetchGmgn(currentMint)
-      const gmgnInterval = setInterval(() => fetchGmgn(currentMint!), 8000)
-      return () => clearInterval(gmgnInterval)
-    }
-
     const poll = () => {
       const price = adapter.getPrice()
       // Pour Padre (pump.fun) : supply = 1 milliard → MC = price × 1e9 (plus fiable que scraping)
@@ -954,6 +948,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       }
     }
 
+    // GMGN: populate cache via API then poll; refresh every 8s
+    let gmgnInterval: number | null = null
+    if (currentTerminal === 'gmgn' && currentMint) {
+      fetchGmgn(currentMint).then(() => poll())
+      gmgnInterval = window.setInterval(() => fetchGmgn(currentMint!).then(() => poll()), 8000)
+    }
+
     poll()
     let lastPollTime = 0
     observerRef.current = new MutationObserver(() => {
@@ -967,6 +968,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     intervalRef.current = window.setInterval(poll, 3000)
 
     return () => {
+      if (gmgnInterval !== null) clearInterval(gmgnInterval)
       observerRef.current?.disconnect()
       if (intervalRef.current) clearInterval(intervalRef.current)
       if (staleRef.current) clearTimeout(staleRef.current)
