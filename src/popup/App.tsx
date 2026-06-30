@@ -742,6 +742,21 @@ export function App() {
           </div>
         </div>
 
+        {/* ── Language bar ── */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4, padding: '4px 14px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.2)' }}>
+          {(Object.entries(LANG_LABELS) as [Lang, string][]).map(([l, label]) => (
+            <button key={l} onClick={() => Storage.set({ language: l })}
+              style={{
+                padding: '2px 8px', borderRadius: 20, cursor: 'pointer', fontFamily: FONT,
+                background: lang === l ? '#ffffff' : 'transparent',
+                border: `1px solid ${lang === l ? '#ffffff' : 'rgba(255,255,255,0.25)'}`,
+                color: lang === l ? '#000000' : 'rgba(255,255,255,0.55)',
+                fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
+              }}
+            >{label}</button>
+          ))}
+        </div>
+
         {/* ── Wallet ── */}
         <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>

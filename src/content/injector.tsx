@@ -4,7 +4,7 @@ import { Storage } from '../storage'
 import type { AppState, Trade, CloseEvent, TokenInfo, RiskInfo } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Tabs, Btn, Divider, SolIcon } from '../popup/components/ui'
 import { JournalPanel, TradeCard } from '../popup/components/JournalPanel'
-import { t as tr, type Lang } from '../i18n'
+import { t as tr, type Lang, LANG_LABELS } from '../i18n'
 
 // ─── Currency toggle ──────────────────────────────────────────────────────────
 
@@ -1563,9 +1563,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
 // ─── Config Panel ─────────────────────────────────────────────────────────────
 
-function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved, lang }: {
+function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved, lang, onLangChange }: {
   buyPresets: number[]; tpPresets: number[]; slPresets: number[]
-  slippage: number; fees: number; onSaved?: () => void; lang: Lang
+  slippage: number; fees: number; onSaved?: () => void; lang: Lang; onLangChange?: (l: Lang) => void
 }) {
   const pad = (arr: number[], n: number) => {
     const filled = arr.map(v => String(Math.abs(v)))
@@ -1614,6 +1614,21 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+      {/* Language */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4 }}>
+        {(Object.entries(LANG_LABELS) as [Lang, string][]).map(([l, label]) => (
+          <button key={l} onClick={() => { Storage.set({ language: l }); onLangChange?.(l) }}
+            style={{
+              padding: '2px 8px', borderRadius: 20, cursor: 'pointer', fontFamily: FONT,
+              background: lang === l ? '#ffffff' : 'transparent',
+              border: `1px solid ${lang === l ? '#ffffff' : C.border}`,
+              color: lang === l ? '#000000' : 'rgba(240,240,250,0.5)',
+              fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
+            }}
+          >{label}</button>
+        ))}
+      </div>
 
       {/* Quick buy */}
       <div>
