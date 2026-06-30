@@ -304,7 +304,15 @@ const axiomAdapter: Adapter = {
   getMintAddress(href = window.location.href) {
     return href.match(/axiom\.trade\/meme\/([A-Za-z0-9]{32,44})/)?.[1] ?? null
   },
-  getExtended: () => ({ liquidity: null, holders: null, age: walkAge() }),
+  getExtended() {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    let node: Node | null
+    while ((node = walker.nextNode())) {
+      const m = (node.textContent ?? '').match(/Holders\s*\((\d[\d,]*)\)/i)
+      if (m) return { liquidity: null, holders: parseInt(m[1].replace(/,/g, ''), 10), age: walkAge() }
+    }
+    return { liquidity: null, holders: null, age: walkAge() }
+  },
 }
 
 const MC_TEXT_RE = /(?:MC|Market\s*Cap)[:\s]*\$?([\d,.]+[KMBkmb]?)/i
