@@ -285,8 +285,9 @@ const axiomAdapter: Adapter = {
     const mint = window.location.href.match(/axiom\.trade\/meme\/([A-Za-z0-9]{32,44})/)?.[1] ?? ''
     if (axiomMCCache.mint !== mint) axiomMCCache.value = 0
 
-    // Iterate ALL primaryLightBlue elements — MC >= $1K distinguishes it from token prices
-    for (const el of document.querySelectorAll<HTMLElement>('[class*="primaryLightBlue"]')) {
+    // Axiom changes MC element color by threshold (primaryLightBlue, primaryYellow, etc.)
+    // Target the constant structural class [font-variant-numeric:tabular-nums] instead
+    for (const el of document.querySelectorAll<HTMLElement>('[class*="tabular-nums"]')) {
       const n = q(el.textContent)
       if (n && n >= 1000) { axiomMCCache.value = n; axiomMCCache.mint = mint; return n }
     }
