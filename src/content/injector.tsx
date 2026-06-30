@@ -280,12 +280,12 @@ const axiomAdapter: Adapter = {
     return null
   },
   getMarketCap() {
-    const el = dt(/^\$[\d,.]+[KMB]$/i)
+    // Axiom: MC value has the 'text-primaryLightBlue' Tailwind class
+    const el = document.querySelector<HTMLElement>('[class*="primaryLightBlue"]')
     if (el) { const n = q(el.textContent); if (n && n > 0) return n }
-    for (const sel of ['[class*="marketCap"]', '[class*="market-cap"]', '[class*="mcap"]']) {
-      const el = document.querySelector<HTMLElement>(sel)
-      if (el) { const n = q(el.textContent); if (n && n > 0) return n }
-    }
+    // Fallback: text node matching $X.xK/M/B pattern
+    const walked = dt(/^\$[\d,.]+[KMB]$/i)
+    if (walked) { const n = q(walked.textContent); if (n && n > 0) return n }
     return null
   },
   getTokenName() {
