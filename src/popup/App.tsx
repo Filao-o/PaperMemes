@@ -539,10 +539,10 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
 
 type Platform = 'padre' | 'axiom' | 'gmgn'
 
-const PLATFORMS: { id: Platform; label: string; desc: string; url: string }[] = [
-  { id: 'padre', label: 'Padre', desc: 'Padre Terminal', url: 'https://trade.padre.gg/trenches' },
-  { id: 'axiom', label: 'AXIOM', desc: 'AXIOM Trade', url: 'https://axiom.trade' },
-  { id: 'gmgn', label: 'GMGN', desc: 'GMGN.ai', url: 'https://gmgn.ai' },
+const PLATFORMS: { id: Platform; label: string; logo: string; url: string }[] = [
+  { id: 'gmgn',  label: 'GMGN',  logo: 'https://gmgn.ai/favicon.ico',                   url: 'https://gmgn.ai' },
+  { id: 'axiom', label: 'AXIOM', logo: 'https://axiom.trade/favicon.ico',                url: 'https://axiom.trade' },
+  { id: 'padre', label: 'Padre', logo: 'https://trade.padre.gg/favicon.ico',             url: 'https://trade.padre.gg/trenches' },
 ]
 
 function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
@@ -567,7 +567,7 @@ function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
       {/* Body */}
       <div style={{
         flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '32px 20px', gap: 24,
+        padding: '32px 20px', gap: 28,
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ color: '#ffffff', fontSize: 18, fontWeight: 800, letterSpacing: -0.5, marginBottom: 6 }}>
@@ -578,8 +578,8 @@ function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
           </div>
         </div>
 
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {PLATFORMS.map(({ id, label, desc, url }) => {
+        <div style={{ width: '100%', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {PLATFORMS.map(({ id, label, logo, url }) => {
             const isHovered = hovered === id
             return (
               <button
@@ -588,28 +588,25 @@ function PlatformSelector({ onSelect }: { onSelect: (p: Platform) => void }) {
                 onMouseEnter={() => setHovered(id)}
                 onMouseLeave={() => setHovered(null)}
                 style={{
-                  width: '100%', padding: '16px 20px', borderRadius: 12, cursor: 'pointer',
-                  background: isHovered ? '#ffffff' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${isHovered ? '#ffffff' : 'rgba(255,255,255,0.15)'}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '20px 12px', borderRadius: 14, cursor: 'pointer',
+                  background: isHovered ? '#ffffff' : 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${isHovered ? '#ffffff' : 'rgba(255,255,255,0.12)'}`,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
                   fontFamily: FONT, transition: 'all 0.15s',
                 }}
               >
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 3 }}>
-                  <span style={{
-                    fontSize: 15, fontWeight: 800, letterSpacing: -0.3,
-                    color: isHovered ? '#000000' : '#ffffff',
-                  }}>{label}</span>
-                  <span style={{
-                    fontSize: 10, fontWeight: 600,
-                    color: isHovered ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.4)',
-                  }}>{desc}</span>
-                </div>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke={isHovered ? '#000' : 'rgba(255,255,255,0.4)'}
-                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6"/>
-                </svg>
+                <img
+                  src={logo}
+                  alt={label}
+                  width={48}
+                  height={48}
+                  style={{ borderRadius: 10, objectFit: 'contain' }}
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+                <span style={{
+                  fontSize: 12, fontWeight: 700, letterSpacing: 0.2,
+                  color: isHovered ? '#000000' : '#ffffff',
+                }}>{label}</span>
               </button>
             )
           })}
