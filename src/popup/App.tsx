@@ -540,7 +540,7 @@ function CalendarModal({ trades, onClose }: { trades: Trade[]; onClose: () => vo
 type Platform = 'padre' | 'axiom' | 'gmgn'
 
 const PLATFORMS: { id: Platform; label: string; desc: string; url: string }[] = [
-  { id: 'padre', label: 'Padre', desc: 'Padre Terminal', url: 'https://padre.so' },
+  { id: 'padre', label: 'Padre', desc: 'Padre Terminal', url: 'https://trade.padre.gg/trenches' },
   { id: 'axiom', label: 'AXIOM', desc: 'AXIOM Trade', url: 'https://axiom.trade' },
   { id: 'gmgn', label: 'GMGN', desc: 'GMGN.ai', url: 'https://gmgn.ai' },
 ]
