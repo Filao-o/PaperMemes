@@ -1870,10 +1870,71 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
 
 const sL: React.CSSProperties = { color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
 
+// ─── Warning banner ───────────────────────────────────────────────────────────
+
+function WarningBanner({ tokenName, lang, onDismiss }: { tokenName: string; lang: Lang; onDismiss: () => void }) {
+  const [dismissed, setDismissed] = React.useState(false)
+
+  React.useEffect(() => {
+    const unsub = Storage.onChanged((changes) => {
+      if ('activeTrade' in changes && !changes.activeTrade.newValue) {
+        setDismissed(true)
+      }
+    })
+    return unsub
+  }, [])
+
+  if (dismissed) return null
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+      zIndex: 2147483647, display: 'flex', alignItems: 'center', gap: 12,
+      background: 'rgba(30,20,0,0.97)', border: '1.5px solid #f59e0b',
+      borderRadius: 10, padding: '10px 16px', boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
+      fontFamily: FONT, maxWidth: 420, width: 'max-content',
+    }}>
+      <span style={{ color: '#fbbf24', fontSize: 12, fontWeight: 600, lineHeight: 1.4 }}>
+        {tr(lang, 'w.away_warning', { token: tokenName })}
+      </span>
+      <button onClick={() => { setDismissed(true); onDismiss() }} style={{
+        flexShrink: 0, background: '#f59e0b', border: 'none', borderRadius: 6,
+        color: '#000', fontSize: 10, fontWeight: 800, padding: '4px 10px',
+        cursor: 'pointer', fontFamily: FONT, letterSpacing: 0.5,
+        textTransform: 'uppercase',
+      }}>
+        {tr(lang, 'w.away_dismiss')}
+      </button>
+    </div>
+  )
+}
+
 // ─── Mount + URL watcher ──────────────────────────────────────────────────────
 
 let widgetRoot: ReturnType<typeof createRoot> | null = null
+let warningRoot: ReturnType<typeof createRoot> | null = null
 let lastMint: string | null = null
+
+function tryUnmountWarning() {
+  const el = document.getElementById('papermemes-warning')
+  if (el) { warningRoot?.unmount(); warningRoot = null; el.remove() }
+}
+
+async function tryMountWarning() {
+  const data = await Storage.get()
+  const activeTrade = data.activeTrade as { tokenName?: string } | undefined
+  if (!activeTrade?.tokenName) return
+  if (document.getElementById('papermemes-warning')) return
+  injectFont()
+  const div = document.createElement('div')
+  div.id = 'papermemes-warning'
+  document.body.appendChild(div)
+  warningRoot = createRoot(div)
+  const lang: Lang = (data.language as Lang) || 'fr'
+  warningRoot.render(
+    <WarningBanner tokenName={activeTrade.tokenName} lang={lang} onDismiss={tryUnmountWarning} />
+  )
+}
 
 function injectFont() {
   if (document.getElementById('papermemes-font')) return
@@ -1899,8 +1960,11 @@ async function tryMount() {
     const el = document.getElementById('papermemes-root')
     if (el) { widgetRoot?.unmount(); widgetRoot = null; el.remove() }
     lastMint = null
+    await tryMountWarning()
     return
   }
+
+  tryUnmountWarning()
 
   const mint = await resolveMint(rawMint)
 
