@@ -951,7 +951,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           if (ext.holders !== null) prevHoldersRef.current = ext.holders
 
           const trade = stateRef.current.activeTrade
-          if (trade && mc !== null) checkTpSl(price, mc, trade)
+          if (trade && mc !== null && trade.mintAddress === currentMint) checkTpSl(price, mc, trade)
         }
       }
     }
@@ -1109,10 +1109,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const solPrice = solPriceLocal || state.solPrice
   const price = tokenInfo?.price ?? null
   const mc = tokenInfo?.marketCap ?? null
-  const livePnL = activeTrade && price ? getLivePnL(activeTrade, price) : null
-  const liveValue = activeTrade && price ? activeTrade.tokensHeld * price : null
-  // Buy buttons: disabled only if different token open
   const buyBlocked = !!(activeTrade && activeTrade.mintAddress !== currentMint)
+  const livePnL = activeTrade && price && !buyBlocked ? getLivePnL(activeTrade, price) : null
+  const liveValue = activeTrade && price && !buyBlocked ? activeTrade.tokensHeld * price : null
 
   function fmtCurStr(sol: number) {
     return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)}`
@@ -1760,7 +1759,11 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
       <div style={{ height: 1, background: C.border, margin: '4px 0' }} />
 
       {/* ── Open Trades ── */}
-      {activeTrade && livePnL != null && liveValue != null ? (
+      {buyBlocked && activeTrade ? (
+        <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, padding: '10px 12px', textAlign: 'center', color: '#fbbf24', fontSize: FS.v4, lineHeight: 1.5 }}>
+          {tr(lang, 'w.position_locked', { token: activeTrade.tokenName })}
+        </div>
+      ) : activeTrade && livePnL != null && liveValue != null ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 
           {/* Header: Open Trades + PnL% */}
