@@ -103,6 +103,23 @@ const TR: Record<Lang, Record<string, string>> = {
     'notif.tp':     'Take Profit !',
     'notif.tp_mc':  'Take Profit MC !',
     'notif.sl':     'Stop Loss déclenché',
+    // Journal / Trade card
+    'journal.win':         'WIN',
+    'journal.loss':        'LOSS',
+    'journal.mc_avg':      'MC Moy. Entrées',
+    'journal.total_inv':   'Total Invest.',
+    'journal.pnl_total':   'PNL Total',
+    'journal.pnl_pct':     'PNL % Total',
+    'journal.details':     '▼ Détails',
+    'journal.collapse':    '▲ Réduire',
+    'journal.entries':     'Entrées',
+    'journal.sells':       'Ventes',
+    'journal.copied':      '✓ Copié',
+    'journal.no_trade':    'Aucun trade enregistré',
+    'journal.wins_losses': '{won}G / {lost}P',
+    'journal.history':     'Historique',
+    // Widget
+    'w.holders':           'Holders',
   },
 
   en: {
@@ -193,6 +210,23 @@ const TR: Record<Lang, Record<string, string>> = {
     'notif.tp':     'Take Profit!',
     'notif.tp_mc':  'Take Profit MC!',
     'notif.sl':     'Stop Loss triggered',
+    // Journal / Trade card
+    'journal.win':         'WIN',
+    'journal.loss':        'LOSS',
+    'journal.mc_avg':      'MC Avg. Entries',
+    'journal.total_inv':   'Total Inv.',
+    'journal.pnl_total':   'Total PNL',
+    'journal.pnl_pct':     'PNL % Total',
+    'journal.details':     '▼ Details',
+    'journal.collapse':    '▲ Close',
+    'journal.entries':     'Entries',
+    'journal.sells':       'Sells',
+    'journal.copied':      '✓ Copied',
+    'journal.no_trade':    'No trades recorded',
+    'journal.wins_losses': '{won}W / {lost}L',
+    'journal.history':     'History',
+    // Widget
+    'w.holders':           'Holders',
   },
 
   es: {
@@ -283,6 +317,23 @@ const TR: Record<Lang, Record<string, string>> = {
     'notif.tp':     '¡Take Profit!',
     'notif.tp_mc':  '¡Take Profit MC!',
     'notif.sl':     'Stop Loss activado',
+    // Journal / Trade card
+    'journal.win':         'WIN',
+    'journal.loss':        'LOSS',
+    'journal.mc_avg':      'MC Prom. Entradas',
+    'journal.total_inv':   'Total Inv.',
+    'journal.pnl_total':   'PNL Total',
+    'journal.pnl_pct':     'PNL % Total',
+    'journal.details':     '▼ Detalles',
+    'journal.collapse':    '▲ Cerrar',
+    'journal.entries':     'Entradas',
+    'journal.sells':       'Ventas',
+    'journal.copied':      '✓ Copiado',
+    'journal.no_trade':    'Sin trades registrados',
+    'journal.wins_losses': '{won}G / {lost}P',
+    'journal.history':     'Historial',
+    // Widget
+    'w.holders':           'Holders',
   },
 }
 

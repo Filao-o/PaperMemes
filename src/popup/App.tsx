@@ -839,7 +839,7 @@ export function App() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {filteredTrades.map(trade => (
-                <TradeCard key={trade.id} trade={trade} currency={currency} solPrice={solPrice} />
+                <TradeCard key={trade.id} trade={trade} currency={currency} solPrice={solPrice} lang={lang} />
               ))}
             </div>
           )}

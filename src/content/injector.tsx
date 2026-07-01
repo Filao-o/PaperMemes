@@ -1423,7 +1423,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
                         fontWeight: 700,
                         color: holdersDir === 'up' ? '#00a854' : holdersDir === 'down' ? '#d9363e' : 'rgba(0,0,0,0.5)',
                         transition: 'color 0.2s',
-                      }}>{tokenInfo.holders.toLocaleString()} Holders</span>
+                      }}>{tokenInfo.holders.toLocaleString()} {tr(lang, 'w.holders')}</span>
                     )}
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import type { Trade, TradeEntry, CloseEvent } from '../../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Divider, Badge, SolIcon } from './ui'
+import { t as tr, type Lang } from '../../i18n'
 
 function Val({ sol, size, currency, solPrice }: { sol: number; size?: number; currency: 'SOL' | 'USD'; solPrice: number }) {
   if (currency === 'USD' && solPrice > 0) return <>${(sol * solPrice).toFixed(2)}</>
@@ -19,7 +20,7 @@ function fmtTs(ts: number): string {
   return `${dd}/${mm}/${yy} - ${h}:${min} ${ampm}`
 }
 
-function CopyTokenName({ trade }: { trade: Trade }) {
+function CopyTokenName({ trade, lang }: { trade: Trade; lang: Lang }) {
   const [copied, setCopied] = useState(false)
   function handleCopy() {
     if (!trade.mintAddress) return
@@ -31,14 +32,14 @@ function CopyTokenName({ trade }: { trade: Trade }) {
   return (
     <span
       onClick={handleCopy}
-      title={trade.mintAddress ? 'Copier CA' : undefined}
+      title={trade.mintAddress ? tr(lang, 'w.copy_ca') : undefined}
       style={{
         color: C.text, fontWeight: 700, fontSize: 13,
         cursor: trade.mintAddress ? 'pointer' : 'default',
         borderBottom: trade.mintAddress ? `1px dashed ${C.muted}` : 'none',
       }}
     >
-      {copied ? <span style={{ color: C.green }}>✓ copié</span> : trade.tokenName}
+      {copied ? <span style={{ color: C.green }}>{tr(lang, 'journal.copied')}</span> : trade.tokenName}
     </span>
   )
 }
@@ -79,9 +80,10 @@ interface Props {
   closedTrades: Trade[]
   currency: 'SOL' | 'USD'
   solPrice: number
+  lang: Lang
 }
 
-export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number }) {
+export function TradeCard({ trade, currency, solPrice, lang }: { trade: Trade; currency: 'SOL' | 'USD'; solPrice: number; lang: Lang }) {
   const [expanded, setExpanded] = useState(false)
 
   const V = ({ sol, size }: { sol: number; size?: number }) =>
@@ -102,27 +104,27 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
       <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 5 }}>
         {/* Token name + badge */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-          <CopyTokenName trade={trade} />
+          <CopyTokenName trade={trade} lang={lang} />
           <span style={{
             background: color, color: '#000',
             borderRadius: 5, padding: '2px 8px', fontSize: 10, fontWeight: 800,
             letterSpacing: 0.5,
-          }}>{trade.status === 'won' ? 'WIN' : 'LOSS'}</span>
+          }}>{trade.status === 'won' ? tr(lang, 'journal.win') : tr(lang, 'journal.loss')}</span>
         </div>
         <div style={rowStyle}>
-          <span style={labelStyle}>MC Ave. Entries</span>
+          <span style={labelStyle}>{tr(lang, 'journal.mc_avg')}</span>
           <span style={valueStyle}>{fmtMC(trade.entryMC)}</span>
         </div>
         <div style={rowStyle}>
-          <span style={labelStyle}>Total Inv.</span>
+          <span style={labelStyle}>{tr(lang, 'journal.total_inv')}</span>
           <span style={valueStyle}><V sol={trade.invested} /></span>
         </div>
         <div style={rowStyle}>
-          <span style={labelStyle}>PNL Total</span>
+          <span style={labelStyle}>{tr(lang, 'journal.pnl_total')}</span>
           <span style={{ ...valueStyle, color: pnlColor(pnl) }}>{pnl >= 0 ? '+' : ''}<V sol={pnl} /></span>
         </div>
         <div style={rowStyle}>
-          <span style={labelStyle}>PNL % Total</span>
+          <span style={labelStyle}>{tr(lang, 'journal.pnl_pct')}</span>
           <span style={{ ...valueStyle, color: pnlColor(pnlPct) }}>{fmtPct(pnlPct)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
@@ -140,17 +142,17 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
         fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
         letterSpacing: 0.5, textTransform: 'uppercase',
       }}>
-        {expanded ? '▲ Fermer' : '▼ Details'}
+        {expanded ? tr(lang, 'journal.collapse') : tr(lang, 'journal.details')}
       </button>
 
       {expanded && (
         <div style={{ borderTop: `1px solid ${C.border}` }}>
           <DetailSection
-            title="Entries" color={C.green}
+            title={tr(lang, 'journal.entries')} color={C.green}
             rows={entries.map((e, i) => ({ key: String(i), ts: e.timestamp, mc: e.entryMC, amount: <V sol={e.invested} size={9} /> }))}
           />
           <DetailSection
-            title="Sells" color={C.red}
+            title={tr(lang, 'journal.sells')} color={C.red}
             rows={trade.closeEvents.map(ev => ({ key: ev.id, ts: ev.timestamp, mc: ev.mcAtClose, amount: <V sol={ev.solReturned} size={9} /> }))}
           />
         </div>
@@ -161,7 +163,7 @@ export function TradeCard({ trade, currency, solPrice }: { trade: Trade; currenc
 
 // ─── Journal panel ────────────────────────────────────────────────────────────
 
-export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
+export function JournalPanel({ closedTrades, currency, solPrice, lang }: Props) {
   const totalPnl = closedTrades.reduce((s, t) => s + (t.pnlSOL ?? 0), 0)
   const won = closedTrades.filter(t => t.status === 'won').length
   const winRate = closedTrades.length > 0 ? (won / closedTrades.length) * 100 : null
@@ -170,7 +172,7 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
     <Val sol={sol} size={size} currency={currency} solPrice={solPrice} />
 
   if (closedTrades.length === 0) {
-    return <div style={{ textAlign: 'center', color: C.muted, padding: '32px 0', fontSize: 12 }}>Aucun trade enregistré</div>
+    return <div style={{ textAlign: 'center', color: C.muted, padding: '32px 0', fontSize: 12 }}>{tr(lang, 'journal.no_trade')}</div>
   }
 
   const lost = closedTrades.length - won
@@ -179,32 +181,32 @@ export function JournalPanel({ closedTrades, currency, solPrice }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.10)' }}>
-          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>PNL Total</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{tr(lang, 'journal.pnl_total')}</div>
           <div style={{ color: pnlColor(totalPnl), fontSize: 14, fontWeight: 700 }}><V sol={totalPnl} size={12} /></div>
-          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>moy. <V sol={totalPnl / closedTrades.length} size={9} /></div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{tr(lang, 'stats.avg')} <V sol={totalPnl / closedTrades.length} size={9} /></div>
         </div>
         <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.10)' }}>
-          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Win Rate</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{tr(lang, 'stats.winrate')}</div>
           <div style={{ color: winRate != null && winRate >= 50 ? C.green : C.red, fontSize: 14, fontWeight: 700 }}>
             {winRate != null ? `${winRate.toFixed(0)}%` : '—'}
           </div>
-          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{won}g / {lost}p</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{tr(lang, 'journal.wins_losses', { won, lost })}</div>
         </div>
         <div style={{ background: 'rgba(0,0,0,0.30)', borderRadius: 8, padding: '8px 10px', border: '1px solid rgba(255,255,255,0.10)' }}>
-          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Trades</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{tr(lang, 'stats.trades')}</div>
           <div style={{ color: C.text, fontSize: 14, fontWeight: 700 }}>{closedTrades.length}</div>
-          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{won}g / {lost}p</div>
+          <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10 }}>{tr(lang, 'journal.wins_losses', { won, lost })}</div>
         </div>
       </div>
 
       <Divider />
 
       <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, textTransform: 'uppercase', letterSpacing: 1 }}>
-        Historique — {closedTrades.length} trade{closedTrades.length > 1 ? 's' : ''}
+        {tr(lang, 'journal.history')} — {closedTrades.length} trade{closedTrades.length > 1 ? 's' : ''}
       </div>
 
       {closedTrades.map(trade => (
-        <TradeCard key={trade.id} trade={trade} currency={currency} solPrice={solPrice} />
+        <TradeCard key={trade.id} trade={trade} currency={currency} solPrice={solPrice} lang={lang} />
       ))}
     </div>
   )
