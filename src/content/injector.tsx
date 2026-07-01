@@ -1888,11 +1888,11 @@ function WarningBanner({ tokenName, lang, onDismiss }: { tokenName: string; lang
 
   return (
     <div style={{
-      position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-      zIndex: 2147483647, display: 'flex', alignItems: 'center', gap: 12,
-      background: 'rgba(30,20,0,0.97)', border: '1.5px solid #f59e0b',
-      borderRadius: 10, padding: '10px 16px', boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-      fontFamily: FONT, maxWidth: 420, width: 'max-content',
+      position: 'fixed', top: 0, left: 0, right: 0,
+      zIndex: 2147483647, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+      background: 'rgba(30,20,0,0.97)', borderBottom: '2px solid #f59e0b',
+      padding: '10px 20px', boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+      fontFamily: FONT,
     }}>
       <span style={{ color: '#fbbf24', fontSize: 12, fontWeight: 600, lineHeight: 1.4 }}>
         {tr(lang, 'w.away_warning', { token: tokenName })}
