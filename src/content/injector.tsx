@@ -1759,11 +1759,19 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
       <div style={{ height: 1, background: C.border, margin: '4px 0' }} />
 
       {/* ── Open Trades ── */}
-      {buyBlocked && activeTrade ? (
-        <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, padding: '10px 12px', textAlign: 'center', color: '#fbbf24', fontSize: FS.v4, lineHeight: 1.5 }}>
-          {tr(lang, 'w.position_locked', { token: activeTrade.tokenName })}
-        </div>
-      ) : activeTrade && livePnL != null && liveValue != null ? (
+      {buyBlocked && activeTrade ? (() => {
+        const [before, after] = tr(lang, 'w.position_locked', { token: '|||' }).split('|||')
+        const url = mintChartUrl(activeTrade.terminal, activeTrade.mintAddress)
+        return (
+          <div style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: 8, padding: '10px 12px', textAlign: 'center', color: '#fbbf24', fontSize: FS.v4, lineHeight: 1.5 }}>
+            {before}
+            <a href={url} target="_blank" rel="noreferrer" style={{ color: '#fbbf24', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer' }}>
+              {activeTrade.tokenName}
+            </a>
+            {after}
+          </div>
+        )
+      })() : activeTrade && livePnL != null && liveValue != null ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 
           {/* Header: Open Trades + PnL% */}
@@ -1869,6 +1877,17 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
       )}
     </div>
   )
+}
+
+function mintChartUrl(terminal: string, mint: string): string {
+  switch (terminal) {
+    case 'gmgn':   return `https://gmgn.ai/sol/token/${mint}`
+    case 'axiom':  return `https://axiom.trade/meme/${mint}`
+    case 'padre':  return `https://trade.padre.gg/trade/solana/${mint}`
+    case 'bullx':  return `https://neo.bullx.io/terminal?chainId=1399811149&address=${mint}`
+    case 'photon': return `https://photon-sol.tinyastro.io/en/lp/${mint}`
+    default:       return `https://dexscreener.com/solana/${mint}`
+  }
 }
 
 const sL: React.CSSProperties = { color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 7, display: 'block' }
