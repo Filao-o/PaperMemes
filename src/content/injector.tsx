@@ -805,6 +805,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const prevHoldersRef = useRef<number | null>(null)
   const stateRef = useRef(state)
   stateRef.current = state
+  const [buyWarn, setBuyWarn] = useState<string | null>(null)
+  const buyWarnRef = useRef<number | null>(null)
+  function showBuyWarn(msg: string) {
+    setBuyWarn(msg)
+    if (buyWarnRef.current) clearTimeout(buyWarnRef.current)
+    buyWarnRef.current = window.setTimeout(() => setBuyWarn(null), 3500)
+  }
 
   // ── Block positions & connections ──────────────────────────────────────────
   const POSITIONS_KEY = 'papermemes_block_positions'
@@ -1013,16 +1020,21 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
   function handleBuy(amount: number) {
     if (!tokenInfo || !currentMint || !tokenInfo.price) return
-    if (state.balance < amount) return
     const existing = state.activeTrade
-    // Block if a different token is already open
     if (existing && existing.mintAddress !== currentMint) return
+    if (state.balance < amount) {
+      showBuyWarn(tr(lang, 'w.insuf_balance'))
+      return
+    }
+    // Apply fees (deducted from SOL spent) and slippage (worse fill price = fewer tokens)
+    const feeCoef = 1 - state.fees / 100
+    const slipCoef = 1 / (1 + state.slippage / 100)
+    const tokensPerSol = (1 / tokenInfo.price) * feeCoef * slipCoef
     if (existing && existing.mintAddress === currentMint) {
-      // DCA: add to existing position, recalculate weighted average entry price and MC
-      const newTokensHeld = existing.tokensHeld + amount / tokenInfo.price
+      const newTokensHeld = existing.tokensHeld + amount * tokensPerSol
       const newInvested = existing.invested + amount
       const prevEntries = existing.entries ?? [{ entryPrice: existing.entryPrice, entryMC: existing.entryMC, invested: existing.invested, tokensHeld: existing.tokensHeld, timestamp: existing.openedAt }]
-      const newEntry = { entryPrice: tokenInfo.price, entryMC: tokenInfo.marketCap ?? 0, invested: amount, tokensHeld: amount / tokenInfo.price, timestamp: Date.now() }
+      const newEntry = { entryPrice: tokenInfo.price, entryMC: tokenInfo.marketCap ?? 0, invested: amount, tokensHeld: amount * tokensPerSol, timestamp: Date.now() }
       const allEntries = [...prevEntries, newEntry]
       const avgEntryMC = allEntries.reduce((s, e) => s + e.entryMC * e.invested, 0) / newInvested
       const updated: Trade = {
@@ -1035,6 +1047,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       }
       Storage.dcaBuy(updated, state.balance - amount)
     } else {
+      const tokensHeld = amount * tokensPerSol
       const trade: Trade = {
         id: `trade_${Date.now()}`,
         mintAddress: currentMint,
@@ -1043,8 +1056,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         entryPrice: tokenInfo.price,
         entryMC: tokenInfo.marketCap ?? 0,
         invested: amount,
-        tokensHeld: amount / tokenInfo.price,
-        entries: [{ entryPrice: tokenInfo.price, entryMC: tokenInfo.marketCap ?? 0, invested: amount, tokensHeld: amount / tokenInfo.price, timestamp: Date.now() }],
+        tokensHeld,
+        entries: [{ entryPrice: tokenInfo.price, entryMC: tokenInfo.marketCap ?? 0, invested: amount, tokensHeld, timestamp: Date.now() }],
         tp: null, tpMC: null, sl: null,
         status: 'active',
         openedAt: Date.now(),
@@ -1074,7 +1087,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
   function doSell(percent: number, price: number, mc: number, trade: Trade, st: AppState) {
     const tokensSold = trade.tokensHeld * (percent / 100)
-    const solReturned = tokensSold * price
+    // Apply slippage (worse fill price) and fees (deducted from proceeds)
+    const solReturned = tokensSold * price * (1 / (1 + st.slippage / 100)) * (1 - st.fees / 100)
     const event: CloseEvent = {
       id: `report_${Date.now()}`,
       timestamp: Date.now(),
@@ -1446,7 +1460,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
             fmtCurStr={fmtCurStr} currency={currency} solPrice={solPrice} price={price}
             onOpenConfig={() => setShowConfig(v => !v)}
-            lang={lang}
+            lang={lang} buyWarn={buyWarn}
           />
         </div>
       </DraggableBlock>
@@ -1712,10 +1726,10 @@ interface TradeTabTopProps {
   hasPrice: boolean; buyBlocked: boolean; onBuy: (a: number) => void; onSell: (p: number) => void
   onSellInitials: () => void; onOpenConfig: () => void
   fmtCurStr: (sol: number) => string; currency: 'SOL' | 'USD'; solPrice: number; price: number | null
-  lang: Lang
+  lang: Lang; buyWarn: string | null
 }
 
-function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onOpenConfig, fmtCurStr, currency, price, lang }: TradeTabTopProps) {
+function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPrice, buyBlocked, onBuy, onSell, onSellInitials, onOpenConfig, fmtCurStr, currency, price, lang, buyWarn }: TradeTabTopProps) {
   const [pnlFlash, setPnlFlash] = useState<'up' | 'down' | null>(null)
   const [pnlFlashKey, setPnlFlashKey] = useState(0)
   const prevPnlRef = useRef<number | null>(null)
@@ -1754,6 +1768,11 @@ function TradeTabTop({ state, activeTrade, livePnL, liveValue, buyPresets, hasPr
             </MetalBtn>
           ))}
         </div>
+        {buyWarn && (
+          <div style={{ marginTop: 6, background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 6, padding: '5px 10px', color: '#f87171', fontSize: FS.v4, textAlign: 'center' }}>
+            {buyWarn}
+          </div>
+        )}
       </div>
 
       <div style={{ height: 1, background: C.border, margin: '4px 0' }} />

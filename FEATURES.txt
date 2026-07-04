@@ -1,0 +1,102 @@
+PAPERMEMES — État du tool
+Dernière mise à jour : 2026-07-04
+==========================================================
+
+WIDGET (injection sur chart)
+─────────────────────────────
+- Détection automatique de la plateforme (Photon, GMGN, BullX, Axiom, Padre)
+- Affichage prix live + Market Cap avec flash directionnel (vert/rouge)
+- Affichage Holders avec flash directionnel
+- Risk score RugCheck (score/100 + top holder %)
+- Copie de l'adresse CA au clic sur le nom du token
+- Blocs draggables (3 blocs A/B/C repositionnables et chaînables)
+
+POSITION / TRADING SIMULÉ
+──────────────────────────
+- Achat rapide (presets SOL configurables)
+- Slippage et fees appliqués à chaque achat et vente
+  · Achat : tokens reçus = SOL × (1 - fees%) / prix / (1 + slippage%)
+  · Vente : SOL retourné = tokens × prix / (1 + slippage%) × (1 - fees%)
+- Notification rouge si solde insuffisant lors d'un achat
+- DCA sur même token (multi-entrées avec MC moyen calculé)
+- Vente partielle : 10 / 25 / 50 / 100%
+- "Vendre Init." — récupère uniquement le capital initial investi
+- PnL live (SOL ou USD) mis à jour en temps réel
+- Valeur live du portefeuille
+- Gains déjà encaissés (closeEvents)
+
+TP / SL AUTOMATIQUES
+─────────────────────
+- TP en % ou en MC cible
+- SL en % (valeur auto-négative)
+- Déclenchement automatique → vente 100% + notification Chrome
+- Presets configurables
+- TP/SL uniquement actifs sur le chart du token concerné (guard par mintAddress)
+
+SÉCURITÉ POSITION UNIQUE
+─────────────────────────
+- Blocage d'entrée sur un token B si position ouverte sur token A
+- Message verrouillé avec nom du token A cliquable → redirige vers son chart
+- Bannière d'alerte flottante (haut de page) si on quitte le chart avec position active
+- livePnL et checkTpSl ignorés si on est sur un token différent de celui de la position
+
+CONFIG PANEL (widget)
+──────────────────────
+- Presets Achat rapide (SOL)
+- Presets TP (%)
+- Presets SL (%)
+- Slippage & Fees
+- Sélecteur de langue (EN / FR / ES)
+
+==========================================================
+
+POPUP (extension Chrome)
+─────────────────────────
+- Sélecteur de plateforme au premier lancement (bouton engrenage pour changer)
+- Sélecteur de langue permanent (EN / FR / ES)
+- Affichage solde wallet simulé (SOL ou USD)
+- Bascule SOL ↔ USD
+
+ONGLET STATS
+─────────────
+- PNL total, Win Rate, Meilleur trade, Moyenne
+- Résumé : 1 position active / aucune position
+
+ONGLET HISTORIQUE
+──────────────────
+- Liste des trades clôturés avec filtres : Tous / Actif / Gain / Perte
+- Détail par trade : MC entrée, investi, PnL, status WIN/LOSS
+- Position active mise en avant
+
+ONGLET CALENDRIER
+──────────────────
+- Vue hebdomadaire / mensuelle
+- Coloration par jour selon gain/perte
+- Résumé gain total et perte totale de la période
+
+ONGLET COURBE PNL
+──────────────────
+- Courbe PNL cumulée sur l'ensemble des trades clôturés
+
+JOURNAL (popup)
+────────────────
+- Fiche par trade : MC moyen, investi, PNL total, PNL %, WIN/LOSS badge
+- Détail extensible : entrées (horodatées, MC, montant) + ventes
+- Copie CA au clic sur le nom du token
+- Résumé global : PNL total, Win Rate, nb trades
+
+RESET WALLET
+─────────────
+- Reset solde uniquement (conserve historique)
+- Reset solde + historique complet
+- Confirmation en 2 étapes
+
+==========================================================
+
+TECHNIQUE
+──────────
+- Chrome Extension MV3, React + TypeScript, Vite
+- Storage : chrome.storage.local (AppState persisté)
+- i18n : 3 langues (FR / EN / ES), fallback FR
+- Notifications Chrome natives (TP/SL)
+- GMGN : fetch API + polling 8s
