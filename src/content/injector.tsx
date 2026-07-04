@@ -779,7 +779,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     balance: 50, activeTrade: null, closedTrades: [],
     tpPresets: [10, 20, 50, 100], slPresets: [-10, -20, -50, -100],
     buyPresets: [0.1, 0.5, 1, 5], currency: 'SOL', solPrice: 0,
-    slippage: 1, fees: 0.25, selectedPlatform: null, language: 'fr',
+    slippage: 50, fees: 1, selectedPlatform: null, language: 'fr',
   })
   const [solPriceLocal, setSolPriceLocal] = useState(0)
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
@@ -1698,7 +1698,7 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
           </div>
           <div>
             <div style={{ color: 'rgba(240,240,250,0.9)', fontSize: FS.v2, marginBottom: 4 }}>{tr(lang, 'cfg.fees_lbl')}</div>
-            <input type="text" inputMode="decimal" value={fee} placeholder="0.25"
+            <input type="text" inputMode="decimal" value={fee} placeholder="1"
               onChange={e => numInput(e.target.value, setFee)}
               style={inputStyle(!!fee)} />
           </div>

@@ -9,8 +9,8 @@ const DEFAULTS: AppState = {
   buyPresets: [0.1, 0.5, 1, 5],
   currency: 'SOL',
   solPrice: 0,
-  slippage: 1,
-  fees: 0.25,
+  slippage: 50,
+  fees: 1,
   selectedPlatform: null,
   language: 'fr' as 'en' | 'fr' | 'es',
 }
