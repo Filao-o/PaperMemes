@@ -809,7 +809,7 @@ export function App() {
           padding: '10px 14px', background: '#ffffff', borderBottom: '1px solid #e0e0e0',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: '#000000', fontSize: 18, lineHeight: 1 }}>≡</span>
+            <img src={chrome.runtime.getURL('assets/icons/icon48.png')} width={24} height={24} style={{ borderRadius: 6 }} alt="PaperMemes" />
             <span style={{ fontWeight: 800, fontSize: 14, color: '#000000', letterSpacing: -0.3 }}>PaperMemes</span>
             <span style={{ color: '#888888', fontSize: 10 }}>v1.5</span>
             <span style={{
@@ -860,10 +860,17 @@ export function App() {
               background: '#fff', color: '#111', fontWeight: 700, fontSize: 11,
               padding: '3px 10px', borderRadius: 20,
             }}>{tr(lang, 'wallet.label')}</span>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button onClick={() => setShowReset(true)} style={{
+                background: '#fff', border: 'none', borderRadius: 20, padding: '3px 12px',
+                color: '#111', fontWeight: 700, fontSize: 11, cursor: 'pointer', fontFamily: FONT,
+                letterSpacing: 0.3,
+              }}>↺ Reset</button>
             <CurrencyToggle
               value={currency}
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
             />
+            </div>
           </div>
           <div style={{ fontSize: 30, fontWeight: 800, color: C.text, display: 'flex', alignItems: 'center' }}>
             {fmtBal()}

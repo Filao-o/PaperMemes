@@ -6,6 +6,8 @@ import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Tabs, Btn, Divider, SolIcon } from 
 import { JournalPanel, TradeCard } from '../popup/components/JournalPanel'
 import { t as tr, type Lang, LANG_LABELS } from '../i18n'
 
+const LANG_CYCLE: Lang[] = ['fr', 'en', 'es']
+
 // ─── Currency toggle ──────────────────────────────────────────────────────────
 
 function CurrencyToggle({ value, onChange }: { value: 'SOL' | 'USD'; onChange: () => void }) {
@@ -785,7 +787,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [risk, setRisk] = useState<RiskInfo | null>(null)
   const [tab, setTab] = useState<'trade' | 'journal'>('trade')
-  const [showConfig, setShowConfig] = useState(false)
+  const [showConfigB, setShowConfigB] = useState(false)
+  const [showConfigC, setShowConfigC] = useState(false)
   const [showReset, setShowReset] = useState(false)
   const [priceStale, setPriceStale] = useState(false)
   const [priceDir, setPriceDir] = useState<'up' | 'down' | null>(null)
@@ -1320,27 +1323,13 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onMouseDown={e => e.stopPropagation()}>
               <button
-                onClick={() => setShowConfig(v => !v)}
-                title={tr(lang, 'w.settings')}
+                onClick={() => { const next = LANG_CYCLE[(LANG_CYCLE.indexOf(lang) + 1) % LANG_CYCLE.length]; Storage.set({ language: next }) }}
                 style={{
-                  width: 32, height: 32,
-                  background: showConfig ? C.green : DS.color.bg,
-                  border: 'none', borderRadius: 10, cursor: 'pointer',
-                  color: showConfig ? DS.color.bg : DS.color.textOn,
-                  fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s',
+                  padding: '4px 10px', borderRadius: 20, cursor: 'pointer', fontFamily: FONT,
+                  background: DS.color.surface, border: '1px solid rgba(0,0,0,0.18)',
+                  color: DS.color.textOff, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
                 }}
-              >⚙</button>
-              <button
-                onClick={() => setShowReset(true)}
-                title={tr(lang, 'w.reset_wallet')}
-                style={{
-                  width: 32, height: 32,
-                  background: DS.color.bg, border: 'none', borderRadius: 8,
-                  cursor: 'pointer', color: DS.color.textOn, fontSize: 18,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >↺</button>
+              >{LANG_LABELS[lang]}</button>
             </div>
           </div>
         )}
@@ -1376,20 +1365,6 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           </div>
         </div>
 
-        {/* Config Panel */}
-        {showConfig && (
-          <div style={{ background: 'rgba(0,0,0,0)', borderTop: `1px solid ${C.border}`, padding: '9px 12px', fontFamily: FONT }}>
-            <ConfigPanel
-              buyPresets={buyPresets}
-              tpPresets={tpPresets}
-              slPresets={slPresets}
-              slippage={state.slippage}
-              fees={state.fees}
-              onSaved={() => setShowConfig(false)}
-              lang={lang}
-            />
-          </div>
-        )}
       </DraggableBlock>
 
       {/* Bloc B — Bloc Mid */}
@@ -1458,14 +1433,15 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             hasPrice={!!price} buyBlocked={buyBlocked}
             onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
             fmtCurStr={fmtCurStr} currency={currency} solPrice={solPrice} price={price}
-            onOpenConfig={() => setShowConfig(v => !v)}
+            onOpenConfig={() => setShowConfigB(v => !v)}
             lang={lang} buyWarn={buyWarn}
           />
+          {showConfigB && <BuyPresetsEditor buyPresets={buyPresets} onSaved={() => setShowConfigB(false)} lang={lang} />}
         </div>
       </DraggableBlock>
 
       {/* Bloc C — TP/SL + Footer (seulement si trade tab et pas config) */}
-      {!showConfig && tab === 'trade' && (
+      {tab === 'trade' && (
         <DraggableBlock
           pos={positions.C}
           onPosChange={p => handleBlockMove('C', p)}
@@ -1486,19 +1462,23 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             }}>
               <span style={{ ...DS.type.heading, color: DS.color.textOff }}>{tr(lang, 'w.tp_sl')}</span>
               <button
-                onClick={() => setShowConfig(v => !v)}
+                onClick={() => setShowConfigC(v => !v)}
                 onMouseDown={e => e.stopPropagation()}
                 style={{
-                  width: 32, height: 32, background: DS.color.bg,
+                  width: 32, height: 32,
+                  background: showConfigC ? C.green : DS.color.bg,
                   border: 'none', borderRadius: 10, cursor: 'pointer',
-                  color: DS.color.textOn, fontSize: 18,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: showConfigC ? DS.color.bg : DS.color.textOn,
+                  fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s',
                 }}>⚙</button>
             </div>
           )}
         >
           <div style={{ background: DS.color.bg, fontFamily: FONT, color: C.text, padding: `${DS.pad.y}px ${DS.pad.x}px`, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {activeTrade ? (
+            {showConfigC ? (
+              <TpSlPresetsEditor tpPresets={tpPresets} slPresets={slPresets} onSaved={() => setShowConfigC(false)} lang={lang} />
+            ) : activeTrade ? (
               <>
                 {/* TP section */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1555,6 +1535,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             )}
 
             {/* Footer */}
+
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 3 }}>
               {risk?.isHighRisk && (
                 <div style={{ color: C.red, ...DS.type.annex }}>{tr(lang, 'w.risk_score', { score: risk.score })}</div>
@@ -1713,6 +1694,115 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
       }}>
         {saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}
       </button>
+    </div>
+  )
+}
+
+// ─── Buy Presets Editor (Block B config) ─────────────────────────────────────
+
+function BuyPresetsEditor({ buyPresets, onSaved, lang }: { buyPresets: number[]; onSaved?: () => void; lang: Lang }) {
+  const pad = (arr: number[], n: number) => arr.map(v => String(v)).concat(Array(n).fill('')).slice(0, n)
+  const [inputs, setInputs] = useState<string[]>(() => pad(buyPresets, 8))
+  const [saved, setSaved] = useState(false)
+
+  function gridInput(i: number, val: string) {
+    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return
+    setInputs(prev => { const n = [...prev]; n[i] = val; return n })
+  }
+
+  function handleSave() {
+    const parsed = inputs.map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0)
+    Storage.set({ buyPresets: parsed })
+    setSaved(true)
+    setTimeout(() => { setSaved(false); onSaved?.() }, 1000)
+  }
+
+  const iSt = (filled: boolean): React.CSSProperties => ({
+    width: '100%', boxSizing: 'border-box',
+    background: 'rgba(0,0,0,0)', border: `1px solid ${filled ? C.green : C.border}`,
+    borderRadius: 6, color: C.text, fontSize: FS.v3, fontWeight: 700,
+    padding: '7px 4px', textAlign: 'center', outline: 'none', fontFamily: 'inherit',
+  })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 10, marginTop: 4 }}>
+      <div style={sL}>{tr(lang, 'cfg.quick_buy')}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+        {inputs.map((val, i) => (
+          <input key={i} type="text" inputMode="decimal" value={val} placeholder="—"
+            onChange={e => gridInput(i, e.target.value)} style={iSt(!!val)} />
+        ))}
+      </div>
+      <button onClick={handleSave} style={{
+        width: '100%', padding: '8px 0',
+        background: saved ? C.green : 'rgba(0,0,0,0)', border: `1px solid ${C.green}`,
+        borderRadius: 6, color: saved ? '#000' : C.green, fontWeight: 700, fontSize: FS.v3,
+        cursor: 'pointer', fontFamily: 'inherit',
+      }}>{saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}</button>
+    </div>
+  )
+}
+
+// ─── TP/SL Presets Editor (Block C config) ────────────────────────────────────
+
+function TpSlPresetsEditor({ tpPresets, slPresets, onSaved, lang }: { tpPresets: number[]; slPresets: number[]; onSaved?: () => void; lang: Lang }) {
+  const pad = (arr: number[], n: number) => arr.map(v => String(Math.abs(v))).concat(Array(n).fill('')).slice(0, n)
+  const [tpInputs, setTpInputs] = useState<string[]>(() => pad(tpPresets, 4))
+  const [slInputs, setSlInputs] = useState<string[]>(() => pad(slPresets, 4))
+  const [saved, setSaved] = useState(false)
+
+  function gridInput(i: number, val: string, setter: React.Dispatch<React.SetStateAction<string[]>>) {
+    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return
+    setter(prev => { const n = [...prev]; n[i] = val; return n })
+  }
+
+  function handleSave() {
+    const tpP = tpInputs.map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0)
+    const slP = slInputs.map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0).map(v => -v)
+    Storage.set({ tpPresets: tpP, slPresets: slP })
+    setSaved(true)
+    setTimeout(() => { setSaved(false); onSaved?.() }, 1000)
+  }
+
+  const iSt = (filled: boolean, red?: boolean): React.CSSProperties => ({
+    width: '100%', boxSizing: 'border-box',
+    background: 'rgba(0,0,0,0)', border: `1px solid ${filled ? (red ? C.red : C.green) : C.border}`,
+    borderRadius: 6, color: C.text, fontSize: FS.v3, fontWeight: 700,
+    padding: '7px 4px', textAlign: 'center', outline: 'none', fontFamily: 'inherit',
+  })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div>
+        <div style={sL}>{tr(lang, 'cfg.tp_pct')}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          {tpInputs.map((val, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <input type="text" inputMode="decimal" value={val} placeholder="—"
+                onChange={e => gridInput(i, e.target.value, setTpInputs)} style={iSt(!!val)} />
+              {val && <span style={{ position: 'absolute', top: 2, right: 4, fontSize: 8, color: C.green }}>%</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div style={sL}>{tr(lang, 'cfg.sl_pct')}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          {slInputs.map((val, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <input type="text" inputMode="decimal" value={val} placeholder="—"
+                onChange={e => gridInput(i, e.target.value, setSlInputs)} style={iSt(!!val, true)} />
+              {val && <span style={{ position: 'absolute', top: 2, right: 4, fontSize: 8, color: C.red }}>%</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+      <button onClick={handleSave} style={{
+        width: '100%', padding: '8px 0',
+        background: saved ? C.green : 'rgba(0,0,0,0)', border: `1px solid ${C.green}`,
+        borderRadius: 6, color: saved ? '#000' : C.green, fontWeight: 700, fontSize: FS.v3,
+        cursor: 'pointer', fontFamily: 'inherit',
+      }}>{saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}</button>
     </div>
   )
 }
