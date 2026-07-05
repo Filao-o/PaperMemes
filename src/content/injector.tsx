@@ -1026,10 +1026,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       showBuyWarn(tr(lang, 'w.insuf_balance'))
       return
     }
-    // Apply fees (deducted from SOL spent) and slippage (worse fill price = fewer tokens)
+    // Apply fees only — slippage is a tolerance setting, not a guaranteed cost
     const feeCoef = 1 - state.fees / 100
-    const slipCoef = 1 / (1 + state.slippage / 100)
-    const tokensPerSol = (1 / tokenInfo.price) * feeCoef * slipCoef
+    const tokensPerSol = (1 / tokenInfo.price) * feeCoef
     if (existing && existing.mintAddress === currentMint) {
       const newTokensHeld = existing.tokensHeld + amount * tokensPerSol
       const newInvested = existing.invested + amount
@@ -1087,8 +1086,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
   function doSell(percent: number, price: number, mc: number, trade: Trade, st: AppState) {
     const tokensSold = trade.tokensHeld * (percent / 100)
-    // Apply slippage (worse fill price) and fees (deducted from proceeds)
-    const solReturned = tokensSold * price * (1 / (1 + st.slippage / 100)) * (1 - st.fees / 100)
+    // Apply fees only — slippage is a tolerance setting, not a guaranteed cost
+    const solReturned = tokensSold * price * (1 - st.fees / 100)
     const event: CloseEvent = {
       id: `report_${Date.now()}`,
       timestamp: Date.now(),

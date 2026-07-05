@@ -3,10 +3,9 @@ import { Storage } from '../storage'
 import type { AppState, Trade } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, SolIcon } from './components/ui'
 import { TradeCard } from './components/JournalPanel'
-import { t as tr, type Lang } from '../i18n'
+import { t as tr, type Lang, LANG_LABELS } from '../i18n'
 
 const LANG_CYCLE: Lang[] = ['fr', 'en', 'es']
-const LANG_FLAGS: Record<Lang, string> = { fr: '🇫🇷', en: '🇺🇸', es: '🇪🇸' }
 
 const FONT = "'Space Grotesk', -apple-system, sans-serif"
 
@@ -829,16 +828,16 @@ export function App() {
                 <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
             </button>
-            {/* Language flag cycler */}
+            {/* Language cycler */}
             <button
               onClick={() => Storage.set({ language: LANG_CYCLE[(LANG_CYCLE.indexOf(lang) + 1) % LANG_CYCLE.length] })}
               title="Language"
               style={{
                 width: 34, height: 34, background: '#000000', border: '1px solid #333',
-                borderRadius: 8, cursor: 'pointer', fontSize: 18, lineHeight: 1,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+                borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 800, letterSpacing: 0.5,
+                color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
               }}
-            >{LANG_FLAGS[lang]}</button>
+            >{LANG_LABELS[lang]}</button>
             {/* Change platform */}
             <button onClick={() => Storage.set({ selectedPlatform: null })} title="Change platform" style={{
               width: 34, height: 34, background: '#000000', border: '1px solid #333',
