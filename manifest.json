@@ -39,6 +39,15 @@
       "js": ["content/injector.js"],
       "css": ["assets/overlay.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://padre.gg/*",
+        "https://trade.padre.gg/*"
+      ],
+      "js": ["content/chart-bridge.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
     }
   ],
   "action": {
@@ -56,7 +65,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/*", "chunks/*"],
+      "resources": ["assets/*", "chunks/*", "content/chart-bridge.js"],
       "matches": [
         "https://photon-sol.tinyastro.io/*",
         "https://gmgn.ai/*",

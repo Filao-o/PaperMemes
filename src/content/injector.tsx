@@ -1058,6 +1058,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         entries: allEntries,
       }
       Storage.dcaBuy(updated, state.balance - amount)
+      if (currentTerminal === 'padre') dispatchChartLine(updated.entryPrice, amount)
     } else {
       const tokensHeld = amount * tokensPerSol
       const trade: Trade = {
@@ -1079,7 +1080,14 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         pnlPercent: null,
       }
       Storage.openTrade(trade, state.balance - amount)
+      if (currentTerminal === 'padre') dispatchChartLine(tokenInfo.price, amount)
     }
+  }
+
+  function dispatchChartLine(price: number, amount: number) {
+    window.dispatchEvent(new CustomEvent('papermemes:drawline', {
+      detail: { price, label: `Buy ${fmtSOL(amount)} SOL`, color: '#22c55e' },
+    }))
   }
 
   function handleSell(percent: number) {
@@ -1119,6 +1127,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       const totalOut = updated.closeEvents.reduce((s, e) => s + e.solReturned, 0)
       const pnlSOL = totalOut - trade.invested
       Storage.closeTrade({ ...updated, status: pnlSOL >= 0 ? 'won' : 'lost', closedAt: Date.now(), pnlSOL, pnlPercent: (pnlSOL / trade.invested) * 100 }, newBalance)
+      if (trade.terminal === 'padre') window.dispatchEvent(new CustomEvent('papermemes:clearlines'))
     } else {
       Storage.partialClose(updated, newBalance)
     }
