@@ -550,7 +550,7 @@ function PlatformSelector({ onSelect, lang }: { onSelect: (p: Platform) => void;
   return (
     <div style={{
       width: 360, minHeight: 480, fontFamily: FONT,
-      background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+      background: '#0a0812',
       border: '1px solid rgba(255,255,255,0.10)',
       display: 'flex', flexDirection: 'column',
     }}>
@@ -798,7 +798,7 @@ export function App() {
       {showSettings && <SettingsModal state={state} lang={lang} onClose={() => setShowSettings(false)} onResetClick={() => setShowReset(true)} />}
       <div style={{
         width: 360, minHeight: 480,
-        background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
+        background: '#0a0812',
         border: '1px solid rgba(255,255,255,0.10)',
         color: C.text, fontFamily: FONT, display: 'flex', flexDirection: 'column',
       }}>
