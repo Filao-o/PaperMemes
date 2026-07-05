@@ -1583,11 +1583,19 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   )
 }
 
-// ─── Note Card (remarques) ────────────────────────────────────────────────────
+// ─── Note Card ────────────────────────────────────────────────────────────────
 
 function NoteCard({ trade, lang, onClose }: { trade: Trade; lang: Lang; onClose: () => void }) {
   const [text, setText] = useState(trade.note ?? '')
+  const [open, setOpen] = useState(false)
   const [saved, setSaved] = useState(false)
+
+  const pnlPct = trade.pnlPercent ?? 0
+  const earns = trade.closeEvents.reduce((s, e) => s + e.solReturned, 0)
+  const isWin = pnlPct >= 0
+  const pnlColor = isWin ? C.green : C.red
+  const pnlStr = `${isWin ? '+' : ''}${pnlPct.toFixed(1)}%`
+  const earnsStr = `${isWin ? '+' : ''}${fmtSOL(earns - trade.invested)}`
 
   function handleSave() {
     Storage.updateTradeNote(trade.id, text.trim())
@@ -1597,49 +1605,65 @@ function NoteCard({ trade, lang, onClose }: { trade: Trade; lang: Lang; onClose:
 
   return (
     <div style={{
-      width: 260, background: '#111827', border: '1px solid rgba(255,255,255,0.15)',
+      width: 260, background: '#111827', border: `1px solid ${isWin ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
       borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
       fontFamily: FONT, overflow: 'hidden',
     }}>
-      {/* Header */}
-      <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '8px 12px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.08)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>
-            {tr(lang, 'journal.note_label')}
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{trade.tokenName}</span>
+      {/* Header — always visible, click to expand note field */}
+      <div
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          padding: '10px 12px', cursor: 'pointer',
+          background: isWin ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Notes</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{trade.tokenName}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: pnlColor }}>{pnlStr}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: pnlColor }}>
+              {earnsStr} <SolIcon size={9} fill={pnlColor} style={{ marginLeft: 1 }} />
+            </span>
+          </div>
         </div>
-        <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)',
-          fontSize: 14, cursor: 'pointer', lineHeight: 1, padding: '0 2px',
-        }}>✕</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{open ? '▲' : '▼'}</span>
+          <button
+            onClick={e => { e.stopPropagation(); onClose() }}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 14, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
+          >✕</button>
+        </div>
       </div>
-      {/* Body */}
-      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <textarea
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder={tr(lang, 'journal.note_placeholder')}
-          rows={3}
-          style={{
-            width: '100%', boxSizing: 'border-box', resize: 'none',
-            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 7, color: '#fff', fontSize: 12, fontFamily: FONT,
-            padding: '7px 10px', outline: 'none', lineHeight: 1.5,
-          }}
-        />
-        <button onClick={handleSave} style={{
-          width: '100%', padding: '7px 0',
-          background: saved ? C.green : 'rgba(255,255,255,0.10)',
-          border: `1px solid ${saved ? C.green : 'rgba(255,255,255,0.15)'}`,
-          borderRadius: 7, color: saved ? '#000' : '#fff',
-          fontWeight: 700, fontSize: 11, cursor: 'pointer', fontFamily: FONT,
-          transition: 'all 0.2s',
-        }}>{saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}</button>
-      </div>
+
+      {/* Expandable note field */}
+      {open && (
+        <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <textarea
+            autoFocus
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder={tr(lang, 'journal.note_placeholder')}
+            rows={3}
+            style={{
+              width: '100%', boxSizing: 'border-box', resize: 'none',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 7, color: '#fff', fontSize: 12, fontFamily: FONT,
+              padding: '7px 10px', outline: 'none', lineHeight: 1.5,
+            }}
+          />
+          <button onClick={handleSave} style={{
+            width: '100%', padding: '7px 0',
+            background: saved ? C.green : 'rgba(255,255,255,0.10)',
+            border: `1px solid ${saved ? C.green : 'rgba(255,255,255,0.15)'}`,
+            borderRadius: 7, color: saved ? '#000' : '#fff',
+            fontWeight: 700, fontSize: 11, cursor: 'pointer', fontFamily: FONT, transition: 'all 0.2s',
+          }}>{saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}</button>
+        </div>
+      )}
     </div>
   )
 }
