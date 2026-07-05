@@ -789,6 +789,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [tab, setTab] = useState<'trade' | 'journal'>('trade')
   const [showConfigB, setShowConfigB] = useState(false)
   const [showConfigC, setShowConfigC] = useState(false)
+  const [pendingNotes, setPendingNotes] = useState<Trade[]>([])
   const [showReset, setShowReset] = useState(false)
   const [priceStale, setPriceStale] = useState(false)
   const [priceDir, setPriceDir] = useState<'up' | 'down' | null>(null)
@@ -880,7 +881,16 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
   useEffect(() => {
     Storage.get().then(setState)
-    Storage.onChanged(c => setState(prev => ({ ...prev, ...c })))
+    Storage.onChanged(c => {
+      setState(prev => {
+        if (c.closedTrades && prev.notesEnabled) {
+          const prevIds = new Set(prev.closedTrades.map(t => t.id))
+          const fresh = c.closedTrades.filter(t => !prevIds.has(t.id))
+          if (fresh.length > 0) setPendingNotes(pn => [...fresh, ...pn])
+        }
+        return { ...prev, ...c }
+      })
+    })
   }, [])
 
   // SOL price — via service worker (same source as popup)
@@ -1550,7 +1560,87 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       )}
 
       {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} lang={lang} />}
+
+      {/* Note cards — bottom-right stack */}
+      {pendingNotes.length > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 9999999,
+          display: 'flex', flexDirection: 'column-reverse', gap: 10,
+          pointerEvents: 'none',
+        }}>
+          {pendingNotes.map(trade => (
+            <div key={trade.id} style={{ pointerEvents: 'all' }}>
+              <NoteCard
+                trade={trade}
+                lang={lang}
+                onClose={() => setPendingNotes(pn => pn.filter(t => t.id !== trade.id))}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </>
+  )
+}
+
+// ─── Note Card (remarques) ────────────────────────────────────────────────────
+
+function NoteCard({ trade, lang, onClose }: { trade: Trade; lang: Lang; onClose: () => void }) {
+  const [text, setText] = useState(trade.note ?? '')
+  const [saved, setSaved] = useState(false)
+
+  function handleSave() {
+    Storage.updateTradeNote(trade.id, text.trim())
+    setSaved(true)
+    setTimeout(() => { setSaved(false); onClose() }, 900)
+  }
+
+  return (
+    <div style={{
+      width: 260, background: '#111827', border: '1px solid rgba(255,255,255,0.15)',
+      borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+      fontFamily: FONT, overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '8px 12px', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.08)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>
+            {tr(lang, 'journal.note_label')}
+          </span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{trade.tokenName}</span>
+        </div>
+        <button onClick={onClose} style={{
+          background: 'none', border: 'none', color: 'rgba(255,255,255,0.45)',
+          fontSize: 14, cursor: 'pointer', lineHeight: 1, padding: '0 2px',
+        }}>✕</button>
+      </div>
+      {/* Body */}
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <textarea
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder={tr(lang, 'journal.note_placeholder')}
+          rows={3}
+          style={{
+            width: '100%', boxSizing: 'border-box', resize: 'none',
+            background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 7, color: '#fff', fontSize: 12, fontFamily: FONT,
+            padding: '7px 10px', outline: 'none', lineHeight: 1.5,
+          }}
+        />
+        <button onClick={handleSave} style={{
+          width: '100%', padding: '7px 0',
+          background: saved ? C.green : 'rgba(255,255,255,0.10)',
+          border: `1px solid ${saved ? C.green : 'rgba(255,255,255,0.15)'}`,
+          borderRadius: 7, color: saved ? '#000' : '#fff',
+          fontWeight: 700, fontSize: 11, cursor: 'pointer', fontFamily: FONT,
+          transition: 'all 0.2s',
+        }}>{saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}</button>
+      </div>
+    </div>
   )
 }
 

@@ -127,6 +127,16 @@ export function TradeCard({ trade, currency, solPrice, lang }: { trade: Trade; c
           <span style={labelStyle}>{tr(lang, 'journal.pnl_pct')}</span>
           <span style={{ ...valueStyle, color: pnlColor(pnlPct) }}>{fmtPct(pnlPct)}</span>
         </div>
+        {trade.note && (
+          <div style={{
+            marginTop: 4, padding: '5px 9px',
+            background: 'rgba(255,255,255,0.04)', borderRadius: 6,
+            borderLeft: `2px solid rgba(255,255,255,0.2)`,
+            color: 'rgba(255,255,255,0.65)', fontSize: 11, lineHeight: 1.5, fontStyle: 'italic',
+          }}>
+            {trade.note}
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
           <a href={`https://solscan.io/token/${trade.mintAddress}`} target="_blank" rel="noreferrer"
             style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, textDecoration: 'none' }}>

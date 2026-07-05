@@ -125,6 +125,8 @@ const TR: Record<Lang, Record<string, string>> = {
     'journal.no_trade':    'Aucun trade enregistré',
     'journal.wins_losses': '{won}G / {lost}P',
     'journal.history':     'Historique',
+    'journal.note_placeholder': 'Ajouter une remarque...',
+    'journal.note_label':       'Remarque',
     // Widget
     'w.holders':           'Holders',
   },
@@ -239,6 +241,8 @@ const TR: Record<Lang, Record<string, string>> = {
     'journal.no_trade':    'No trades recorded',
     'journal.wins_losses': '{won}W / {lost}L',
     'journal.history':     'History',
+    'journal.note_placeholder': 'Add a note...',
+    'journal.note_label':       'Note',
     // Widget
     'w.holders':           'Holders',
   },
@@ -353,6 +357,8 @@ const TR: Record<Lang, Record<string, string>> = {
     'journal.no_trade':    'Sin trades registrados',
     'journal.wins_losses': '{won}G / {lost}P',
     'journal.history':     'Historial',
+    'journal.note_placeholder': 'Agregar nota...',
+    'journal.note_label':       'Nota',
     // Widget
     'w.holders':           'Holders',
   },

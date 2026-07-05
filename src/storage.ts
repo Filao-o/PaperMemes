@@ -35,6 +35,12 @@ export const Storage = {
     await this.set({ activeTrade: null, balance: newBalance, closedTrades: [trade, ...closedTrades] })
   },
 
+  async updateTradeNote(tradeId: string, note: string): Promise<void> {
+    const { closedTrades } = await this.get()
+    const updated = closedTrades.map(t => t.id === tradeId ? { ...t, note } : t)
+    await this.set({ closedTrades: updated })
+  },
+
   async partialClose(trade: Trade, newBalance: number): Promise<void> {
     await this.set({ activeTrade: trade, balance: newBalance })
   },
