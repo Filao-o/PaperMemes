@@ -641,13 +641,17 @@ export function App() {
   useEffect(() => {
     Storage.get().then(setState)
     const cleanup = Storage.onChanged(changes => setState(prev => prev ? { ...prev, ...changes } : prev))
-    chrome.runtime.sendMessage({ type: 'FETCH_SOL_PRICE' }, res => {
-      if (res?.ok) {
-        setState(prev => prev ? { ...prev, solPrice: res.data } : prev)
-        Storage.set({ solPrice: res.data })
-      }
-    })
-    return cleanup
+    const fetchPrice = () => {
+      chrome.runtime.sendMessage({ type: 'FETCH_SOL_PRICE' }, res => {
+        if (res?.ok && res.data > 0) {
+          setState(prev => prev ? { ...prev, solPrice: res.data } : prev)
+          Storage.set({ solPrice: res.data })
+        }
+      })
+    }
+    fetchPrice()
+    const t = setInterval(fetchPrice, 60_000)
+    return () => { cleanup(); clearInterval(t) }
   }, [])
 
   if (!state) return null
