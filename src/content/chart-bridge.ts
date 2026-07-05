@@ -2,6 +2,8 @@
   let tvWidget: any = null
   const pendingLines: Array<{ price: number; label: string; color: string }> = []
   const activeLines: any[] = []
+  let flushTimer: ReturnType<typeof setInterval> | null = null
+  let flushKillTimer: ReturnType<typeof setTimeout> | null = null
 
   // ── Hook TradingView.widget constructor ────────────────────────────────────
 
@@ -12,7 +14,7 @@
     function Hooked(this: any, options: any) {
       const instance = new Orig(options)
       tvWidget = instance
-      flushPending()
+      scheduledFlush()
       return instance
     }
     Hooked.prototype = Orig.prototype
@@ -21,36 +23,74 @@
     return true
   }
 
-  // Poll until TradingView is available (it loads via <script> after page parse)
-  let attempts = 0
+  let hookAttempts = 0
   const hookTimer = setInterval(() => {
-    if (hookConstructor() || attempts++ > 200) clearInterval(hookTimer)
+    if (hookConstructor() || hookAttempts++ > 200) clearInterval(hookTimer)
   }, 50)
 
-  // ── Fallback: scan window for existing widget ──────────────────────────────
+  // ── Widget lookup ──────────────────────────────────────────────────────────
 
-  function findWidget(): any {
-    if (tvWidget) return tvWidget
-    for (const key of Object.getOwnPropertyNames(window)) {
-      try {
-        const v = (window as any)[key]
-        if (v && typeof v === 'object' && typeof v.chart === 'function' && typeof v.onChartReady === 'function') {
-          tvWidget = v
-          return v
-        }
-      } catch { /* skip non-accessible props */ }
+  function isAlive(w: any): boolean {
+    if (!w) return false
+    try {
+      return typeof w.chart === 'function' && typeof w.onChartReady === 'function'
+    } catch {
+      return false
     }
-    return null
   }
 
-  // ── Draw a position line ───────────────────────────────────────────────────
-
-  function drawLine(price: number, label: string, color: string) {
-    const w = findWidget()
-    if (!w) {
-      pendingLines.push({ price, label, color })
-      return
+  function findWidget(): any {
+    if (!isAlive(tvWidget)) {
+      tvWidget = null
+      // Scan window properties for a live widget instance
+      for (const key of Object.getOwnPropertyNames(window)) {
+        try {
+          const v = (window as any)[key]
+          if (v && typeof v === 'object' && typeof v.chart === 'function' && typeof v.onChartReady === 'function') {
+            tvWidget = v
+            break
+          }
+        } catch { /* non-accessible property */ }
+      }
     }
+    return tvWidget
+  }
+
+  // ── Flush pending lines (with polling fallback) ────────────────────────────
+
+  function flushPending() {
+    const w = findWidget()
+    if (!w || pendingLines.length === 0) return
+    const snapshot = pendingLines.splice(0)
+    for (const p of snapshot) {
+      applyLine(w, p.price, p.label, p.color)
+    }
+  }
+
+  function scheduledFlush() {
+    flushPending()
+    // If lines are still pending, keep polling until widget is ready
+    if (pendingLines.length > 0 && !flushTimer) startFlushPolling()
+  }
+
+  function startFlushPolling() {
+    if (flushTimer) return
+    flushTimer = setInterval(() => {
+      flushPending()
+      if (pendingLines.length === 0) stopFlushPolling()
+    }, 400)
+    // Hard stop after 30s to avoid eternal polling
+    flushKillTimer = setTimeout(stopFlushPolling, 30_000)
+  }
+
+  function stopFlushPolling() {
+    if (flushTimer) { clearInterval(flushTimer); flushTimer = null }
+    if (flushKillTimer) { clearTimeout(flushKillTimer); flushKillTimer = null }
+  }
+
+  // ── Draw a single position line ────────────────────────────────────────────
+
+  function applyLine(w: any, price: number, label: string, color: string) {
     try {
       w.onChartReady(() => {
         try {
@@ -73,30 +113,43 @@
     }
   }
 
-  function flushPending() {
-    while (pendingLines.length) {
-      const p = pendingLines.shift()!
-      drawLine(p.price, p.label, p.color)
+  function drawLine(price: number, label: string, color: string) {
+    const w = findWidget()
+    if (!w) {
+      pendingLines.push({ price, label, color })
+      startFlushPolling()
+      return
     }
+    applyLine(w, price, label, color)
   }
 
-  // ── Remove all lines ───────────────────────────────────────────────────────
+  // ── Remove all active lines and reset widget reference ─────────────────────
 
-  function clearLines() {
+  function reset() {
     for (const line of activeLines) {
       try { line.remove() } catch {}
     }
     activeLines.length = 0
+    pendingLines.length = 0
+    stopFlushPolling()
+    tvWidget = null  // Force re-scan on next drawline
   }
 
-  // ── Event listeners (from content script / ISOLATED world) ─────────────────
+  // ── Event listeners ────────────────────────────────────────────────────────
 
+  // Called by injector.tsx on buy
   window.addEventListener('papermemes:drawline', (e: Event) => {
     const { price, label, color } = (e as CustomEvent).detail
     drawLine(price, label, color)
   })
 
+  // Called by injector.tsx on full close
   window.addEventListener('papermemes:clearlines', () => {
-    clearLines()
+    reset()
+  })
+
+  // Called by injector.tsx on SPA navigation (new token)
+  window.addEventListener('papermemes:urlchange', () => {
+    reset()
   })
 })()
