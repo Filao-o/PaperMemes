@@ -1561,10 +1561,10 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
       {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} lang={lang} />}
 
-      {/* Note cards — bottom-right stack */}
+      {/* Note cards — bottom-left stack */}
       {pendingNotes.length > 0 && (
         <div style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 9999999,
+          position: 'fixed', bottom: 24, left: 24, zIndex: 9999999,
           display: 'flex', flexDirection: 'column-reverse', gap: 10,
           pointerEvents: 'none',
         }}>
@@ -1573,6 +1573,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               <NoteCard
                 trade={trade}
                 lang={lang}
+                solPrice={solPriceLocal}
                 onClose={() => setPendingNotes(pn => pn.filter(t => t.id !== trade.id))}
               />
             </div>
@@ -1585,17 +1586,20 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
 // ─── Note Card ────────────────────────────────────────────────────────────────
 
-function NoteCard({ trade, lang, onClose }: { trade: Trade; lang: Lang; onClose: () => void }) {
+function NoteCard({ trade, lang, solPrice, onClose }: { trade: Trade; lang: Lang; solPrice: number; onClose: () => void }) {
   const [text, setText] = useState(trade.note ?? '')
   const [open, setOpen] = useState(false)
   const [saved, setSaved] = useState(false)
 
   const pnlPct = trade.pnlPercent ?? 0
-  const earns = trade.closeEvents.reduce((s, e) => s + e.solReturned, 0)
+  const netSOL = trade.closeEvents.reduce((s, e) => s + e.solReturned, 0) - trade.invested
   const isWin = pnlPct >= 0
-  const pnlColor = isWin ? C.green : C.red
-  const pnlStr = `${isWin ? '+' : ''}${pnlPct.toFixed(1)}%`
-  const earnsStr = `${isWin ? '+' : ''}${fmtSOL(earns - trade.invested)}`
+  const col = isWin ? C.green : C.red
+  const sign = isWin ? '+' : ''
+  const pnlStr = `${sign}${pnlPct.toFixed(1)}%`
+  const earnsStr = solPrice > 0
+    ? `${sign}${Math.round(netSOL * solPrice)}USD`
+    : `${sign}${fmtSOL(netSOL)}`
 
   function handleSave() {
     Storage.updateTradeNote(trade.id, text.trim())
@@ -1605,37 +1609,31 @@ function NoteCard({ trade, lang, onClose }: { trade: Trade; lang: Lang; onClose:
 
   return (
     <div style={{
-      width: 260, background: '#111827', border: `1px solid ${isWin ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+      width: 250, background: '#111827', border: `1px solid ${isWin ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
       borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
       fontFamily: FONT, overflow: 'hidden',
     }}>
-      {/* Header — always visible, click to expand note field */}
+      {/* Header — click to expand */}
       <div
         onClick={() => setOpen(v => !v)}
-        style={{
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          padding: '10px 12px', cursor: 'pointer',
-          background: isWin ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-        }}
+        style={{ padding: '10px 12px', cursor: 'pointer', background: isWin ? 'rgba(34,197,94,0.07)' : 'rgba(239,68,68,0.07)' }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Row 1: TokenName ——— Notes ✕ */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{trade.tokenName}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Notes</span>
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{trade.tokenName}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: pnlColor }}>{pnlStr}</span>
-            <span style={{ fontSize: 11, fontWeight: 600, color: pnlColor }}>
-              {earnsStr} <SolIcon size={9} fill={pnlColor} style={{ marginLeft: 1 }} />
-            </span>
+            <button
+              onClick={e => { e.stopPropagation(); onClose() }}
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
+            >✕</button>
           </div>
         </div>
+        {/* Row 2: +1.5%  •  +253USD */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{open ? '▲' : '▼'}</span>
-          <button
-            onClick={e => { e.stopPropagation(); onClose() }}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 14, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
-          >✕</button>
+          <span style={{ fontSize: 13, fontWeight: 800, color: col }}>{pnlStr}</span>
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>•</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: col }}>{earnsStr}</span>
         </div>
       </div>
 
