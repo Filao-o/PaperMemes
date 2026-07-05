@@ -13,6 +13,7 @@ const DEFAULTS: AppState = {
   fees: 1,
   selectedPlatform: null,
   language: 'fr' as 'en' | 'fr' | 'es',
+  notesEnabled: true,
 }
 
 export const Storage = {

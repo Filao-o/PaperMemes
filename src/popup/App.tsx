@@ -3,7 +3,10 @@ import { Storage } from '../storage'
 import type { AppState, Trade } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, SolIcon } from './components/ui'
 import { TradeCard } from './components/JournalPanel'
-import { t as tr, type Lang, LANG_LABELS } from '../i18n'
+import { t as tr, type Lang } from '../i18n'
+
+const LANG_CYCLE: Lang[] = ['fr', 'en', 'es']
+const LANG_FLAGS: Record<Lang, string> = { fr: '🇫🇷', en: '🇺🇸', es: '🇪🇸' }
 
 const FONT = "'Space Grotesk', -apple-system, sans-serif"
 
@@ -630,12 +633,107 @@ function PlatformSelector({ onSelect, lang }: { onSelect: (p: Platform) => void;
   )
 }
 
+// ─── Settings Modal ───────────────────────────────────────────────────────────
+
+const inputSt: React.CSSProperties = {
+  width: '100%', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)',
+  borderRadius: 6, color: '#fff', fontSize: 12, padding: '6px 10px', fontFamily: FONT, boxSizing: 'border-box',
+}
+
+function SettingsModal({ state, lang, onClose, onResetClick }: {
+  state: AppState; lang: Lang; onClose: () => void; onResetClick: () => void
+}) {
+  const [slip, setSlip] = useState(String(state.slippage))
+  const [fee, setFee] = useState(String(state.fees))
+  const [saved, setSaved] = useState(false)
+
+  function numInput(val: string, setter: (v: string) => void) {
+    if (val === '' || /^\d*\.?\d*$/.test(val)) setter(val)
+  }
+
+  function handleSave() {
+    const slipV = parseFloat(slip)
+    const feeV = parseFloat(fee)
+    Storage.set({
+      ...(isNaN(slipV) ? {} : { slippage: slipV }),
+      ...(isNaN(feeV) ? {} : { fees: feeV }),
+    })
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1500)
+  }
+
+  const labelSt: React.CSSProperties = { color: 'rgba(255,255,255,0.5)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1, display: 'block', marginBottom: 4 }
+  const rowSt: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 12, padding: '18px 20px', width: 300, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        {/* Header */}
+        <div style={rowSt}>
+          <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: '#fff' }}>{tr(lang, 'w.settings')}</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}>✕</button>
+        </div>
+
+        {/* Slippage & Fees */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div>
+            <label style={labelSt}>Slippage (%)</label>
+            <input style={inputSt} value={slip} placeholder="50" onChange={e => numInput(e.target.value, setSlip)} />
+          </div>
+          <div>
+            <label style={labelSt}>Fees (%)</label>
+            <input style={inputSt} value={fee} placeholder="1" onChange={e => numInput(e.target.value, setFee)} />
+          </div>
+        </div>
+
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }} />
+
+        {/* Notes toggle */}
+        <div style={rowSt}>
+          <span style={{ color: '#fff', fontSize: 12, fontWeight: 600 }}>{tr(lang, 'settings.notes')}</span>
+          <button onClick={() => Storage.set({ notesEnabled: !state.notesEnabled })} style={{
+            padding: '4px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontFamily: FONT,
+            fontSize: 10, fontWeight: 800, letterSpacing: 0.5,
+            background: state.notesEnabled ? C.green : 'rgba(255,255,255,0.12)',
+            color: state.notesEnabled ? '#000' : 'rgba(255,255,255,0.5)',
+          }}>
+            {state.notesEnabled ? tr(lang, 'settings.on') : tr(lang, 'settings.off')}
+          </button>
+        </div>
+
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }} />
+
+        {/* Reset wallet */}
+        <button onClick={() => { onClose(); onResetClick() }} style={{
+          background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8,
+          color: '#f87171', fontSize: 11, fontWeight: 700, padding: '8px 0', cursor: 'pointer', fontFamily: FONT,
+          letterSpacing: 0.5, textTransform: 'uppercase',
+        }}>
+          {tr(lang, 'w.reset_wallet')}
+        </button>
+
+        {/* Save */}
+        <button onClick={handleSave} style={{
+          background: saved ? C.green : '#fff', color: saved ? '#000' : '#000',
+          border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 800, padding: '9px 0',
+          cursor: 'pointer', fontFamily: FONT, letterSpacing: 0.5, textTransform: 'uppercase',
+        }}>
+          {saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}
+        </button>
+
+      </div>
+    </div>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export function App() {
   const [state, setState] = useState<AppState | null>(null)
   const [showReset, setShowReset] = useState(false)
   const [showCalendar, setShowCalendar] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
   const [filter, setFilter] = useState<Filter>('ALL')
 
   useEffect(() => {
@@ -698,6 +796,7 @@ export function App() {
     <>
       {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} lang={lang} />}
       {showCalendar && <CalendarModal trades={closedTrades} onClose={() => setShowCalendar(false)} lang={lang} />}
+      {showSettings && <SettingsModal state={state} lang={lang} onClose={() => setShowSettings(false)} onResetClick={() => setShowReset(true)} />}
       <div style={{
         width: 360, minHeight: 480,
         background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(32px)', WebkitBackdropFilter: 'blur(32px)',
@@ -720,45 +819,39 @@ export function App() {
             }}>{state.selectedPlatform}</span>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => setShowCalendar(true)} title="Calendar" style={{
+            {/* Settings */}
+            <button onClick={() => setShowSettings(true)} title={tr(lang, 'w.settings')} style={{
               width: 34, height: 34, background: '#000000', border: '1px solid #333',
-              borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 16,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
-            }}>
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="16" height="16" fill="#ffffff">
-                <path d="M216 64C229.3 64 240 74.7 240 88L240 128L400 128L400 88C400 74.7 410.7 64 424 64C437.3 64 448 74.7 448 88L448 128L480 128C515.3 128 544 156.7 544 192L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 192C96 156.7 124.7 128 160 128L192 128L192 88C192 74.7 202.7 64 216 64zM216 176L160 176C151.2 176 144 183.2 144 192L144 240L496 240L496 192C496 183.2 488.8 176 480 176L216 176zM144 288L144 480C144 488.8 151.2 496 160 496L480 496C488.8 496 496 488.8 496 480L496 288L144 288z"/>
-              </svg>
-            </button>
-            <button onClick={() => setShowReset(true)} title="Reset" style={{
-              width: 34, height: 34, background: '#000000', border: '1px solid #333',
-              borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 17,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
-            }}>↺</button>
-            <button onClick={() => Storage.set({ selectedPlatform: null })} title="Change platform" style={{
-              width: 34, height: 34, background: '#000000', border: '1px solid #333',
-              borderRadius: 8, cursor: 'pointer', color: '#fff', fontSize: 14,
+              borderRadius: 8, cursor: 'pointer', color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
             }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
               </svg>
             </button>
-          </div>
-        </div>
-
-        {/* ── Language bar ── */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 4, padding: '4px 14px', borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.2)' }}>
-          {(Object.entries(LANG_LABELS) as [Lang, string][]).map(([l, label]) => (
-            <button key={l} onClick={() => Storage.set({ language: l })}
+            {/* Language flag cycler */}
+            <button
+              onClick={() => Storage.set({ language: LANG_CYCLE[(LANG_CYCLE.indexOf(lang) + 1) % LANG_CYCLE.length] })}
+              title="Language"
               style={{
-                padding: '2px 8px', borderRadius: 20, cursor: 'pointer', fontFamily: FONT,
-                background: lang === l ? '#ffffff' : 'transparent',
-                border: `1px solid ${lang === l ? '#ffffff' : 'rgba(255,255,255,0.25)'}`,
-                color: lang === l ? '#000000' : 'rgba(255,255,255,0.55)',
-                fontSize: 9, fontWeight: 700, letterSpacing: 0.5,
+                width: 34, height: 34, background: '#000000', border: '1px solid #333',
+                borderRadius: 8, cursor: 'pointer', fontSize: 18, lineHeight: 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
               }}
-            >{label}</button>
-          ))}
+            >{LANG_FLAGS[lang]}</button>
+            {/* Change platform */}
+            <button onClick={() => Storage.set({ selectedPlatform: null })} title="Change platform" style={{
+              width: 34, height: 34, background: '#000000', border: '1px solid #333',
+              borderRadius: 8, cursor: 'pointer', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit',
+            }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M13 15H16" stroke="#ffffff" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M8 15L10.5 12.5C10.7761 12.2239 10.7761 11.7761 10.5 11.5L8 9" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M3 8C3 6.11438 3 5.17157 3.58579 4.58579C4.17157 4 5.11438 4 7 4H12H17C18.8856 4 19.8284 4 20.4142 4.58579C21 5.17157 21 6.11438 21 8V12V16C21 17.8856 21 18.8284 20.4142 19.4142C19.8284 20 18.8856 20 17 20H12H7C5.11438 20 4.17157 20 3.58579 19.4142C3 18.8284 3 17.8856 3 16V12V8Z" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* ── Wallet ── */}
@@ -776,9 +869,18 @@ export function App() {
           <div style={{ fontSize: 30, fontWeight: 800, color: C.text, display: 'flex', alignItems: 'center' }}>
             {fmtBal()}
           </div>
-          {fmtSub() && (
-            <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, marginTop: 3 }}>{fmtSub()}</div>
-          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 3, minHeight: 22 }}>
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13 }}>{fmtSub()}</span>
+            <button onClick={() => setShowCalendar(true)} title="Calendar" style={{
+              width: 28, height: 28, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 7, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="14" height="14" fill="#ffffff">
+                <path d="M216 64C229.3 64 240 74.7 240 88L240 128L400 128L400 88C400 74.7 410.7 64 424 64C437.3 64 448 74.7 448 88L448 128L480 128C515.3 128 544 156.7 544 192L544 480C544 515.3 515.3 544 480 544L160 544C124.7 544 96 515.3 96 480L96 192C96 156.7 124.7 128 160 128L192 128L192 88C192 74.7 202.7 64 216 64zM216 176L160 176C151.2 176 144 183.2 144 192L144 240L496 240L496 192C496 183.2 488.8 176 480 176L216 176zM144 288L144 480C144 488.8 151.2 496 160 496L480 496C488.8 496 496 488.8 496 480L496 288L144 288z"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* ── Content ── */}

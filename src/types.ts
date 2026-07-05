@@ -49,6 +49,7 @@ export interface AppState {
   fees: number
   selectedPlatform: 'padre' | 'axiom' | 'gmgn' | null
   language: 'en' | 'fr' | 'es'
+  notesEnabled: boolean
 }
 
 export interface TokenInfo {

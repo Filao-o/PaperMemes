@@ -1,5 +1,5 @@
 PAPERMEMES — État du tool
-Dernière mise à jour : 2026-07-04
+Dernière mise à jour : 2026-07-05
 ==========================================================
 
 WIDGET (injection sur chart)
@@ -52,10 +52,14 @@ CONFIG PANEL (widget)
 
 POPUP (extension Chrome)
 ─────────────────────────
-- Sélecteur de plateforme au premier lancement (bouton engrenage pour changer)
-- Sélecteur de langue permanent (EN / FR / ES)
+- Sélecteur de plateforme au premier lancement
+- Bouton terminal (icône console) pour changer de plateforme
+- Bouton drapeau langue (🇫🇷/🇺🇸/🇪🇸) — cycle FR→EN→ES au clic
+- Bouton Settings (⚙) : slippage, fees, toggle remarques, reset wallet
+- Bouton calendrier dans le bloc wallet (bas-droite, aligné valeur convertie)
 - Affichage solde wallet simulé (SOL ou USD)
 - Bascule SOL ↔ USD
+- Prix SOL rafraîchi toutes les 60s (popup) et 30s (widget)
 
 ONGLET STATS
 ─────────────
