@@ -1,75 +1,79 @@
 ;(function () {
   let tvWidget: any = null
-  const pendingLines: Array<{ price: number; label: string; color: string }> = []
-  const activeLines: any[] = []
-  let flushTimer: ReturnType<typeof setInterval> | null = null
-  let flushKillTimer: ReturnType<typeof setTimeout> | null = null
+  const LOG = (...a: any[]) => console.log('[PaperMemes bridge]', ...a)
 
   // ── Hook TradingView.widget constructor ────────────────────────────────────
-  // Runs at document_start so we catch the very first instantiation.
-  // Also re-checked every 1s in case TradingView is loaded lazily.
 
   function hookConstructor(): boolean {
     const tv = (window as any).TradingView
-    if (!tv?.widget || tv.widget.__pm_hooked) return !!tv?.widget?.__pm_hooked
+    if (!tv?.widget || tv.widget.__pm_hooked) return !!(tv?.widget?.__pm_hooked)
     const Orig = tv.widget
     function Hooked(this: any, options: any) {
       const instance = new Orig(options)
+      LOG('widget created via constructor hook')
       tvWidget = instance
-      scheduledFlush()
       return instance
     }
     Hooked.prototype = Orig.prototype
     Hooked.__pm_hooked = true
     tv.widget = Hooked
+    LOG('constructor hooked')
     return true
   }
 
-  // Initial fast-poll (catches first load)
   let hookAttempts = 0
   const fastHookTimer = setInterval(() => {
     if (hookConstructor() || hookAttempts++ > 100) clearInterval(fastHookTimer)
   }, 50)
 
-  // Long-running check — catches cases where TradingView reloads its script
+  // Long-running re-hook check (handles TradingView script reloads)
   setInterval(() => {
     const tv = (window as any).TradingView
-    if (tv?.widget && !tv.widget.__pm_hooked) hookConstructor()
+    if (tv?.widget && !tv.widget.__pm_hooked) {
+      LOG('TradingView reloaded, re-hooking')
+      hookConstructor()
+    }
   }, 2000)
 
-  // ── Widget lookup ──────────────────────────────────────────────────────────
+  // ── Widget scan ────────────────────────────────────────────────────────────
 
-  function isAlive(w: any): boolean {
-    if (!w) return false
-    try { return typeof w.chart === 'function' && typeof w.onChartReady === 'function' }
-    catch { return false }
-  }
-
-  function findWidget(): any {
-    if (isAlive(tvWidget)) return tvWidget
-
-    // tvWidget is dead or null — scan window properties
-    tvWidget = null
+  function scanWindow(): any {
     for (const key of Object.getOwnPropertyNames(window)) {
       try {
         const v = (window as any)[key]
         if (v && typeof v === 'object' && typeof v.chart === 'function' && typeof v.onChartReady === 'function') {
-          tvWidget = v
-          break
+          LOG('widget found via scan, key:', key)
+          return v
         }
       } catch {}
     }
+    return null
+  }
+
+  function getWidget(): any {
+    if (tvWidget) {
+      // Verify still alive with a real call
+      try { tvWidget.chart(); return tvWidget } catch {}
+      // chart() threw — widget is dead
+      LOG('cached widget dead, rescanning')
+      tvWidget = null
+    }
+    tvWidget = scanWindow()
     return tvWidget
   }
 
-  // ── Line drawing ───────────────────────────────────────────────────────────
+  // ── Draw with retry ────────────────────────────────────────────────────────
 
-  function drawLineOnChart(w: any, price: number, label: string, color: string) {
-    // Try direct access first (chart may already be ready after SPA nav)
-    let drawn = false
+  function attemptDraw(price: number, label: string, color: string, attempt: number) {
+    const w = getWidget()
+    if (!w) {
+      LOG(`attempt ${attempt}: no widget found`)
+      if (attempt < 20) setTimeout(() => attemptDraw(price, label, color, attempt + 1), 500)
+      return
+    }
+
     try {
-      const chart = w.chart()
-      const line = chart.createPositionLine()
+      const line = w.chart().createPositionLine()
         .setPrice(price)
         .setLineColor(color)
         .setLineWidth(2)
@@ -78,96 +82,51 @@
         .setBodyBackgroundColor(color)
         .setBodyBorderColor(color)
         .setQuantity('')
-      activeLines.push(line)
-      drawn = true
-    } catch {}
-
-    if (!drawn) {
-      // Chart not ready yet — wait for it
-      try {
-        w.onChartReady(() => {
-          try {
-            const line = w.chart().createPositionLine()
-              .setPrice(price)
-              .setLineColor(color)
-              .setLineWidth(2)
-              .setBodyText(label)
-              .setBodyTextColor('#ffffff')
-              .setBodyBackgroundColor(color)
-              .setBodyBorderColor(color)
-              .setQuantity('')
-            activeLines.push(line)
-          } catch (e) {
-            console.warn('[PaperMemes] createPositionLine failed:', e)
-          }
-        })
-      } catch (e) {
-        console.warn('[PaperMemes] onChartReady failed:', e)
-      }
-    }
-  }
-
-  function drawLine(price: number, label: string, color: string) {
-    const w = findWidget()
-    if (!w) {
-      pendingLines.push({ price, label, color })
-      startFlushPolling()
+      LOG('line drawn via chart()')
       return
+    } catch (e1) {
+      LOG(`attempt ${attempt}: chart() failed (${(e1 as any)?.message}), trying onChartReady`)
     }
-    drawLineOnChart(w, price, label, color)
+
+    try {
+      w.onChartReady(() => {
+        try {
+          w.chart().createPositionLine()
+            .setPrice(price)
+            .setLineColor(color)
+            .setLineWidth(2)
+            .setBodyText(label)
+            .setBodyTextColor('#ffffff')
+            .setBodyBackgroundColor(color)
+            .setBodyBorderColor(color)
+            .setQuantity('')
+          LOG('line drawn via onChartReady')
+        } catch (e) {
+          LOG('createPositionLine inside onChartReady failed:', e)
+          if (attempt < 20) setTimeout(() => attemptDraw(price, label, color, attempt + 1), 500)
+        }
+      })
+    } catch (e2) {
+      LOG(`attempt ${attempt}: onChartReady failed (${(e2 as any)?.message})`)
+      if (attempt < 20) setTimeout(() => attemptDraw(price, label, color, attempt + 1), 500)
+    }
   }
 
-  // ── Flush pending lines ────────────────────────────────────────────────────
-
-  function flushPending() {
-    const w = findWidget()
-    if (!w || pendingLines.length === 0) return
-    const snapshot = pendingLines.splice(0)
-    for (const p of snapshot) drawLineOnChart(w, p.price, p.label, p.color)
-    stopFlushPolling()
-  }
-
-  function scheduledFlush() {
-    flushPending()
-    if (pendingLines.length > 0) startFlushPolling()
-  }
-
-  function startFlushPolling() {
-    if (flushTimer) return
-    flushTimer = setInterval(flushPending, 400)
-    flushKillTimer = setTimeout(stopFlushPolling, 30_000)
-  }
-
-  function stopFlushPolling() {
-    if (flushTimer) { clearInterval(flushTimer); flushTimer = null }
-    if (flushKillTimer) { clearTimeout(flushKillTimer); flushKillTimer = null }
-  }
-
-  // ── Remove active lines only (keep widget reference alive) ─────────────────
-
-  function clearLines() {
-    for (const line of activeLines) { try { line.remove() } catch {} }
-    activeLines.length = 0
-    pendingLines.length = 0
-    stopFlushPolling()
-    // Do NOT reset tvWidget — Padre may reuse the same widget instance across
-    // SPA navigations (setSymbol instead of recreating). Clearing it would make
-    // findWidget() unable to recover if the widget isn't on window.
-  }
-
-  // ── Events from injector.tsx (ISOLATED world → MAIN world via DOM) ─────────
+  // ── Events ─────────────────────────────────────────────────────────────────
 
   window.addEventListener('papermemes:drawline', (e: Event) => {
     const { price, label, color } = (e as CustomEvent).detail
-    drawLine(price, label, color)
+    LOG('drawline received, price:', price, 'widget:', tvWidget ? 'cached' : 'none')
+    attemptDraw(price, label, color, 0)
   })
 
   window.addEventListener('papermemes:clearlines', () => {
-    clearLines()
+    LOG('clearlines received')
+    // Don't touch tvWidget — keep reference alive for next draw
   })
 
-  // On SPA navigation: clear stale lines. Keep tvWidget intact.
   window.addEventListener('papermemes:urlchange', () => {
-    clearLines()
+    LOG('urlchange received')
+    // Don't touch tvWidget
   })
 })()
