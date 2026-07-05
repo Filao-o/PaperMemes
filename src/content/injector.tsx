@@ -1546,13 +1546,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
             {/* Footer */}
 
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {risk?.isHighRisk && (
-                <div style={{ color: C.red, ...DS.type.annex }}>{tr(lang, 'w.risk_score', { score: risk.score })}</div>
-              )}
-              {risk?.topHolderPercent != null && risk.topHolderPercent > 20 && (
-                <div style={{ color: C.red, ...DS.type.annex }}>{tr(lang, 'w.top_holder', { pct: risk.topHolderPercent.toFixed(0) })}</div>
-              )}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 8 }}>
               <div style={{ color: C.yellow, ...DS.type.annex }}>{tr(lang, 'w.tp_warning')}</div>
             </div>
           </div>
