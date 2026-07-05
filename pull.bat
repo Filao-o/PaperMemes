@@ -1,15 +1,28 @@
 @echo off
 cd /d "%~dp0"
 
-for /f "delims=" %%b in ('git rev-parse --abbrev-ref HEAD') do set BRANCH=%%b
-
-echo Pulling from origin/%BRANCH%...
-git pull origin %BRANCH%
+echo Fetching latest changes from claude/busy-shannon-w1hqvm...
+git fetch origin claude/busy-shannon-w1hqvm
 if errorlevel 1 (
-    echo Pull failed.
+    echo Fetch failed.
     pause
     exit /b 1
 )
 
-echo Done.
+git merge origin/claude/busy-shannon-w1hqvm
+if errorlevel 1 (
+    echo Merge failed. Resolve conflicts manually.
+    pause
+    exit /b 1
+)
+
+echo Done. Building...
+call npm run build
+if errorlevel 1 (
+    echo Build failed.
+    pause
+    exit /b 1
+)
+
+echo All good. Reload the extension in Chrome.
 pause
