@@ -1127,7 +1127,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       const totalOut = updated.closeEvents.reduce((s, e) => s + e.solReturned, 0)
       const pnlSOL = totalOut - trade.invested
       Storage.closeTrade({ ...updated, status: pnlSOL >= 0 ? 'won' : 'lost', closedAt: Date.now(), pnlSOL, pnlPercent: (pnlSOL / trade.invested) * 100 }, newBalance)
-      if (trade.terminal === 'padre' || trade.terminal === 'axiom') window.dispatchEvent(new CustomEvent('papermemes:clearlines'))
+      if (trade.terminal === 'padre' || trade.terminal === 'axiom') window.dispatchEvent(new CustomEvent('papermemes:clearlines', { detail: { mintAddress: trade.mintAddress } }))
     } else {
       Storage.partialClose(updated, newBalance)
     }

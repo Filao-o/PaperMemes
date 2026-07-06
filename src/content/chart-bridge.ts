@@ -3,6 +3,7 @@
   let currentLine: any = null
   let failStreak = 0
   let drawGen = 0   // incremented on cancel/clear; invalidates stale callbacks
+  let currentMint = ''
   const LOG = (...a: any[]) => console.log('[PaperMemes bridge]', ...a)
 
   // ── Hook TradingView.widget constructor (Padre / window.TradingView builds) ──
@@ -236,13 +237,19 @@
     attemptDraw(price, label, color, 0)
   })
 
-  window.addEventListener('papermemes:clearlines', () => {
+  window.addEventListener('papermemes:clearlines', (e: Event) => {
+    const mint = (e as CustomEvent).detail?.mintAddress
+    if (mint && mint !== currentMint) {
+      LOG('clearlines ignored (stale mint)')
+      return
+    }
     LOG('clearlines received')
     removeLine()
   })
 
-  window.addEventListener('papermemes:urlchange', () => {
-    LOG('urlchange received')
+  window.addEventListener('papermemes:urlchange', (e: Event) => {
+    currentMint = (e as CustomEvent).detail?.mintAddress ?? ''
+    LOG('urlchange received, mint:', currentMint)
     removeLine()
     tvWidget = null   // stale after SPA navigation; force rescan on next buy
     failStreak = 0
