@@ -1,10 +1,10 @@
 ;(function () {
   let tvWidget: any = null
-  let currentLine: any = null   // reference to the active buy line
-  let failStreak = 0            // consecutive chart() failures
+  let currentLine: any = null
+  let failStreak = 0
   const LOG = (...a: any[]) => console.log('[PaperMemes bridge]', ...a)
 
-  // ── Hook TradingView.widget constructor ────────────────────────────────────
+  // ── Hook TradingView.widget constructor (works when widget is on window.TradingView) ──
 
   function hookConstructor(): boolean {
     const tv = (window as any).TradingView
@@ -34,10 +34,12 @@
     if (tv?.widget && !tv.widget.__pm_hooked) hookConstructor()
   }, 2000)
 
-  // ── Widget finders ─────────────────────────────────────────────────────────
+  // ── Widget detection ────────────────────────────────────────────────────────
 
   function isWidget(v: any): boolean {
-    return !!(v && typeof v === 'object' && typeof v.chart === 'function' && typeof v.onChartReady === 'function')
+    return !!(v && typeof v === 'object' &&
+      typeof v.chart === 'function' &&
+      (typeof v.onChartReady === 'function' || typeof v.activeChart === 'function'))
   }
 
   function scanWindow(): any {
@@ -50,40 +52,87 @@
     return null
   }
 
-  // Traverse React fiber tree (for widgets stored in useState / useRef)
-  function scanReactFibers(): any {
-    const root = document.querySelector('#tv-chart-container, [data-testid="trading-view-container"]') ?? document.body
-    if (!root) return null
-    const fiberKey = Object.keys(root).find(k => /^__reactFiber/.test(k))
-    if (!fiberKey) return null
-
-    function walk(fiber: any, depth: number): any {
-      if (!fiber || depth <= 0) return null
-      let hook = fiber.memoizedState
-      while (hook) {
-        const v = hook.memoizedState
-        if (isWidget(v)) return v
-        if (v && isWidget(v.current)) return v.current  // useRef
-        hook = hook.next
-      }
-      return walk(fiber.child, depth - 1) ?? walk(fiber.sibling, depth - 1)
+  // Walk a single fiber node's hook chain
+  function checkFiberHooks(fiber: any): any {
+    let hook = fiber?.memoizedState
+    while (hook) {
+      const v = hook.memoizedState
+      if (isWidget(v)) return v
+      if (v && isWidget(v.current)) return v.current          // useRef
+      if (Array.isArray(v) && isWidget(v[0])) return v[0]    // useMemo
+      hook = hook.next
     }
+    return null
+  }
 
-    const found = walk((root as any)[fiberKey], 50)
-    if (found) LOG('found via React fiber scan')
-    return found
+  // Traverse fiber tree downward from a root element (depth-limited DFS)
+  function walkFiber(fiber: any, depth: number): any {
+    if (!fiber || depth <= 0) return null
+    const found = checkFiberHooks(fiber)
+    if (found) return found
+    return walkFiber(fiber.child, depth - 1) ?? walkFiber(fiber.sibling, depth - 1)
+  }
+
+  function fiberOf(el: Element | null): any {
+    if (!el) return null
+    const key = Object.keys(el).find(k => /^__reactFiber/.test(k))
+    return key ? (el as any)[key] : null
+  }
+
+  // Scan upward from the TradingView iframe — the component that owns the iframe
+  // holds the widget ref in its hooks (works for Axiom / webpack-bundled TV)
+  function scanFromIframe(): any {
+    const iframe = document.querySelector('iframe[id^="tradingview"]')
+    if (!iframe) return null
+    let el: Element | null = iframe
+    for (let i = 0; i < 30 && el && el !== document.documentElement; i++) {
+      const fiber = fiberOf(el)
+      if (fiber) {
+        const found = walkFiber(fiber, 20)
+        if (found) { LOG('found via iframe parent scan at depth', i); return found }
+      }
+      el = el.parentElement
+    }
+    return null
+  }
+
+  // Scan React fiber tree from common TradingView container selectors
+  function scanReactFibers(): any {
+    const selectors = [
+      '#tv-chart-container',
+      '[data-testid="trading-view-container"]',
+      '#__next',           // Next.js root (Axiom)
+    ]
+    for (const sel of selectors) {
+      const el = document.querySelector(sel)
+      const fiber = fiberOf(el)
+      if (!fiber) continue
+      const found = walkFiber(fiber, 200)
+      if (found) { LOG('found via React fiber scan from', sel); return found }
+    }
+    // Last resort: scan from body
+    const fiber = fiberOf(document.body)
+    if (fiber) {
+      const found = walkFiber(fiber, 100)
+      if (found) { LOG('found via React fiber scan from body'); return found }
+    }
+    return null
+  }
+
+  function fullScan(): any {
+    return scanWindow() ?? scanFromIframe() ?? scanReactFibers()
   }
 
   function forceRescan() {
     LOG('forcing widget rescan')
     tvWidget = null
     failStreak = 0
-    tvWidget = scanWindow() ?? scanReactFibers()
+    tvWidget = fullScan()
   }
 
   function getWidget(): any {
     if (tvWidget) return tvWidget
-    tvWidget = scanWindow() ?? scanReactFibers()
+    tvWidget = fullScan()
     return tvWidget
   }
 
@@ -109,7 +158,6 @@
   // ── Draw with retry ────────────────────────────────────────────────────────
 
   function attemptDraw(price: number, label: string, color: string, attempt: number) {
-    // After 3 consecutive failures on the same widget, force a rescan
     if (failStreak >= 3) forceRescan()
 
     const w = getWidget()
@@ -132,9 +180,9 @@
     }
   }
 
-  // ── Watch for TradingView iframe changes (id or src) ──────────────────────
+  // ── Watch for TradingView iframe changes ──────────────────────────────────
 
-  let knownSig = ''  // "id|src" signature
+  let knownSig = ''
 
   new MutationObserver(() => {
     const iframe = document.querySelector('iframe[id^="tradingview"]') as HTMLIFrameElement | null
@@ -143,7 +191,7 @@
     if (sig === knownSig) return
     knownSig = sig
     LOG('TradingView iframe changed, resetting fail streak')
-    failStreak = 0  // Don't null tvWidget — the constructor hook updates it; nulling here causes a race
+    failStreak = 0
   }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'id'] })
 
   // ── Events ─────────────────────────────────────────────────────────────────
@@ -152,13 +200,12 @@
     const { price, label, color } = (e as CustomEvent).detail
     LOG('drawline received, price:', price)
     if (currentLine) {
-      // Update existing line in place (DCA case) — avoids visual flicker
       try {
         applySetters(currentLine, price, label, color)
         LOG('line updated in place')
         return
       } catch {
-        currentLine = null  // Line is dead, fall through to full redraw
+        currentLine = null
       }
     }
     attemptDraw(price, label, color, 0)
