@@ -42,6 +42,7 @@
     },
     {
       "matches": [
+        "https://axiom.trade/*",
         "https://padre.gg/*",
         "https://trade.padre.gg/*"
       ],
