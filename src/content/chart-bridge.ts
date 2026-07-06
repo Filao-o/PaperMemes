@@ -242,5 +242,7 @@
   window.addEventListener('papermemes:urlchange', () => {
     LOG('urlchange received')
     removeLine()
+    tvWidget = null   // stale after SPA navigation; force rescan on next buy
+    failStreak = 0
   })
 })()
