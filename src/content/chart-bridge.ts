@@ -152,7 +152,16 @@
   window.addEventListener('papermemes:drawline', (e: Event) => {
     const { price, label, color } = (e as CustomEvent).detail
     LOG('drawline received, price:', price)
-    removeLine()  // Remove previous line before drawing a new one
+    if (currentLine) {
+      // Update existing line in place (DCA case) — avoids visual flicker
+      try {
+        applySetters(currentLine, price, label, color)
+        LOG('line updated in place')
+        return
+      } catch {
+        currentLine = null  // Line is dead, fall through to full redraw
+      }
+    }
     attemptDraw(price, label, color, 0)
   })
 
