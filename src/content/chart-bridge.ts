@@ -2,9 +2,10 @@
   let tvWidget: any = null
   let currentLine: any = null
   let failStreak = 0
+  let drawGen = 0   // incremented on cancel/clear; invalidates stale callbacks
   const LOG = (...a: any[]) => console.log('[PaperMemes bridge]', ...a)
 
-  // ── Hook TradingView.widget constructor (works when widget is on window.TradingView) ──
+  // ── Hook TradingView.widget constructor (Padre / window.TradingView builds) ──
 
   function hookConstructor(): boolean {
     const tv = (window as any).TradingView
@@ -52,7 +53,6 @@
     return null
   }
 
-  // Walk a single fiber node's hook chain
   function checkFiberHooks(fiber: any): any {
     let hook = fiber?.memoizedState
     while (hook) {
@@ -65,7 +65,6 @@
     return null
   }
 
-  // Traverse fiber tree downward from a root element (depth-limited DFS)
   function walkFiber(fiber: any, depth: number): any {
     if (!fiber || depth <= 0) return null
     const found = checkFiberHooks(fiber)
@@ -79,8 +78,8 @@
     return key ? (el as any)[key] : null
   }
 
-  // Scan upward from the TradingView iframe — the component that owns the iframe
-  // holds the widget ref in its hooks (works for Axiom / webpack-bundled TV)
+  // Walk DOM upward from the TradingView iframe — the owning React component
+  // holds the widget in its hooks (works for Axiom / webpack-bundled TradingView)
   function scanFromIframe(): any {
     const iframe = document.querySelector('iframe[id^="tradingview"]')
     if (!iframe) return null
@@ -96,24 +95,16 @@
     return null
   }
 
-  // Scan React fiber tree from common TradingView container selectors
   function scanReactFibers(): any {
-    const selectors = [
-      '#tv-chart-container',
-      '[data-testid="trading-view-container"]',
-      '#__next',           // Next.js root (Axiom)
-    ]
-    for (const sel of selectors) {
-      const el = document.querySelector(sel)
-      const fiber = fiberOf(el)
+    for (const sel of ['#tv-chart-container', '[data-testid="trading-view-container"]', '#__next']) {
+      const fiber = fiberOf(document.querySelector(sel))
       if (!fiber) continue
       const found = walkFiber(fiber, 200)
       if (found) { LOG('found via React fiber scan from', sel); return found }
     }
-    // Last resort: scan from body
-    const fiber = fiberOf(document.body)
-    if (fiber) {
-      const found = walkFiber(fiber, 100)
+    const bodyFiber = fiberOf(document.body)
+    if (bodyFiber) {
+      const found = walkFiber(bodyFiber, 100)
       if (found) { LOG('found via React fiber scan from body'); return found }
     }
     return null
@@ -149,34 +140,66 @@
   }
 
   function removeLine() {
+    drawGen++           // invalidate any pending onChartReady / retry callbacks
     if (!currentLine) return
     try { currentLine.remove() } catch {}
     currentLine = null
     LOG('line removed')
   }
 
-  // ── Draw with retry ────────────────────────────────────────────────────────
+  // ── Draw with retry + onChartReady fallback ────────────────────────────────
+
+  function drawLine(w: any, price: number, label: string, color: string): boolean {
+    const line = w.chart().createPositionLine()
+    applySetters(line, price, label, color)
+    currentLine = line
+    failStreak = 0
+    return true
+  }
 
   function attemptDraw(price: number, label: string, color: string, attempt: number) {
+    const gen = drawGen   // capture; stale if removeLine() was called since
+
     if (failStreak >= 3) forceRescan()
 
     const w = getWidget()
     if (!w) {
       LOG(`attempt ${attempt}: no widget`)
-      if (attempt < 40) setTimeout(() => attemptDraw(price, label, color, attempt + 1), 500)
+      if (attempt < 40) setTimeout(() => {
+        if (drawGen === gen) attemptDraw(price, label, color, attempt + 1)
+      }, 500)
       return
     }
 
     try {
-      const line = w.chart().createPositionLine()
-      applySetters(line, price, label, color)
-      currentLine = line
-      failStreak = 0
+      drawLine(w, price, label, color)
       LOG('line drawn on attempt', attempt)
     } catch (e) {
+      const msg = String((e as any)?.message ?? '').slice(0, 80)
       failStreak++
-      LOG(`attempt ${attempt} failed (streak ${failStreak}): ${String((e as any)?.message ?? '').slice(0, 80)}`)
-      if (attempt < 40) setTimeout(() => attemptDraw(price, label, color, attempt + 1), 500)
+      LOG(`attempt ${attempt} failed (streak ${failStreak}): ${msg}`)
+
+      // On attempt 0, use onChartReady as primary wait (chart still initialising)
+      if (attempt === 0) {
+        try {
+          w.onChartReady(() => {
+            if (drawGen !== gen) return          // navigation happened — abort
+            if (currentLine) return              // already drawn by retry loop
+            try {
+              drawLine(w, price, label, color)
+              LOG('line drawn via onChartReady')
+            } catch (e2) {
+              // onChartReady fired but chart still not drawable — fall into retry
+              if (drawGen === gen) attemptDraw(price, label, color, 1)
+            }
+          })
+          return  // wait for the callback; retry loop takes over only if it fails
+        } catch {}
+      }
+
+      if (attempt < 40) setTimeout(() => {
+        if (drawGen === gen) attemptDraw(price, label, color, attempt + 1)
+      }, 500)
     }
   }
 
