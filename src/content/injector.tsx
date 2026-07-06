@@ -2159,6 +2159,7 @@ function WarningBanner({ tokenName, lang, onDismiss }: { tokenName: string; lang
 let widgetRoot: ReturnType<typeof createRoot> | null = null
 let warningRoot: ReturnType<typeof createRoot> | null = null
 let lastMint: string | null = null
+let mountInFlight = false
 
 function tryUnmountWarning() {
   const el = document.getElementById('papermemes-warning')
@@ -2199,6 +2200,16 @@ function injectFont() {
 }
 
 async function tryMount() {
+  if (mountInFlight) return
+  mountInFlight = true
+  try {
+    await _tryMount()
+  } finally {
+    mountInFlight = false
+  }
+}
+
+async function _tryMount() {
   const { terminal, mintAddress: rawMint } = detectTerminal()
 
   if (!terminal || !rawMint) {
