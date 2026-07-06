@@ -142,9 +142,8 @@
     const sig = `${iframe.id}|${iframe.src}`
     if (sig === knownSig) return
     knownSig = sig
-    LOG('TradingView iframe changed, resetting widget ref')
-    tvWidget = null
-    failStreak = 0
+    LOG('TradingView iframe changed, resetting fail streak')
+    failStreak = 0  // Don't null tvWidget — the constructor hook updates it; nulling here causes a race
   }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'id'] })
 
   // ── Events ─────────────────────────────────────────────────────────────────
