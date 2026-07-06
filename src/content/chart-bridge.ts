@@ -1,5 +1,7 @@
 ;(function () {
   let tvWidget: any = null
+  let currentLine: any = null   // reference to the active buy line
+  let failStreak = 0            // consecutive chart() failures
   const LOG = (...a: any[]) => console.log('[PaperMemes bridge]', ...a)
 
   // ── Hook TradingView.widget constructor ────────────────────────────────────
@@ -12,6 +14,7 @@
       const instance = new Orig(options)
       LOG('widget captured via hook')
       tvWidget = instance
+      failStreak = 0
       return instance
     }
     Hooked.prototype = Orig.prototype
@@ -22,13 +25,13 @@
   }
 
   let hookAttempts = 0
-  const fastHookTimer = setInterval(() => {
-    if (hookConstructor() || hookAttempts++ > 100) clearInterval(fastHookTimer)
+  const fastTimer = setInterval(() => {
+    if (hookConstructor() || hookAttempts++ > 100) clearInterval(fastTimer)
   }, 50)
 
   setInterval(() => {
     const tv = (window as any).TradingView
-    if (tv?.widget && !tv.widget.__pm_hooked) { LOG('re-hooking'); hookConstructor() }
+    if (tv?.widget && !tv.widget.__pm_hooked) hookConstructor()
   }, 2000)
 
   // ── Widget finders ─────────────────────────────────────────────────────────
@@ -47,27 +50,34 @@
     return null
   }
 
-  // Walk React fiber tree looking for a TradingView widget in useState/useRef hooks
+  // Traverse React fiber tree (for widgets stored in useState / useRef)
   function scanReactFibers(): any {
     const root = document.querySelector('#tv-chart-container, [data-testid="trading-view-container"]') ?? document.body
     const fiberKey = Object.keys(root).find(k => /^__reactFiber/.test(k))
     if (!fiberKey) return null
 
-    function walkFiber(fiber: any, depth: number): any {
+    function walk(fiber: any, depth: number): any {
       if (!fiber || depth <= 0) return null
       let hook = fiber.memoizedState
       while (hook) {
-        const val = hook.memoizedState
-        if (isWidget(val)) return val
-        if (val && isWidget(val.current)) return val.current  // useRef
+        const v = hook.memoizedState
+        if (isWidget(v)) return v
+        if (v && isWidget(v.current)) return v.current  // useRef
         hook = hook.next
       }
-      return walkFiber(fiber.child, depth - 1) ?? walkFiber(fiber.sibling, depth - 1)
+      return walk(fiber.child, depth - 1) ?? walk(fiber.sibling, depth - 1)
     }
 
-    const found = walkFiber((root as any)[fiberKey], 40)
+    const found = walk((root as any)[fiberKey], 50)
     if (found) LOG('found via React fiber scan')
     return found
+  }
+
+  function forceRescan() {
+    LOG('forcing widget rescan')
+    tvWidget = null
+    failStreak = 0
+    tvWidget = scanWindow() ?? scanReactFibers()
   }
 
   function getWidget(): any {
@@ -76,7 +86,7 @@
     return tvWidget
   }
 
-  // ── Draw with individual setters + retry ───────────────────────────────────
+  // ── Line management ────────────────────────────────────────────────────────
 
   function applySetters(line: any, price: number, label: string, color: string) {
     try { line.setPrice(price) } catch {}
@@ -88,43 +98,70 @@
     try { line.setQuantityBorderColor(color) } catch {}
   }
 
+  function removeLine() {
+    if (!currentLine) return
+    try { currentLine.remove() } catch {}
+    currentLine = null
+    LOG('line removed')
+  }
+
+  // ── Draw with retry ────────────────────────────────────────────────────────
+
   function attemptDraw(price: number, label: string, color: string, attempt: number) {
+    // After 3 consecutive failures on the same widget, force a rescan
+    if (failStreak >= 3) forceRescan()
+
     const w = getWidget()
     if (!w) {
-      LOG(`attempt ${attempt}: no widget found`)
-      if (attempt < 30) setTimeout(() => attemptDraw(price, label, color, attempt + 1), 500)
+      LOG(`attempt ${attempt}: no widget`)
+      if (attempt < 40) setTimeout(() => attemptDraw(price, label, color, attempt + 1), 500)
       return
     }
+
     try {
       const line = w.chart().createPositionLine()
       applySetters(line, price, label, color)
+      currentLine = line
+      failStreak = 0
       LOG('line drawn on attempt', attempt)
     } catch (e) {
-      const msg = String((e as any)?.message ?? '')
-      LOG(`attempt ${attempt} failed: ${msg.slice(0, 80)}`)
-      if (attempt < 30) setTimeout(() => attemptDraw(price, label, color, attempt + 1), 500)
+      failStreak++
+      LOG(`attempt ${attempt} failed (streak ${failStreak}): ${String((e as any)?.message ?? '').slice(0, 80)}`)
+      if (attempt < 40) setTimeout(() => attemptDraw(price, label, color, attempt + 1), 500)
     }
   }
 
-  // ── Watch for new TradingView iframe (widget recreated by SPA) ─────────────
+  // ── Watch for TradingView iframe changes (id or src) ──────────────────────
 
-  let knownIframeId: string | null = null
+  let knownSig = ''  // "id|src" signature
+
   new MutationObserver(() => {
     const iframe = document.querySelector('iframe[id^="tradingview"]') as HTMLIFrameElement | null
-    if (!iframe || iframe.id === knownIframeId) return
-    knownIframeId = iframe.id
-    LOG('new TradingView iframe:', iframe.id, '— forcing widget rescan')
-    tvWidget = null  // Reset so getWidget re-scans with updated React state
-  }).observe(document.body, { childList: true, subtree: true })
+    if (!iframe) return
+    const sig = `${iframe.id}|${iframe.src}`
+    if (sig === knownSig) return
+    knownSig = sig
+    LOG('TradingView iframe changed, resetting widget ref')
+    tvWidget = null
+    failStreak = 0
+  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'id'] })
 
   // ── Events ─────────────────────────────────────────────────────────────────
 
   window.addEventListener('papermemes:drawline', (e: Event) => {
     const { price, label, color } = (e as CustomEvent).detail
-    LOG('drawline received, price:', price, 'widget:', tvWidget ? 'cached' : 'none')
+    LOG('drawline received, price:', price)
+    removeLine()  // Remove previous line before drawing a new one
     attemptDraw(price, label, color, 0)
   })
 
-  window.addEventListener('papermemes:clearlines', () => LOG('clearlines (widget ref kept)'))
-  window.addEventListener('papermemes:urlchange', () => LOG('urlchange (widget ref kept)'))
+  window.addEventListener('papermemes:clearlines', () => {
+    LOG('clearlines received')
+    removeLine()
+  })
+
+  window.addEventListener('papermemes:urlchange', () => {
+    LOG('urlchange received')
+    removeLine()
+  })
 })()
