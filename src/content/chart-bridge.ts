@@ -53,6 +53,7 @@
   // Traverse React fiber tree (for widgets stored in useState / useRef)
   function scanReactFibers(): any {
     const root = document.querySelector('#tv-chart-container, [data-testid="trading-view-container"]') ?? document.body
+    if (!root) return null
     const fiberKey = Object.keys(root).find(k => /^__reactFiber/.test(k))
     if (!fiberKey) return null
 
@@ -144,7 +145,7 @@
     LOG('TradingView iframe changed, resetting widget ref')
     tvWidget = null
     failStreak = 0
-  }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'id'] })
+  }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'id'] })
 
   // ── Events ─────────────────────────────────────────────────────────────────
 
