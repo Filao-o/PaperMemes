@@ -180,6 +180,10 @@
       LOG(`attempt ${attempt} failed (streak ${failStreak}): ${msg}`)
 
       // On attempt 0, use onChartReady as primary wait (chart still initialising)
+      // On attempt 0, also register onChartReady as a fast path (fires immediately
+      // if the chart is already ready). Do NOT return — the retry loop below always
+      // runs as a fallback because onChartReady is only called once per widget
+      // instance and won't re-fire after SPA navigation.
       if (attempt === 0) {
         try {
           w.onChartReady(() => {
@@ -189,11 +193,9 @@
               drawLine(w, price, label, color)
               LOG('line drawn via onChartReady')
             } catch (e2) {
-              // onChartReady fired but chart still not drawable — fall into retry
               if (drawGen === gen) attemptDraw(price, label, color, 1)
             }
           })
-          return  // wait for the callback; retry loop takes over only if it fails
         } catch {}
       }
 
