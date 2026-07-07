@@ -180,27 +180,32 @@
       failStreak++
       LOG(`attempt ${attempt} failed (streak ${failStreak}): ${msg}`)
 
-      // On attempt 0, use onChartReady as primary wait (chart still initialising)
-      // On attempt 0, also register onChartReady as a fast path (fires immediately
-      // if the chart is already ready). Do NOT return — the retry loop below always
-      // runs as a fallback because onChartReady is only called once per widget
-      // instance and won't re-fire after SPA navigation.
+      // On attempt 0 register onChartReady as a fast path — fires immediately if
+      // the chart is already ready, and gives us a free draw without waiting 500ms.
+      // Do NOT start a new retry chain inside the callback: Chain A (below) is
+      // already retrying every 500ms, and a parallel Chain B would corrupt
+      // the shared failStreak counter causing chaos.
       if (attempt === 0) {
         try {
           w.onChartReady(() => {
+            LOG('onChartReady fired')
             if (drawGen !== gen) return          // navigation happened — abort
             if (currentLine) return              // already drawn by retry loop
+            const fresh = getWidget()            // use current widget, not stale closure
+            if (!fresh) return
             try {
-              drawLine(w, price, label, color)
+              drawLine(fresh, price, label, color)
               LOG('line drawn via onChartReady')
-            } catch (e2) {
-              if (drawGen === gen) attemptDraw(price, label, color, 1)
-            }
+            } catch {}
+            // On failure: do nothing — Chain A retry loop handles it
           })
-        } catch {}
+          LOG('onChartReady registered')
+        } catch {
+          LOG('onChartReady not available on this widget')
+        }
       }
 
-      if (attempt < 40) setTimeout(() => {
+      if (attempt < 120) setTimeout(() => {
         if (drawGen === gen) attemptDraw(price, label, color, attempt + 1)
       }, 500)
     }
