@@ -185,19 +185,28 @@
       // Do NOT start a new retry chain inside the callback: Chain A (below) is
       // already retrying every 500ms, and a parallel Chain B would corrupt
       // the shared failStreak counter causing chaos.
+      // On Axiom, onChartReady fires synchronously (before the TV internal API is
+      // truly ready). Start a fast 50ms poll inside the callback so we draw the
+      // instant _innerAPI() becomes non-null — typically < 1s after the callback.
       if (attempt === 0) {
         try {
           w.onChartReady(() => {
-            LOG('onChartReady fired')
-            if (drawGen !== gen) return          // navigation happened — abort
-            if (currentLine) return              // already drawn by retry loop
-            const fresh = getWidget()            // use current widget, not stale closure
-            if (!fresh) return
-            try {
-              drawLine(fresh, price, label, color)
-              LOG('line drawn via onChartReady')
-            } catch {}
-            // On failure: do nothing — Chain A retry loop handles it
+            LOG('onChartReady fired — starting fast poll')
+            let ticks = 0
+            const poll = setInterval(() => {
+              ticks++
+              if (ticks > 200 || currentLine || drawGen !== gen) {
+                clearInterval(poll)
+                return
+              }
+              const fresh = getWidget()
+              if (!fresh) return
+              try {
+                drawLine(fresh, price, label, color)
+                LOG('line drawn via onChartReady poll, tick', ticks)
+                clearInterval(poll)
+              } catch {}
+            }, 50)
           })
           LOG('onChartReady registered')
         } catch {
