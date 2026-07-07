@@ -4,6 +4,7 @@
   let failStreak = 0
   let drawGen = 0   // incremented on cancel/clear; invalidates stale callbacks
   let currentMint = ''
+  let chartReadyCbOn: any = null  // which widget we last registered onChartReady on
   const LOG = (...a: any[]) => console.log('[PaperMemes bridge]', ...a)
 
   // ── Hook TradingView.widget constructor (Padre / window.TradingView builds) ──
@@ -142,6 +143,7 @@
 
   function removeLine() {
     drawGen++           // invalidate any pending onChartReady / retry callbacks
+    chartReadyCbOn = null  // allow re-registration on next draw
     if (!currentLine) return
     try { currentLine.remove() } catch {}
     currentLine = null
@@ -151,11 +153,72 @@
   // ── Draw with retry + onChartReady fallback ────────────────────────────────
 
   function drawLine(w: any, price: number, label: string, color: string): boolean {
-    const line = w.chart().createPositionLine()
+    let chartObj: any
+    try {
+      chartObj = w.chart()
+    } catch (e) {
+      // Some TV builds expose activeChart() instead of (or in addition to) chart()
+      if (typeof w.activeChart === 'function') {
+        chartObj = w.activeChart()
+      } else {
+        throw e
+      }
+    }
+    const line = chartObj.createPositionLine()
     applySetters(line, price, label, color)
     currentLine = line
     failStreak = 0
     return true
+  }
+
+  // Register onChartReady on a widget we haven't registered on yet.
+  // Detects whether the callback fires synchronously (widget already "ready" but
+  // chart() may still throw — Axiom after SPA nav) or asynchronously (chart
+  // genuinely just became ready — draw immediately).
+  function ensureChartReadyCb(w: any, price: number, label: string, color: string, gen: number) {
+    if (chartReadyCbOn === w) return   // already registered on this widget
+    chartReadyCbOn = w
+    try {
+      let syncFired = false
+      w.onChartReady(() => {
+        if (!syncFired) {
+          // Synchronous fire: widget's isReady flag is true but _innerAPI() may
+          // still be null (Axiom SPA nav scenario).  Start a 50ms fast poll so we
+          // catch the moment _innerAPI() becomes non-null.
+          LOG('onChartReady SYNC — fast poll starting')
+          let ticks = 0
+          const poll = setInterval(() => {
+            ticks++
+            if (ticks > 200 || currentLine || drawGen !== gen) { clearInterval(poll); return }
+            const fresh = getWidget()
+            if (!fresh) return
+            try {
+              drawLine(fresh, price, label, color)
+              LOG('drawn via SYNC onChartReady poll, tick', ticks)
+              clearInterval(poll)
+            } catch {}
+          }, 50)
+        } else {
+          // Asynchronous fire: a newly-initialised widget just became ready.
+          // This is the key path for Axiom SPA nav when a new widget instance
+          // appears after forceRescan() — draw immediately.
+          LOG('onChartReady ASYNC — drawing now')
+          if (currentLine || drawGen !== gen) return
+          const fresh = getWidget()
+          if (!fresh) return
+          try {
+            drawLine(fresh, price, label, color)
+            LOG('drawn via ASYNC onChartReady')
+          } catch (err) {
+            LOG('ASYNC draw failed:', String((err as any)?.message ?? '').slice(0, 60))
+          }
+        }
+      })
+      syncFired = true
+      LOG('onChartReady registered on widget')
+    } catch {
+      LOG('onChartReady not available on this widget')
+    }
   }
 
   function attemptDraw(price: number, label: string, color: string, attempt: number) {
@@ -166,11 +229,17 @@
     const w = getWidget()
     if (!w) {
       LOG(`attempt ${attempt}: no widget`)
-      if (attempt < 40) setTimeout(() => {
+      if (attempt < 120) setTimeout(() => {
         if (drawGen === gen) attemptDraw(price, label, color, attempt + 1)
       }, 500)
       return
     }
+
+    // Register onChartReady on every NEW widget we encounter.  If forceRescan()
+    // returns a different (newly created) widget, we register on that one too — so
+    // when it fires asynchronously we can draw immediately instead of waiting for
+    // the next 500ms retry tick.
+    ensureChartReadyCb(w, price, label, color, gen)
 
     try {
       drawLine(w, price, label, color)
@@ -179,40 +248,6 @@
       const msg = String((e as any)?.message ?? '').slice(0, 80)
       failStreak++
       LOG(`attempt ${attempt} failed (streak ${failStreak}): ${msg}`)
-
-      // On attempt 0 register onChartReady as a fast path — fires immediately if
-      // the chart is already ready, and gives us a free draw without waiting 500ms.
-      // Do NOT start a new retry chain inside the callback: Chain A (below) is
-      // already retrying every 500ms, and a parallel Chain B would corrupt
-      // the shared failStreak counter causing chaos.
-      // On Axiom, onChartReady fires synchronously (before the TV internal API is
-      // truly ready). Start a fast 50ms poll inside the callback so we draw the
-      // instant _innerAPI() becomes non-null — typically < 1s after the callback.
-      if (attempt === 0) {
-        try {
-          w.onChartReady(() => {
-            LOG('onChartReady fired — starting fast poll')
-            let ticks = 0
-            const poll = setInterval(() => {
-              ticks++
-              if (ticks > 200 || currentLine || drawGen !== gen) {
-                clearInterval(poll)
-                return
-              }
-              const fresh = getWidget()
-              if (!fresh) return
-              try {
-                drawLine(fresh, price, label, color)
-                LOG('line drawn via onChartReady poll, tick', ticks)
-                clearInterval(poll)
-              } catch {}
-            }, 50)
-          })
-          LOG('onChartReady registered')
-        } catch {
-          LOG('onChartReady not available on this widget')
-        }
-      }
 
       if (attempt < 120) setTimeout(() => {
         if (drawGen === gen) attemptDraw(price, label, color, attempt + 1)
@@ -265,7 +300,8 @@
     currentMint = (e as CustomEvent).detail?.mintAddress ?? ''
     LOG('urlchange received, mint:', currentMint)
     removeLine()
-    tvWidget = null   // stale after SPA navigation; force rescan on next buy
+    tvWidget = null       // stale after SPA navigation; force rescan on next buy
     failStreak = 0
+    chartReadyCbOn = null // allow registration on whatever widget appears next
   })
 })()
