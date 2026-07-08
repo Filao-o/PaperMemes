@@ -1059,7 +1059,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       }
       Storage.dcaBuy(updated, state.balance - amount)
       // Show the TOTAL invested across all entries, not just this one.
-      if (currentTerminal === 'padre' || currentTerminal === 'axiom') dispatchChartLine(updated.entryPrice, updated.invested)
+      if (hasChartLine(currentTerminal)) dispatchChartLine(updated.entryPrice, updated.invested)
     } else {
       const tokensHeld = amount * tokensPerSol
       const trade: Trade = {
@@ -1081,7 +1081,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         pnlPercent: null,
       }
       Storage.openTrade(trade, state.balance - amount)
-      if (currentTerminal === 'padre' || currentTerminal === 'axiom') dispatchChartLine(tokenInfo.price, trade.invested)
+      if (hasChartLine(currentTerminal)) dispatchChartLine(tokenInfo.price, trade.invested)
     }
   }
 
@@ -1090,6 +1090,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       detail: { price, label: `Buy ${fmtSOL(amount)} SOL`, color: '#22c55e' },
     }))
   }
+
+  // Terminals whose chart supports the position line (handled by chart-bridge).
+  const hasChartLine = (t: string) => t === 'padre' || t === 'axiom' || t === 'gmgn'
 
   function handleSell(percent: number) {
     if (!state.activeTrade || !tokenInfo) return
@@ -1128,7 +1131,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       const totalOut = updated.closeEvents.reduce((s, e) => s + e.solReturned, 0)
       const pnlSOL = totalOut - trade.invested
       Storage.closeTrade({ ...updated, status: pnlSOL >= 0 ? 'won' : 'lost', closedAt: Date.now(), pnlSOL, pnlPercent: (pnlSOL / trade.invested) * 100 }, newBalance)
-      if (trade.terminal === 'padre' || trade.terminal === 'axiom') window.dispatchEvent(new CustomEvent('papermemes:clearlines', { detail: { mintAddress: trade.mintAddress } }))
+      if (hasChartLine(trade.terminal)) window.dispatchEvent(new CustomEvent('papermemes:clearlines', { detail: { mintAddress: trade.mintAddress } }))
     } else {
       Storage.partialClose(updated, newBalance)
     }
