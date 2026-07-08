@@ -1,24 +1,29 @@
 ;(function () {
-  let tvWidget: any = null
-  let currentLine: any = null
-  let failStreak = 0
-  let drawGen = 0   // incremented on cancel/clear; invalidates stale callbacks
-  let currentMint = ''
-  let chartReadyCbOn: any = null  // which widget we last registered onChartReady on
-  let pendingDraw: { price: number; label: string; color: string; gen: number } | null = null
+  // Runs in the MAIN world (page context) so it can reach the TradingView API.
+  // Draws / updates / removes a single horizontal position line on the chart in
+  // response to CustomEvents dispatched by the content script (injector).
+  //
+  // Two chart-access paths:
+  //   • Padre  — hook window.TradingView.widget to capture the widget instance.
+  //   • Axiom  — webpack-bundled TradingView with no window.TradingView; reach
+  //              the chart API directly inside the live same-origin iframe.
+
+  let tvWidget: any = null    // widget instance captured via the constructor hook (Padre)
+  let currentLine: any = null // the position line currently drawn (null if none)
+  let drawGen = 0             // bumped on clear / navigation to cancel stale retry chains
+  let currentMint = ''        // active token mint — picks the right iframe & guards stale clears
   const LOG = (...a: any[]) => console.log('[PaperMemes bridge]', ...a)
 
-  // ── Hook TradingView.widget constructor (Padre / window.TradingView builds) ──
+  // ── Padre: capture the widget by hooking the constructor ─────────────────────
 
   function hookConstructor(): boolean {
     const tv = (window as any).TradingView
-    if (!tv?.widget || tv.widget.__pm_hooked) return !!(tv?.widget?.__pm_hooked)
+    if (!tv?.widget || tv.widget.__pm_hooked) return !!tv?.widget?.__pm_hooked
     const Orig = tv.widget
     function Hooked(this: any, options: any) {
       const instance = new Orig(options)
-      LOG('widget captured via hook')
+      LOG('widget captured via constructor hook')
       tvWidget = instance
-      failStreak = 0
       return instance
     }
     Hooked.prototype = Orig.prototype
@@ -29,198 +34,25 @@
   }
 
   let hookAttempts = 0
-  const fastTimer = setInterval(() => {
-    if (hookConstructor() || hookAttempts++ > 100) clearInterval(fastTimer)
+  const hookTimer = setInterval(() => {
+    if (hookConstructor() || hookAttempts++ > 100) clearInterval(hookTimer)
   }, 50)
-
+  // TradingView may load late or be replaced — keep the hook in place.
   setInterval(() => {
     const tv = (window as any).TradingView
     if (tv?.widget && !tv.widget.__pm_hooked) hookConstructor()
   }, 2000)
 
-  // ── Prototype patch (Axiom / webpack builds) ────────────────────────────────
-  // We can't hook the constructor of a webpack-bundled TradingView widget, but
-  // once we've seen ANY widget instance we can patch its prototype's
-  // onChartReady.  Axiom calls widget.onChartReady(...) on every widget it
-  // creates (including after SPA navigation), so the patch captures each fresh
-  // live instance at the exact moment its chart becomes genuinely ready —
-  // no polling, no stale references.
+  // ── Axiom: reach the chart API inside the live TradingView iframe ─────────────
 
-  let capturedAt = 0
-
-  function onWidgetReady(w: any) {
-    tvWidget = w
-    failStreak = 0
-    capturedAt = Date.now()
-    LOG('live widget captured via prototype onChartReady')
-    const p = pendingDraw
-    if (!p || p.gen !== drawGen) return
-    try {
-      drawLine(w, p.price, p.label, p.color)
-      LOG('pending line drawn via prototype capture')
-      pendingDraw = null
-    } catch (e) {
-      LOG('prototype-capture draw failed:', String((e as any)?.message ?? '').slice(0, 60))
-    }
-  }
-
-  function patchPrototype(w: any) {
-    let proto = w
-    // walk the prototype chain to find where onChartReady actually lives
-    while (proto && !Object.prototype.hasOwnProperty.call(proto, 'onChartReady')) {
-      proto = Object.getPrototypeOf(proto)
-    }
-    if (!proto || proto.__pm_ready_patched) return
-    const orig = proto.onChartReady
-    if (typeof orig !== 'function') return
-    proto.__pm_ready_patched = true
-    proto.onChartReady = function (this: any, cb: any) {
-      const self = this
-      return orig.call(this, function (this: any, ...args: any[]) {
-        try { onWidgetReady(self) } catch {}
-        return typeof cb === 'function' ? cb.apply(this, args) : undefined
-      })
-    }
-    LOG('widget prototype onChartReady patched')
-  }
-
-  // ── Widget detection ────────────────────────────────────────────────────────
-
-  function isWidget(v: any): boolean {
-    return !!(v && typeof v === 'object' &&
-      typeof v.chart === 'function' &&
-      (typeof v.onChartReady === 'function' || typeof v.activeChart === 'function'))
-  }
-
-  function scanWindow(): any {
-    for (const key of Object.getOwnPropertyNames(window)) {
-      try {
-        const v = (window as any)[key]
-        if (isWidget(v)) { LOG('found via window scan, key:', key); return v }
-      } catch {}
-    }
-    return null
-  }
-
-  function checkFiberHooks(fiber: any): any {
-    let hook = fiber?.memoizedState
-    while (hook) {
-      const v = hook.memoizedState
-      if (isWidget(v)) return v
-      if (v && isWidget(v.current)) return v.current          // useRef
-      if (Array.isArray(v) && isWidget(v[0])) return v[0]    // useMemo
-      hook = hook.next
-    }
-    return null
-  }
-
-  function walkFiber(fiber: any, depth: number): any {
-    if (!fiber || depth <= 0) return null
-    const found = checkFiberHooks(fiber)
-    if (found) return found
-    return walkFiber(fiber.child, depth - 1) ?? walkFiber(fiber.sibling, depth - 1)
-  }
-
-  function fiberOf(el: Element | null): any {
-    if (!el) return null
-    const key = Object.keys(el).find(k => /^__reactFiber/.test(k))
-    return key ? (el as any)[key] : null
-  }
-
-  // Walk DOM upward from the TradingView iframe — the owning React component
-  // holds the widget in its hooks (works for Axiom / webpack-bundled TradingView)
-  function scanFromIframe(): any {
-    const iframe = document.querySelector('iframe[id^="tradingview"]')
-    if (!iframe) return null
-    let el: Element | null = iframe
-    for (let i = 0; i < 30 && el && el !== document.documentElement; i++) {
-      const fiber = fiberOf(el)
-      if (fiber) {
-        const found = walkFiber(fiber, 20)
-        if (found) { LOG('found via iframe parent scan at depth', i); return found }
-      }
-      el = el.parentElement
-    }
-    return null
-  }
-
-  function scanReactFibers(): any {
-    for (const sel of ['#tv-chart-container', '[data-testid="trading-view-container"]', '#__next']) {
-      const fiber = fiberOf(document.querySelector(sel))
-      if (!fiber) continue
-      const found = walkFiber(fiber, 200)
-      if (found) { LOG('found via React fiber scan from', sel); return found }
-    }
-    const bodyFiber = fiberOf(document.body)
-    if (bodyFiber) {
-      const found = walkFiber(bodyFiber, 100)
-      if (found) { LOG('found via React fiber scan from body'); return found }
-    }
-    return null
-  }
-
-  function fullScan(): any {
-    return scanWindow() ?? scanFromIframe() ?? scanReactFibers()
-  }
-
-  function forceRescan() {
-    LOG('forcing widget rescan')
-    tvWidget = null
-    failStreak = 0
-    tvWidget = fullScan()
-  }
-
-  function getWidget(): any {
-    if (tvWidget) { patchPrototype(tvWidget); return tvWidget }
-    tvWidget = fullScan()
-    if (tvWidget) patchPrototype(tvWidget)
-    return tvWidget
-  }
-
-  // Background: find any widget instance early just to get the prototype patched
-  // BEFORE the user takes a position (and before Axiom re-creates the widget on
-  // SPA navigation).  Stops once a prototype has been patched.
-  let protoScanTicks = 0
-  const protoScanTimer = setInterval(() => {
-    protoScanTicks++
-    if (protoScanTicks > 150) { clearInterval(protoScanTimer); return }  // ~5 min
-    const w = tvWidget ?? fullScan()
-    if (!w) return
-    patchPrototype(w)
-    clearInterval(protoScanTimer)
-  }, 2000)
-
-  // ── Line management ────────────────────────────────────────────────────────
-
-  function applySetters(line: any, price: number, label: string, color: string) {
-    try { line.setPrice(price) } catch {}
-    try { line.setLineColor(color) } catch {}
-    try { line.setLineWidth(2) } catch {}
-    try { line.setQuantity(label) } catch {}
-    try { line.setQuantityTextColor('#ffffff') } catch {}
-    try { line.setQuantityBackgroundColor(color) } catch {}
-    try { line.setQuantityBorderColor(color) } catch {}
-  }
-
-  function removeLine() {
-    drawGen++           // invalidate any pending onChartReady / retry callbacks
-    chartReadyCbOn = null  // allow re-registration on next draw
-    if (!currentLine) return
-    try { currentLine.remove() } catch {}
-    currentLine = null
-    LOG('line removed')
-  }
-
-  // ── Draw with retry + onChartReady fallback ────────────────────────────────
-
-  // Extract the chart API object from an iframe's contentWindow.
-  // widget.chart() internally does `this._iFrame.contentWindow.tradingViewApi`.
   function apiFromIframe(iframe: HTMLIFrameElement): any {
     let cw: any = null
     try { cw = iframe.contentWindow } catch {}
     if (!cw) return null
-    try { if (cw.tradingViewApi && typeof cw.tradingViewApi.activeChart === 'function') return cw.tradingViewApi } catch {}
-    // fallback: scan the iframe window for anything exposing the chart API
+    try {
+      if (cw.tradingViewApi && typeof cw.tradingViewApi.activeChart === 'function') return cw.tradingViewApi
+    } catch {}
+    // Fallback: scan the iframe window for anything exposing the chart API.
     try {
       for (const key of Object.getOwnPropertyNames(cw)) {
         try {
@@ -236,134 +68,109 @@
     try { return String(api.activeChart().symbol() || '') } catch { return '' }
   }
 
-  // Create a position line on the correct live in-DOM TradingView iframe.
-  // Axiom keeps a STALE, dataless iframe (symbol "UNKNOWN-…", createPositionLine
-  // throws "Value is null") in the DOM alongside the live one during SPA
-  // navigation.  Iterate every iframe, prefer the one whose symbol matches the
-  // current mint, and only accept the iframe where createPositionLine actually
-  // succeeds — so we never draw onto the dead chart.
+  // During SPA navigation Axiom keeps a STALE, dataless iframe (symbol
+  // "UNKNOWN-…", createPositionLine throws "Value is null") in the DOM alongside
+  // the live one for the current token.  Try every iframe, prefer the one whose
+  // symbol matches the current mint, and accept only the iframe where
+  // createPositionLine actually succeeds — never the dead chart.
   function createLineViaLiveIframe(): any {
     const iframes = Array.prototype.slice.call(
       document.querySelectorAll('iframe[id^="tradingview"]')) as HTMLIFrameElement[]
-    const cands: { ifr: HTMLIFrameElement; api: any; sym: string }[] = []
+    const cands: { id: string; api: any; sym: string }[] = []
     for (const ifr of iframes) {
       const api = apiFromIframe(ifr)
-      if (api) cands.push({ ifr, api, sym: symbolOf(api) })
+      if (api) cands.push({ id: ifr.id, api, sym: symbolOf(api) })
     }
     if (!cands.length) return null
-    // Prefer the iframe whose symbol contains the current mint (base58 uppercased
-    // by TradingView), then anything that isn't the "UNKNOWN-…" placeholder.
+
+    // Rank: symbol matching the current mint first, "UNKNOWN-…" placeholder last.
     const mint = currentMint.toUpperCase()
-    cands.sort((a, b) => {
-      const am = mint && a.sym.toUpperCase().includes(mint) ? 0 : (a.sym.startsWith('UNKNOWN') ? 2 : 1)
-      const bm = mint && b.sym.toUpperCase().includes(mint) ? 0 : (b.sym.startsWith('UNKNOWN') ? 2 : 1)
-      return am - bm
-    })
-    for (const { ifr, api, sym } of cands) {
+    const rank = (s: string) =>
+      mint && s.toUpperCase().includes(mint) ? 0 : (s.startsWith('UNKNOWN') ? 2 : 1)
+    cands.sort((a, b) => rank(a.sym) - rank(b.sym))
+
+    for (const { id, api, sym } of cands) {
       try {
         const line = api.activeChart().createPositionLine()
-        LOG('line via live iframe', ifr.id, 'sym', sym.slice(0, 16))
+        LOG('line via live iframe', id, 'sym', sym.slice(0, 16))
         return line
       } catch {}
     }
     return null
   }
 
-  function drawLine(w: any, price: number, label: string, color: string): boolean {
-    // Preferred path: the live in-DOM iframe that actually accepts the line.
-    let line = createLineViaLiveIframe()
-    // Fallback: the React/hooked widget object (Padre, or Axiom first load
-    // before a second iframe exists).
-    if (!line && w) {
-      let chartObj: any = null
-      try { chartObj = w.chart() } catch {}
-      if (!chartObj) { try { if (typeof w.activeChart === 'function') chartObj = w.activeChart() } catch {} }
-      if (chartObj) line = chartObj.createPositionLine()
-    }
-    if (!line) throw new Error('no usable chart API')
-    applySetters(line, price, label, color)
-    currentLine = line
-    failStreak = 0
-    pendingDraw = null
-    return true
+  // ── Line drawing ─────────────────────────────────────────────────────────────
+
+  function applySetters(line: any, price: number, label: string, color: string) {
+    try { line.setPrice(price) } catch {}
+    try { line.setLineColor(color) } catch {}
+    try { line.setLineWidth(2) } catch {}
+    try { line.setQuantity(label) } catch {}
+    try { line.setQuantityTextColor('#ffffff') } catch {}
+    try { line.setQuantityBackgroundColor(color) } catch {}
+    try { line.setQuantityBorderColor(color) } catch {}
   }
 
-  // Register a no-op onChartReady on each new widget we encounter.  The call
-  // goes through the patched prototype, so when it fires (sync or async) the
-  // wrapper runs onWidgetReady() → captures the instance and draws pendingDraw.
-  function ensureChartReadyCb(w: any) {
-    if (chartReadyCbOn === w) return   // already registered on this widget
-    chartReadyCbOn = w
-    try {
-      w.onChartReady(() => {})
-      LOG('onChartReady registered on widget')
-    } catch {
-      LOG('onChartReady not available on this widget')
+  // Create a fresh position line, or null if no chart is ready yet.
+  function createLine(): any {
+    // Primary: the live in-DOM iframe that actually accepts the line (Axiom).
+    const viaIframe = createLineViaLiveIframe()
+    if (viaIframe) return viaIframe
+    // Fallback: the hooked widget instance (Padre).
+    if (tvWidget) {
+      let chart: any = null
+      try { chart = tvWidget.chart() } catch {}
+      if (!chart) { try { if (typeof tvWidget.activeChart === 'function') chart = tvWidget.activeChart() } catch {} }
+      if (chart) {
+        try { const line = chart.createPositionLine(); LOG('line via hooked widget'); return line } catch {}
+      }
     }
+    return null
   }
 
+  // Try to draw; if the chart isn't ready yet (data still loading), retry every
+  // 500ms for up to ~60s.  drawGen invalidates the chain if a clear/navigation
+  // happens in between.
   function attemptDraw(price: number, label: string, color: string, attempt: number) {
-    const gen = drawGen   // capture; stale if removeLine() was called since
-
-    if (failStreak >= 3) forceRescan()
-
-    const w = getWidget()
-    if (w) ensureChartReadyCb(w)
-
-    try {
-      drawLine(w, price, label, color)   // falls back to live-iframe API when w is null/stale
+    const gen = drawGen
+    const line = createLine()
+    if (line) {
+      applySetters(line, price, label, color)
+      currentLine = line
       LOG('line drawn on attempt', attempt)
-    } catch (e) {
-      const msg = String((e as any)?.message ?? '').slice(0, 80)
-      failStreak++
-      LOG(`attempt ${attempt} failed (streak ${failStreak}): ${msg}`)
-
-      if (attempt < 120) setTimeout(() => {
-        if (drawGen === gen) attemptDraw(price, label, color, attempt + 1)
-      }, 500)
+      return
+    }
+    if (attempt < 120) {
+      setTimeout(() => { if (drawGen === gen) attemptDraw(price, label, color, attempt + 1) }, 500)
+    } else {
+      LOG('gave up after', attempt, 'attempts')
     }
   }
 
-  // ── Watch for TradingView iframe changes ──────────────────────────────────
+  function removeLine() {
+    drawGen++   // cancel any pending retry chain
+    if (!currentLine) return
+    try { currentLine.remove() } catch {}
+    currentLine = null
+    LOG('line removed')
+  }
 
-  let knownSig = ''
-
-  new MutationObserver(() => {
-    const iframe = document.querySelector('iframe[id^="tradingview"]') as HTMLIFrameElement | null
-    if (!iframe) return
-    const sig = `${iframe.id}|${iframe.src}`
-    if (sig === knownSig) return
-    knownSig = sig
-    LOG('TradingView iframe changed, resetting fail streak')
-    failStreak = 0
-  }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'id'] })
-
-  // ── Events ─────────────────────────────────────────────────────────────────
+  // ── Events from the content script (injector) ────────────────────────────────
 
   window.addEventListener('papermemes:drawline', (e: Event) => {
     const { price, label, color } = (e as CustomEvent).detail
     LOG('drawline received, price:', price)
     if (currentLine) {
-      try {
-        applySetters(currentLine, price, label, color)
-        LOG('line updated in place')
-        return
-      } catch {
-        currentLine = null
-      }
+      // DCA: update the existing line in place (new average entry price).
+      try { applySetters(currentLine, price, label, color); LOG('line updated in place'); return }
+      catch { currentLine = null }
     }
-    // Remember the request: if the prototype patch captures a freshly-ready
-    // widget while the retry loop is still failing, it draws this immediately.
-    pendingDraw = { price, label, color, gen: drawGen }
     attemptDraw(price, label, color, 0)
   })
 
   window.addEventListener('papermemes:clearlines', (e: Event) => {
     const mint = (e as CustomEvent).detail?.mintAddress
-    if (mint && mint !== currentMint) {
-      LOG('clearlines ignored (stale mint)')
-      return
-    }
+    if (mint && mint !== currentMint) { LOG('clearlines ignored (stale mint)'); return }
     LOG('clearlines received')
     removeLine()
   })
@@ -372,11 +179,5 @@
     currentMint = (e as CustomEvent).detail?.mintAddress ?? ''
     LOG('urlchange received, mint:', currentMint)
     removeLine()
-    // Widget from the previous token is stale — but if the prototype patch just
-    // captured a fresh one (new token's chart became ready before this event
-    // arrived), keep it.
-    if (Date.now() - capturedAt > 3000) tvWidget = null
-    failStreak = 0
-    chartReadyCbOn = null // allow registration on whatever widget appears next
   })
 })()
