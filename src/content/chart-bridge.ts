@@ -5,6 +5,7 @@
   let drawGen = 0   // incremented on cancel/clear; invalidates stale callbacks
   let currentMint = ''
   let chartReadyCbOn: any = null  // which widget we last registered onChartReady on
+  let pendingDraw: { price: number; label: string; color: string; gen: number } | null = null
   const LOG = (...a: any[]) => console.log('[PaperMemes bridge]', ...a)
 
   // ── Hook TradingView.widget constructor (Padre / window.TradingView builds) ──
@@ -36,6 +37,52 @@
     const tv = (window as any).TradingView
     if (tv?.widget && !tv.widget.__pm_hooked) hookConstructor()
   }, 2000)
+
+  // ── Prototype patch (Axiom / webpack builds) ────────────────────────────────
+  // We can't hook the constructor of a webpack-bundled TradingView widget, but
+  // once we've seen ANY widget instance we can patch its prototype's
+  // onChartReady.  Axiom calls widget.onChartReady(...) on every widget it
+  // creates (including after SPA navigation), so the patch captures each fresh
+  // live instance at the exact moment its chart becomes genuinely ready —
+  // no polling, no stale references.
+
+  let capturedAt = 0
+
+  function onWidgetReady(w: any) {
+    tvWidget = w
+    failStreak = 0
+    capturedAt = Date.now()
+    LOG('live widget captured via prototype onChartReady')
+    const p = pendingDraw
+    if (!p || p.gen !== drawGen) return
+    try {
+      drawLine(w, p.price, p.label, p.color)
+      LOG('pending line drawn via prototype capture')
+      pendingDraw = null
+    } catch (e) {
+      LOG('prototype-capture draw failed:', String((e as any)?.message ?? '').slice(0, 60))
+    }
+  }
+
+  function patchPrototype(w: any) {
+    let proto = w
+    // walk the prototype chain to find where onChartReady actually lives
+    while (proto && !Object.prototype.hasOwnProperty.call(proto, 'onChartReady')) {
+      proto = Object.getPrototypeOf(proto)
+    }
+    if (!proto || proto.__pm_ready_patched) return
+    const orig = proto.onChartReady
+    if (typeof orig !== 'function') return
+    proto.__pm_ready_patched = true
+    proto.onChartReady = function (this: any, cb: any) {
+      const self = this
+      return orig.call(this, function (this: any, ...args: any[]) {
+        try { onWidgetReady(self) } catch {}
+        return typeof cb === 'function' ? cb.apply(this, args) : undefined
+      })
+    }
+    LOG('widget prototype onChartReady patched')
+  }
 
   // ── Widget detection ────────────────────────────────────────────────────────
 
@@ -124,10 +171,24 @@
   }
 
   function getWidget(): any {
-    if (tvWidget) return tvWidget
+    if (tvWidget) { patchPrototype(tvWidget); return tvWidget }
     tvWidget = fullScan()
+    if (tvWidget) patchPrototype(tvWidget)
     return tvWidget
   }
+
+  // Background: find any widget instance early just to get the prototype patched
+  // BEFORE the user takes a position (and before Axiom re-creates the widget on
+  // SPA navigation).  Stops once a prototype has been patched.
+  let protoScanTicks = 0
+  const protoScanTimer = setInterval(() => {
+    protoScanTicks++
+    if (protoScanTicks > 150) { clearInterval(protoScanTimer); return }  // ~5 min
+    const w = tvWidget ?? fullScan()
+    if (!w) return
+    patchPrototype(w)
+    clearInterval(protoScanTimer)
+  }, 2000)
 
   // ── Line management ────────────────────────────────────────────────────────
 
@@ -168,53 +229,18 @@
     applySetters(line, price, label, color)
     currentLine = line
     failStreak = 0
+    pendingDraw = null
     return true
   }
 
-  // Register onChartReady on a widget we haven't registered on yet.
-  // Detects whether the callback fires synchronously (widget already "ready" but
-  // chart() may still throw — Axiom after SPA nav) or asynchronously (chart
-  // genuinely just became ready — draw immediately).
-  function ensureChartReadyCb(w: any, price: number, label: string, color: string, gen: number) {
+  // Register a no-op onChartReady on each new widget we encounter.  The call
+  // goes through the patched prototype, so when it fires (sync or async) the
+  // wrapper runs onWidgetReady() → captures the instance and draws pendingDraw.
+  function ensureChartReadyCb(w: any) {
     if (chartReadyCbOn === w) return   // already registered on this widget
     chartReadyCbOn = w
     try {
-      let syncFired = false
-      w.onChartReady(() => {
-        if (!syncFired) {
-          // Synchronous fire: widget's isReady flag is true but _innerAPI() may
-          // still be null (Axiom SPA nav scenario).  Start a 50ms fast poll so we
-          // catch the moment _innerAPI() becomes non-null.
-          LOG('onChartReady SYNC — fast poll starting')
-          let ticks = 0
-          const poll = setInterval(() => {
-            ticks++
-            if (ticks > 200 || currentLine || drawGen !== gen) { clearInterval(poll); return }
-            const fresh = getWidget()
-            if (!fresh) return
-            try {
-              drawLine(fresh, price, label, color)
-              LOG('drawn via SYNC onChartReady poll, tick', ticks)
-              clearInterval(poll)
-            } catch {}
-          }, 50)
-        } else {
-          // Asynchronous fire: a newly-initialised widget just became ready.
-          // This is the key path for Axiom SPA nav when a new widget instance
-          // appears after forceRescan() — draw immediately.
-          LOG('onChartReady ASYNC — drawing now')
-          if (currentLine || drawGen !== gen) return
-          const fresh = getWidget()
-          if (!fresh) return
-          try {
-            drawLine(fresh, price, label, color)
-            LOG('drawn via ASYNC onChartReady')
-          } catch (err) {
-            LOG('ASYNC draw failed:', String((err as any)?.message ?? '').slice(0, 60))
-          }
-        }
-      })
-      syncFired = true
+      w.onChartReady(() => {})
       LOG('onChartReady registered on widget')
     } catch {
       LOG('onChartReady not available on this widget')
@@ -235,11 +261,7 @@
       return
     }
 
-    // Register onChartReady on every NEW widget we encounter.  If forceRescan()
-    // returns a different (newly created) widget, we register on that one too — so
-    // when it fires asynchronously we can draw immediately instead of waiting for
-    // the next 500ms retry tick.
-    ensureChartReadyCb(w, price, label, color, gen)
+    ensureChartReadyCb(w)
 
     try {
       drawLine(w, price, label, color)
@@ -283,6 +305,9 @@
         currentLine = null
       }
     }
+    // Remember the request: if the prototype patch captures a freshly-ready
+    // widget while the retry loop is still failing, it draws this immediately.
+    pendingDraw = { price, label, color, gen: drawGen }
     attemptDraw(price, label, color, 0)
   })
 
@@ -300,7 +325,10 @@
     currentMint = (e as CustomEvent).detail?.mintAddress ?? ''
     LOG('urlchange received, mint:', currentMint)
     removeLine()
-    tvWidget = null       // stale after SPA navigation; force rescan on next buy
+    // Widget from the previous token is stale — but if the prototype patch just
+    // captured a fresh one (new token's chart became ready before this event
+    // arrived), keep it.
+    if (Date.now() - capturedAt > 3000) tvWidget = null
     failStreak = 0
     chartReadyCbOn = null // allow registration on whatever widget appears next
   })
