@@ -160,10 +160,15 @@
   window.addEventListener('papermemes:drawline', (e: Event) => {
     const { price, label, color } = (e as CustomEvent).detail
     LOG('drawline received, price:', price)
+    // Always remove + redraw rather than updating in place.  In-place setters
+    // silently no-op on a detached line (e.g. GMGN re-renders the chart between
+    // buys), so a DCA would keep showing the old average / total.  Removing and
+    // recreating in the SAME synchronous handler causes no visible flicker and
+    // guarantees the line lands on the currently-live chart with fresh values.
+    drawGen++   // cancel any pending retry chain from a previous drawline
     if (currentLine) {
-      // DCA: update the existing line in place (new average entry price).
-      try { applySetters(currentLine, price, label, color); LOG('line updated in place'); return }
-      catch { currentLine = null }
+      try { currentLine.remove() } catch {}
+      currentLine = null
     }
     attemptDraw(price, label, color, 0)
   })
