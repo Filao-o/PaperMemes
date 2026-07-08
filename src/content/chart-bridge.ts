@@ -213,18 +213,67 @@
 
   // ── Draw with retry + onChartReady fallback ────────────────────────────────
 
-  function drawLine(w: any, price: number, label: string, color: string): boolean {
-    let chartObj: any
-    try {
-      chartObj = w.chart()
-    } catch (e) {
-      // Some TV builds expose activeChart() instead of (or in addition to) chart()
-      if (typeof w.activeChart === 'function') {
-        chartObj = w.activeChart()
-      } else {
-        throw e
-      }
+  // Reach the chart API *inside* the TradingView iframe currently in the DOM.
+  // widget.chart() internally does `this._iFrame.contentWindow.tradingViewApi`,
+  // so when Axiom replaces the iframe on SPA navigation the React-held widget
+  // points at a dead iframe and throws "Value is null" forever.  The iframe is
+  // same-origin — go straight to the live one instead.
+  function chartFromLiveIframe(): any {
+    const iframe = document.querySelector('iframe[id^="tradingview"]') as HTMLIFrameElement | null
+    let cw: any = null
+    try { cw = iframe?.contentWindow } catch {}
+    if (!cw) return null
+    const candidates: any[] = []
+    try { if (cw.tradingViewApi) candidates.push(cw.tradingViewApi) } catch {}
+    // fallback: scan the iframe window for anything exposing the chart API
+    if (!candidates.length) {
+      try {
+        for (const key of Object.getOwnPropertyNames(cw)) {
+          try {
+            const v = cw[key]
+            if (v && typeof v === 'object' &&
+                (typeof v.activeChart === 'function' || typeof v.chart === 'function')) {
+              candidates.push(v)
+            }
+          } catch {}
+        }
+      } catch {}
     }
+    for (const api of candidates) {
+      try {
+        const c = api.activeChart?.()
+        if (c && typeof c.createPositionLine === 'function') {
+          LOG('chart via live iframe (activeChart)')
+          return c
+        }
+      } catch {}
+      try {
+        const c = api.chart?.(0)
+        if (c && typeof c.createPositionLine === 'function') {
+          LOG('chart via live iframe (chart)')
+          return c
+        }
+      } catch {}
+    }
+    return null
+  }
+
+  function getChartObj(w: any): any {
+    if (w) {
+      try { return w.chart() } catch {}
+      try {
+        if (typeof w.activeChart === 'function') {
+          const c = w.activeChart()
+          if (c) return c
+        }
+      } catch {}
+    }
+    return chartFromLiveIframe()
+  }
+
+  function drawLine(w: any, price: number, label: string, color: string): boolean {
+    const chartObj = getChartObj(w)
+    if (!chartObj) throw new Error('no usable chart API')
     const line = chartObj.createPositionLine()
     applySetters(line, price, label, color)
     currentLine = line
@@ -253,18 +302,10 @@
     if (failStreak >= 3) forceRescan()
 
     const w = getWidget()
-    if (!w) {
-      LOG(`attempt ${attempt}: no widget`)
-      if (attempt < 120) setTimeout(() => {
-        if (drawGen === gen) attemptDraw(price, label, color, attempt + 1)
-      }, 500)
-      return
-    }
-
-    ensureChartReadyCb(w)
+    if (w) ensureChartReadyCb(w)
 
     try {
-      drawLine(w, price, label, color)
+      drawLine(w, price, label, color)   // falls back to live-iframe API when w is null/stale
       LOG('line drawn on attempt', attempt)
     } catch (e) {
       const msg = String((e as any)?.message ?? '').slice(0, 80)
