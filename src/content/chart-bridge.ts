@@ -133,18 +133,34 @@
   // happens in between.
   function attemptDraw(price: number, label: string, color: string, attempt: number) {
     const gen = drawGen
-    const line = createLine()
-    if (line) {
-      applySetters(line, price, label, color)
-      currentLine = line
-      LOG('line drawn on attempt', attempt)
+    const retry = () => {
+      if (attempt < 120) setTimeout(() => { if (drawGen === gen) attemptDraw(price, label, color, attempt + 1) }, 500)
+      else LOG('gave up after', attempt, 'attempts')
+    }
+
+    let raw: any = null
+    try { raw = createLine() } catch {}
+    if (!raw) { retry(); return }
+
+    // GMGN's TradingView build returns a Promise from createPositionLine();
+    // Axiom/Padre return the line adapter directly.
+    if (typeof raw.then === 'function') {
+      Promise.resolve(raw).then((line: any) => {
+        if (drawGen !== gen) { try { line?.remove() } catch {} ; return }  // superseded
+        if (!line || typeof line.setPrice !== 'function') { retry(); return }
+        applySetters(line, price, label, color)
+        currentLine = line
+        LOG('line drawn (async) on attempt', attempt)
+      }).catch((e: any) => {
+        LOG('async line rejected:', String(e?.message ?? '').slice(0, 60))
+        retry()
+      })
       return
     }
-    if (attempt < 120) {
-      setTimeout(() => { if (drawGen === gen) attemptDraw(price, label, color, attempt + 1) }, 500)
-    } else {
-      LOG('gave up after', attempt, 'attempts')
-    }
+
+    applySetters(raw, price, label, color)
+    currentLine = raw
+    LOG('line drawn on attempt', attempt)
   }
 
   function removeLine() {
