@@ -1058,7 +1058,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         entries: allEntries,
       }
       Storage.dcaBuy(updated, state.balance - amount)
-      if (currentTerminal === 'padre' || currentTerminal === 'axiom') dispatchChartLine(updated.entryPrice, amount)
+      // Show the TOTAL invested across all entries, not just this one.
+      if (currentTerminal === 'padre' || currentTerminal === 'axiom') dispatchChartLine(updated.entryPrice, updated.invested)
     } else {
       const tokensHeld = amount * tokensPerSol
       const trade: Trade = {
@@ -1080,7 +1081,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         pnlPercent: null,
       }
       Storage.openTrade(trade, state.balance - amount)
-      if (currentTerminal === 'padre' || currentTerminal === 'axiom') dispatchChartLine(tokenInfo.price, amount)
+      if (currentTerminal === 'padre' || currentTerminal === 'axiom') dispatchChartLine(tokenInfo.price, trade.invested)
     }
   }
 
