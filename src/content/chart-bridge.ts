@@ -259,8 +259,13 @@
   }
 
   function getChartObj(w: any): any {
+    // The iframe currently in the DOM IS the chart the user sees.  Prefer it —
+    // on Axiom the React-held widget often points at a destroyed iframe and its
+    // chart()/activeChart() are permanently broken after SPA navigation.
+    const live = chartFromLiveIframe()
+    if (live) return live
     if (w) {
-      try { return w.chart() } catch {}
+      try { const c = w.chart(); if (c) return c } catch {}
       try {
         if (typeof w.activeChart === 'function') {
           const c = w.activeChart()
@@ -268,7 +273,7 @@
         }
       } catch {}
     }
-    return chartFromLiveIframe()
+    return null
   }
 
   function drawLine(w: any, price: number, label: string, color: string): boolean {
