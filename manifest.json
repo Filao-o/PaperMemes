@@ -16,7 +16,8 @@
     "https://api.rugcheck.xyz/*",
     "https://api.dexscreener.com/*",
     "https://price.jup.ag/*",
-    "https://api.binance.com/*"
+    "https://api.binance.com/*",
+    "https://translate.googleapis.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

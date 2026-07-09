@@ -879,6 +879,59 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     return () => clearInterval(timer)
   }, [lang])
 
+  // ── Auto-translate the X/Twitter narrative preview (Padre) ───────────────────
+  // Hovering a token's X link shows an interactive MUI tooltip with the tweet.
+  // The tweet body is the only element whose words are each wrapped in
+  // <span class="fast-search-available">.  We translate that text in place into
+  // the extension language via the free Google Translate endpoint.
+  useEffect(() => {
+    if (currentTerminal !== 'padre') return
+    const target = lang || 'fr'
+    const cache = new Map<string, string>()
+
+    async function translate(text: string): Promise<string> {
+      const key = target + '|' + text
+      const hit = cache.get(key)
+      if (hit !== undefined) return hit
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(target)}&dt=t&q=${encodeURIComponent(text)}`
+      const res = await fetch(url)
+      const data = await res.json()
+      const out = (data?.[0] ?? []).map((s: any) => s?.[0] ?? '').join('')
+      cache.set(key, out)
+      return out
+    }
+
+    function translateBody(body: HTMLElement) {
+      if (body.dataset.pmTr) return          // already handled
+      const original = (body.textContent ?? '').trim()
+      if (!original) return
+      body.dataset.pmTr = '1'
+      translate(original)
+        .then(t => { if (t && t !== original) body.textContent = t })
+        .catch(() => { delete body.dataset.pmTr })   // allow a later retry
+    }
+
+    function scan(node: HTMLElement) {
+      const word = node.matches?.('span.fast-search-available')
+        ? node
+        : node.querySelector?.('span.fast-search-available')
+      const body = (word?.parentElement) as HTMLElement | null
+      // Only inside the interactive tweet tooltip, and let the render settle so
+      // every word span is present before we read textContent.
+      if (body && body.closest('.MuiTooltip-popperInteractive')) {
+        window.setTimeout(() => translateBody(body), 60)
+      }
+    }
+
+    const obs = new MutationObserver(muts => {
+      for (const m of muts)
+        for (const n of m.addedNodes)
+          if (n instanceof HTMLElement) scan(n)
+    })
+    obs.observe(document.body, { childList: true, subtree: true })
+    return () => obs.disconnect()
+  }, [currentTerminal, lang])
+
   useEffect(() => {
     Storage.get().then(setState)
     Storage.onChanged(c => {
