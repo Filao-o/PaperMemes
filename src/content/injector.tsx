@@ -2257,17 +2257,19 @@ function scheduleRetry() {
   }, 500)
 }
 
-// ── Auto-translate X/Twitter narrative previews (Padre + Axiom) ───────────────
-// Runs site-wide (token pages AND the trenches list) since the React widget only
-// mounts on token pages.  Hovering a token's X link shows a hover preview of the
-// tweet; we translate the tweet body in place into the extension language via the
-// free Google Translate endpoint.  Body detection differs per site:
+// ── Auto-translate X/Twitter narrative previews (Padre + Axiom + GMGN) ────────
+// Runs site-wide (token pages AND the trenches/list view) since the React widget
+// only mounts on token pages.  Hovering a token's X link shows a hover preview of
+// the tweet; we translate the tweet body in place into the extension language via
+// the free Google Translate endpoint.  Body detection differs per site:
 //   • Padre — parent of the per-word <span class="fast-search-available"> inside
 //             an interactive MUI tooltip.
 //   • Axiom — <span class="text-[18px] text-wrap"> inside the fixed z-[9999] card
 //             (name is text-[16px], handle text-[15px], so text-[18px] is unique).
+//   • GMGN  — <span class="font-mono break-words whitespace-pre-wrap"> inside the
+//             tweet card (bg-[#15202B]).
 function setupTweetTranslation() {
-  if (!/(padre\.gg|axiom\.trade)$/.test(window.location.hostname)) return
+  if (!/(padre\.gg|axiom\.trade|gmgn\.ai)$/.test(window.location.hostname)) return
 
   let target = 'fr'
   Storage.get().then(s => { if (s?.language) target = s.language })
@@ -2311,8 +2313,14 @@ function setupTweetTranslation() {
     return body && body.closest('.fixed.z-\\[9999\\]') ? body : null
   }
 
+  function gmgnBody(node: HTMLElement): HTMLElement | null {
+    const sel = 'span.whitespace-pre-wrap.break-words'
+    const body = (node.matches?.(sel) ? node : node.querySelector?.(sel)) as HTMLElement | null
+    return body && body.closest('.bg-\\[#15202B\\]') ? body : null
+  }
+
   function scan(node: HTMLElement) {
-    const body = padreBody(node) || axiomBody(node)
+    const body = padreBody(node) || axiomBody(node) || gmgnBody(node)
     // Let the render settle so the full tweet text is present before we read it.
     if (body) window.setTimeout(() => translateBody(body), 60)
   }
