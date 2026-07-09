@@ -2316,7 +2316,8 @@ function setupTweetTranslation() {
   function gmgnBody(node: HTMLElement): HTMLElement | null {
     const sel = 'span.whitespace-pre-wrap.break-words'
     const body = (node.matches?.(sel) ? node : node.querySelector?.(sel)) as HTMLElement | null
-    return body && body.closest('.bg-\\[#15202B\\]') ? body : null
+    // Card class is bg-[#15202B]; the "#" must be escaped too or CSS reads it as an id.
+    return body && body.closest('.bg-\\[\\#15202B\\]') ? body : null
   }
 
   function scan(node: HTMLElement) {
