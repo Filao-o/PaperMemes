@@ -2257,14 +2257,17 @@ function scheduleRetry() {
   }, 500)
 }
 
-// ── Auto-translate X/Twitter narrative previews (Padre) ───────────────────────
-// Runs for the whole Padre site — token pages AND the trenches list — since the
-// React widget only mounts on token pages.  Hovering a token's X link shows an
-// interactive MUI tooltip; the tweet body is the only element whose words are
-// each wrapped in <span class="fast-search-available">.  We translate that text
-// in place into the extension language via the free Google Translate endpoint.
+// ── Auto-translate X/Twitter narrative previews (Padre + Axiom) ───────────────
+// Runs site-wide (token pages AND the trenches list) since the React widget only
+// mounts on token pages.  Hovering a token's X link shows a hover preview of the
+// tweet; we translate the tweet body in place into the extension language via the
+// free Google Translate endpoint.  Body detection differs per site:
+//   • Padre — parent of the per-word <span class="fast-search-available"> inside
+//             an interactive MUI tooltip.
+//   • Axiom — <span class="text-[18px] text-wrap"> inside the fixed z-[9999] card
+//             (name is text-[16px], handle text-[15px], so text-[18px] is unique).
 function setupTweetTranslation() {
-  if (!/padre\.gg$/.test(window.location.hostname)) return
+  if (!/(padre\.gg|axiom\.trade)$/.test(window.location.hostname)) return
 
   let target = 'fr'
   Storage.get().then(s => { if (s?.language) target = s.language })
@@ -2294,16 +2297,24 @@ function setupTweetTranslation() {
       .catch(() => { delete body.dataset.pmTr })   // allow a later retry
   }
 
-  function scan(node: HTMLElement) {
+  function padreBody(node: HTMLElement): HTMLElement | null {
     const word = node.matches?.('span.fast-search-available')
       ? node
       : node.querySelector?.('span.fast-search-available')
-    const body = (word?.parentElement) as HTMLElement | null
-    // Only inside the interactive tweet tooltip, and let the render settle so
-    // every word span is present before we read textContent.
-    if (body && body.closest('.MuiTooltip-popperInteractive')) {
-      window.setTimeout(() => translateBody(body), 60)
-    }
+    const body = word?.parentElement as HTMLElement | null
+    return body && body.closest('.MuiTooltip-popperInteractive') ? body : null
+  }
+
+  function axiomBody(node: HTMLElement): HTMLElement | null {
+    const sel = 'span.text-\\[18px\\]'
+    const body = (node.matches?.(sel) ? node : node.querySelector?.(sel)) as HTMLElement | null
+    return body && body.closest('.fixed.z-\\[9999\\]') ? body : null
+  }
+
+  function scan(node: HTMLElement) {
+    const body = padreBody(node) || axiomBody(node)
+    // Let the render settle so the full tweet text is present before we read it.
+    if (body) window.setTimeout(() => translateBody(body), 60)
   }
 
   new MutationObserver(muts => {
