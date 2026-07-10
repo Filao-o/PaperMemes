@@ -1106,6 +1106,17 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   // Terminals whose chart supports the position line (handled by chart-bridge).
   const hasChartLine = (t: string) => t === 'padre' || t === 'axiom' || t === 'gmgn'
 
+  // Restore the entry line when landing on a token that still has an open
+  // position.  The line is drawn on buy, but navigating away and back (SPA)
+  // clears it, so re-draw it whenever the current token has an active trade.
+  useEffect(() => {
+    const trade = state.activeTrade
+    if (!trade || !currentMint || trade.mintAddress !== currentMint) return
+    if (!hasChartLine(currentTerminal)) return
+    const id = window.setTimeout(() => dispatchChartLine(trade.entryPrice, trade.invested), 300)
+    return () => clearTimeout(id)
+  }, [currentMint, currentTerminal, state.activeTrade])
+
   function handleSell(percent: number) {
     if (!state.activeTrade || !tokenInfo) return
     doSell(percent, tokenInfo.price, tokenInfo.marketCap ?? 0, state.activeTrade, state)
