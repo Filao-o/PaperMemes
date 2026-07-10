@@ -406,8 +406,19 @@ const ADAPTERS: Record<string, Adapter> = {
 
 // ─── Trade logic ──────────────────────────────────────────────────────────────
 
-function getLivePnL(trade: Trade, price: number): { sol: number; percent: number } {
-  const liveValue = trade.tokensHeld * price
+// Value the position from the market-cap move relative to entry rather than the
+// raw token price.  Market cap is read consistently (K/M/B suffixes), whereas
+// sub-cent memecoin prices (e.g. $0.0₄778) can misparse by orders of magnitude
+// and would corrupt PnL and, worse, the SOL paid out on close.  Both entryPrice
+// and entryMC are captured together at buy, so the ratio is scale-safe.
+// Falls back to the raw price only when MC data is missing.
+function effectivePrice(trade: Trade, price: number, mc: number | null | undefined): number {
+  if (mc && mc > 0 && trade.entryMC > 0) return trade.entryPrice * (mc / trade.entryMC)
+  return price
+}
+
+function getLivePnL(trade: Trade, price: number, mc?: number | null): { sol: number; percent: number } {
+  const liveValue = trade.tokensHeld * effectivePrice(trade, price, mc)
   const alreadyOut = trade.closeEvents.reduce((s, e) => s + e.solReturned, 0)
   const sol = liveValue + alreadyOut - trade.invested
   return { sol, percent: (sol / trade.invested) * 100 }
@@ -1016,7 +1027,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   }, [currentMint])
 
   function checkTpSl(price: number, mc: number, trade: Trade) {
-    const { percent: pnlPct } = getLivePnL(trade, price)
+    const { percent: pnlPct } = getLivePnL(trade, price, mc)
     if (trade.tp && pnlPct >= trade.tp) {
       doSell(100, price, mc, trade, stateRef.current)
       const notifLang = (stateRef.current.language ?? 'fr') as Lang
@@ -1112,14 +1123,16 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
 
   function doSell(percent: number, price: number, mc: number, trade: Trade, st: AppState) {
     const tokensSold = trade.tokensHeld * (percent / 100)
-    // Apply fees only — slippage is a tolerance setting, not a guaranteed cost
-    const solReturned = tokensSold * price * (1 - st.fees / 100)
+    // Value the sale from the MC move relative to entry (scale-safe), not the raw
+    // price.  Apply fees only — slippage is a tolerance setting, not a cost.
+    const eff = effectivePrice(trade, price, mc)
+    const solReturned = tokensSold * eff * (1 - st.fees / 100)
     const event: CloseEvent = {
       id: `report_${Date.now()}`,
       timestamp: Date.now(),
       sellPercent: percent,
       solReturned,
-      priceAtClose: price,
+      priceAtClose: eff,
       mcAtClose: mc,
     }
     const updated: Trade = {
@@ -1150,8 +1163,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const price = tokenInfo?.price ?? null
   const mc = tokenInfo?.marketCap ?? null
   const buyBlocked = !!(activeTrade && activeTrade.mintAddress !== currentMint)
-  const livePnL = activeTrade && price && !buyBlocked ? getLivePnL(activeTrade, price) : null
-  const liveValue = activeTrade && price && !buyBlocked ? activeTrade.tokensHeld * price : null
+  const livePnL = activeTrade && price && !buyBlocked ? getLivePnL(activeTrade, price, mc) : null
+  const liveValue = activeTrade && price && !buyBlocked ? activeTrade.tokensHeld * effectivePrice(activeTrade, price, mc) : null
 
   function fmtCurStr(sol: number) {
     return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)}`
