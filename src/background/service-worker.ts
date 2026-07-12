@@ -46,4 +46,25 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 chrome.alarms.create('keepalive', { periodInMinutes: 0.4 })
 chrome.alarms.onAlarm.addListener(() => {})
 
+// ── Firebase cloud sync ───────────────────────────────────────────────────────
+// Push trading data to Firestore whenever it changes (debounced), so the user's
+// account always reflects their latest trades — even with the popup closed.
+import { syncNow } from '../firebase/sync'
+import { AUTH_KEY } from '../firebase/auth'
+
+const SYNC_KEYS = ['balance', 'activeTrade', 'closedTrades', 'currency', 'fees', 'slippage', 'buyPresets', 'tpPresets', 'slPresets']
+let syncTimer: ReturnType<typeof setTimeout> | undefined
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return
+  const keys = Object.keys(changes)
+  // Sync on trade/setting changes, and immediately when the user signs in.
+  const signedIn = keys.includes(AUTH_KEY) && !!changes[AUTH_KEY].newValue
+  if (!signedIn && !keys.some(k => SYNC_KEYS.includes(k))) return
+  clearTimeout(syncTimer)
+  syncTimer = setTimeout(() => {
+    syncNow().catch(e => console.warn('[PaperMemes sync]', e?.message ?? e))
+  }, signedIn ? 200 : 1500)
+})
+
 export {}

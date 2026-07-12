@@ -1173,7 +1173,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   // so it can be analysed on a dedicated page or re-imported later.
   function handleExport() {
     Storage.get().then(s => {
-      const payload = { app: 'PaperMemes', schema: 1, exportedAt: new Date().toISOString(), ...s }
+      // Never leak Firebase auth tokens into the exported file.
+      const { __pmAuth, ...clean } = s as any
+      const payload = { app: 'PaperMemes', schema: 1, exportedAt: new Date().toISOString(), ...clean }
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const d = new Date()

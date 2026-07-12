@@ -3,6 +3,7 @@ import { Storage } from '../storage'
 import type { AppState, Trade } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, SolIcon } from './components/ui'
 import { TradeCard } from './components/JournalPanel'
+import { AccountSection } from './components/Account'
 import { t as tr, type Lang, LANG_LABELS } from '../i18n'
 
 const LANG_CYCLE: Lang[] = ['fr', 'en', 'es']
@@ -673,6 +674,11 @@ function SettingsModal({ state, lang, onClose, onResetClick }: {
           <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: '#fff' }}>{tr(lang, 'w.settings')}</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}>✕</button>
         </div>
+
+        {/* Account (Firebase) */}
+        <AccountSection lang={lang} />
+
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }} />
 
         {/* Slippage & Fees */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
