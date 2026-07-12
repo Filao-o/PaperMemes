@@ -66,6 +66,7 @@ const TR: Record<Lang, Record<string, string>> = {
     'pnl.no_data': 'Pas encore de données',
     // Widget
     'w.wallet':       'Wallet',
+    'w.export':       'Exporter les données (JSON)',
     'w.loading':      'Chargement…',
     'w.navigate':     'Navigue sur un token…',
     'w.quick_buy':    'Achat Rapide',
@@ -184,6 +185,7 @@ const TR: Record<Lang, Record<string, string>> = {
     'pnl.title':   'Cumulative PNL Curve',
     'pnl.no_data': 'No data yet',
     'w.wallet':       'Wallet',
+    'w.export':       'Export data (JSON)',
     'w.loading':      'Loading…',
     'w.navigate':     'Navigate to a token…',
     'w.quick_buy':    'Quick Buy',
@@ -300,6 +302,7 @@ const TR: Record<Lang, Record<string, string>> = {
     'pnl.title':   'Curva PNL Acumulado',
     'pnl.no_data': 'Sin datos aún',
     'w.wallet':       'Wallet',
+    'w.export':       'Exportar datos (JSON)',
     'w.loading':      'Cargando…',
     'w.navigate':     'Navega a un token…',
     'w.quick_buy':    'Compra Rápida',

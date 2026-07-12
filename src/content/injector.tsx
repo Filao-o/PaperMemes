@@ -1169,6 +1169,26 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     setTimeout(() => setCopied(false), 1500)
   }
 
+  // Export the full extension state (trades, balance, presets, settings) as JSON
+  // so it can be analysed on a dedicated page or re-imported later.
+  function handleExport() {
+    Storage.get().then(s => {
+      const payload = { app: 'PaperMemes', schema: 1, exportedAt: new Date().toISOString(), ...s }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const d = new Date()
+      const p2 = (n: number) => String(n).padStart(2, '0')
+      const stamp = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}`
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `papermemes-export-${stamp}.json`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    })
+  }
+
   const { balance, activeTrade, closedTrades, currency, buyPresets, tpPresets, slPresets } = state
   const solPrice = solPriceLocal || state.solPrice
   const price = tokenInfo?.price ?? null
@@ -1370,6 +1390,16 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
               <span style={{ color: '#999', ...DS.type.annex }}>v1.7.8</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onMouseDown={e => e.stopPropagation()}>
+              <button
+                onClick={handleExport}
+                title={tr(lang, 'w.export')}
+                style={{
+                  padding: '4px 10px', borderRadius: 20, cursor: 'pointer', fontFamily: FONT,
+                  background: DS.color.surface, border: '1px solid rgba(0,0,0,0.18)',
+                  color: DS.color.textOff, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}
+              >⤓ JSON</button>
               <button
                 onClick={() => { const next = LANG_CYCLE[(LANG_CYCLE.indexOf(lang) + 1) % LANG_CYCLE.length]; Storage.set({ language: next }) }}
                 style={{
