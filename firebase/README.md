@@ -43,10 +43,26 @@ already cover sub-collections.
 - The **popup** (Settings → Account) handles sign in / sign up, the wallet field,
   and sign out.
 
+## Google sign-in (MV3)
+
+Implemented via `chrome.identity.launchWebAuthFlow` (Google consent) →
+`signInWithIdp` (Firebase REST). To activate it:
+
+1. **Get the Web client ID**: Firebase Console → Authentication → Sign-in method
+   → Google → *Web SDK configuration* → copy the **Web client ID**.
+2. Put it in `src/firebase/config.ts` → `export const googleClientId = '…'`.
+3. **Register the extension redirect**: load the extension, note its ID on
+   `chrome://extensions`. The redirect is `https://<EXTENSION_ID>.chromiumapp.org/`
+   (also printed by `chrome.identity.getRedirectURL()` in the popup console).
+   In **Google Cloud Console → APIs & Services → Credentials**, open that Web
+   OAuth client and add this URL under **Authorized redirect URIs**.
+4. For a **stable extension ID** in dev, add a `"key"` to `manifest.json`
+   (otherwise the ID — and thus the redirect — changes per machine).
+
+Requires the `"identity"` permission (already in the manifest). Email/password
+works without any of this.
+
 ## TODO (next steps)
 
-- **Google sign-in** in MV3: needs an OAuth Web client ID + the extension's
-  `https://<extension-id>.chromiumapp.org/` redirect, driven via
-  `chrome.identity.launchWebAuthFlow` then `signInWithCredential`-equivalent REST.
 - **Vercel dashboard**: a page that reads `users/{uid}` after login and renders
   the analytics (winrate, cumulative PnL, per-terminal breakdown).

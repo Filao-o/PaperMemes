@@ -3,7 +3,7 @@
   "name": "PaperMemes – Paper Trading Simulator",
   "version": "1.3.0",
   "description": "Simulez vos trades de meme coins Solana en paper trading sur Photon, GMGN, Bullx, Axiom & Padre.",
-  "permissions": ["storage", "alarms", "scripting", "activeTab", "notifications"],
+  "permissions": ["storage", "alarms", "scripting", "activeTab", "notifications", "identity"],
   "host_permissions": [
     "https://photon-sol.tinyastro.io/*",
     "https://gmgn.ai/*",

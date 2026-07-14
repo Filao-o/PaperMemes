@@ -10,3 +10,13 @@ export const firebaseConfig = {
   appId: '1:1093050907458:web:d135de6fbb3c4a501ca6db',
   measurementId: 'G-7QQ41GV4FD',
 }
+
+// OAuth 2.0 Web client ID used for "Sign in with Google" in the extension.
+// Get it in Firebase Console → Authentication → Sign-in method → Google →
+// "Web SDK configuration" → Web client ID.
+// IMPORTANT: in Google Cloud Console → APIs & Services → Credentials, open that
+// same Web client and add the extension's redirect URL to "Authorized redirect
+// URIs":  chrome.identity.getRedirectURL()  →  https://<EXTENSION_ID>.chromiumapp.org/
+// (the extension ID is shown on chrome://extensions). Leave empty to disable
+// Google sign-in (email/password still works).
+export const googleClientId = ''
