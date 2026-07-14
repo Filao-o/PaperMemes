@@ -5,6 +5,10 @@ import { C, fmtSOL, fmtMC, fmtPct, pnlColor, SolIcon } from './components/ui'
 import { TradeCard } from './components/JournalPanel'
 import { AccountSection } from './components/Account'
 import { t as tr, type Lang, LANG_LABELS } from '../i18n'
+import {
+  trackExtensionOpened, trackTabViewed, trackLanguageChanged,
+  trackWalletReset, trackPlatformSelected,
+} from '../analytics/track'
 
 const LANG_CYCLE: Lang[] = ['fr', 'en', 'es']
 
@@ -39,6 +43,7 @@ function ResetModal({ onClose, currency, solPrice, lang }: { onClose: () => void
 
   function doReset(keepHistory: boolean) {
     if (activeAmountSOL <= 0) return
+    trackWalletReset(keepHistory ? 'balance_only' : 'full')
     Storage.set({ balance: activeAmountSOL, activeTrade: null, ...(keepHistory ? {} : { closedTrades: [] }) })
     onClose()
   }
@@ -742,6 +747,7 @@ export function App() {
   const [filter, setFilter] = useState<Filter>('ALL')
 
   useEffect(() => {
+    trackExtensionOpened()
     Storage.get().then(setState)
     const cleanup = Storage.onChanged(changes => setState(prev => prev ? { ...prev, ...changes } : prev))
     const fetchPrice = () => {
@@ -762,7 +768,7 @@ export function App() {
   const lang = (state.language ?? 'fr') as Lang
 
   if (state.selectedPlatform === null) {
-    return <PlatformSelector onSelect={p => Storage.set({ selectedPlatform: p })} lang={lang} />
+    return <PlatformSelector onSelect={p => { trackPlatformSelected(p); Storage.set({ selectedPlatform: p }) }} lang={lang} />
   }
 
   const { balance, activeTrade, closedTrades, currency, solPrice } = state
@@ -836,7 +842,7 @@ export function App() {
             </button>
             {/* Language cycler */}
             <button
-              onClick={() => Storage.set({ language: LANG_CYCLE[(LANG_CYCLE.indexOf(lang) + 1) % LANG_CYCLE.length] })}
+              onClick={() => { const next = LANG_CYCLE[(LANG_CYCLE.indexOf(lang) + 1) % LANG_CYCLE.length]; trackLanguageChanged(next); Storage.set({ language: next }) }}
               title="Language"
               style={{
                 width: 34, height: 34, background: '#000000', border: '1px solid #333',

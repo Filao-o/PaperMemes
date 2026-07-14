@@ -4,6 +4,7 @@ import {
 } from '../../firebase/auth'
 import { syncNow } from '../../firebase/sync'
 import { t as tr, type Lang } from '../../i18n'
+import { trackSignIn, trackSignOut } from '../../analytics/track'
 
 const FONT = "'Space Grotesk', -apple-system, sans-serif"
 const GREEN = '#22c55e'
@@ -59,6 +60,7 @@ export function AccountSection({ lang, mode = 'full' }: { lang: Lang; mode?: 'fu
     setErr(''); setBusy(true)
     try {
       await (authMode === 'in' ? signIn : signUp)(email.trim(), pw)
+      trackSignIn('email')
       setEmail(''); setPw('')
       syncNow().catch(() => {})
     } catch (e: any) {
@@ -72,6 +74,7 @@ export function AccountSection({ lang, mode = 'full' }: { lang: Lang; mode?: 'fu
     setErr(''); setBusy(true)
     try {
       await signInWithGoogle()
+      trackSignIn('google')
       syncNow().catch(() => {})
     } catch (e: any) {
       setErr(e?.message ?? 'Erreur Google')
@@ -188,7 +191,7 @@ export function AccountSection({ lang, mode = 'full' }: { lang: Lang; mode?: 'fu
             {auth.email}
           </span>
         </span>
-        <button onClick={() => signOut()} style={{
+        <button onClick={() => { trackSignOut(); signOut() }} style={{
           background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8,
           color: '#f87171', fontSize: 10, fontWeight: 800, padding: '5px 10px', cursor: 'pointer',
           fontFamily: FONT, letterSpacing: 0.3, flexShrink: 0,
@@ -237,7 +240,7 @@ export function AccountSection({ lang, mode = 'full' }: { lang: Lang; mode?: 'fu
         </div>
       </div>
 
-      <button onClick={() => signOut()} style={btn('rgba(239,68,68,0.12)', '#f87171')}>
+      <button onClick={() => { trackSignOut(); signOut() }} style={btn('rgba(239,68,68,0.12)', '#f87171')}>
         {tr(lang, 'acc.signout')}
       </button>
     </div>

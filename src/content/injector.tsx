@@ -5,6 +5,10 @@ import type { AppState, Trade, CloseEvent, TokenInfo, RiskInfo } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Tabs, Btn, Divider, SolIcon } from '../popup/components/ui'
 import { JournalPanel, TradeCard } from '../popup/components/JournalPanel'
 import { t as tr, type Lang, LANG_LABELS } from '../i18n'
+import {
+  trackTradeOpened, trackTradeClosed, trackPartialSell,
+  trackSellInit, trackTpTriggered, trackSlTriggered, trackBuyPresetUsed,
+} from '../analytics/track'
 
 const LANG_CYCLE: Lang[] = ['fr', 'en', 'es']
 
@@ -1030,14 +1034,17 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     const { percent: pnlPct } = getLivePnL(trade, price, mc)
     if (trade.tp && pnlPct >= trade.tp) {
       doSell(100, price, mc, trade, stateRef.current)
+      trackTpTriggered(trade.terminal, pnlPct)
       const notifLang = (stateRef.current.language ?? 'fr') as Lang
       chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: tr(notifLang, 'notif.tp'), body: `${trade.tokenName} +${pnlPct.toFixed(1)}%` } })
     } else if (trade.tpMC && mc >= trade.tpMC) {
       doSell(100, price, mc, trade, stateRef.current)
+      trackTpTriggered(trade.terminal, pnlPct)
       const notifLang = (stateRef.current.language ?? 'fr') as Lang
       chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: tr(notifLang, 'notif.tp_mc'), body: `${trade.tokenName} MC ${fmtMC(mc)}` } })
     } else if (trade.sl && pnlPct <= trade.sl) {
       doSell(100, price, mc, trade, stateRef.current)
+      trackSlTriggered(trade.terminal, pnlPct)
       const notifLang = (stateRef.current.language ?? 'fr') as Lang
       chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: tr(notifLang, 'notif.sl'), body: `${trade.tokenName} ${pnlPct.toFixed(1)}%` } })
     }
@@ -1051,6 +1058,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       showBuyWarn(tr(lang, 'w.insuf_balance'))
       return
     }
+    trackBuyPresetUsed(amount, currentTerminal)
     // Apply fees only — slippage is a tolerance setting, not a guaranteed cost
     const feeCoef = 1 - state.fees / 100
     const tokensPerSol = (1 / tokenInfo.price) * feeCoef
@@ -1093,6 +1101,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         pnlPercent: null,
       }
       Storage.openTrade(trade, state.balance - amount)
+      trackTradeOpened(currentTerminal, amount)
       if (hasChartLine(currentTerminal)) dispatchChartLine(tokenInfo.price, trade.invested)
     }
   }
@@ -1129,6 +1138,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     const stillNeeded = trade.invested - alreadyOut
     if (stillNeeded <= 0) return
     const pct = Math.min((stillNeeded / tokenInfo.price / trade.tokensHeld) * 100, 100)
+    trackSellInit()
     doSell(pct, tokenInfo.price, tokenInfo.marketCap ?? 0, trade, state)
   }
 
@@ -1156,9 +1166,11 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       const totalOut = updated.closeEvents.reduce((s, e) => s + e.solReturned, 0)
       const pnlSOL = totalOut - trade.invested
       Storage.closeTrade({ ...updated, status: pnlSOL >= 0 ? 'won' : 'lost', closedAt: Date.now(), pnlSOL, pnlPercent: (pnlSOL / trade.invested) * 100 }, newBalance)
+      trackTradeClosed({ terminal: trade.terminal, status: pnlSOL >= 0 ? 'won' : 'lost', pnl_percent: (pnlSOL / trade.invested) * 100, duration_min: Math.round((Date.now() - trade.openedAt) / 60000) })
       if (hasChartLine(trade.terminal)) window.dispatchEvent(new CustomEvent('papermemes:clearlines', { detail: { mintAddress: trade.mintAddress } }))
     } else {
       Storage.partialClose(updated, newBalance)
+      trackPartialSell(Math.round(percent) as 10 | 25 | 50 | 100)
     }
   }
 
