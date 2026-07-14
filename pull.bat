@@ -1,15 +1,15 @@
 @echo off
 cd /d "%~dp0"
 
-echo Fetching latest changes from claude/busy-shannon-w1hqvm...
-git fetch origin claude/busy-shannon-w1hqvm
+echo Fetching latest changes from main...
+git fetch origin main
 if errorlevel 1 (
     echo Fetch failed.
     pause
     exit /b 1
 )
 
-git merge origin/claude/busy-shannon-w1hqvm
+git merge origin/main
 if errorlevel 1 (
     echo Merge failed. Resolve conflicts manually.
     pause
