@@ -25,6 +25,7 @@ export interface Trade {
   closeEvents: CloseEvent[]
   pnlSOL: number | null
   pnlPercent: number | null
+  note?: string
 }
 
 export interface CloseEvent {

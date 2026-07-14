@@ -3,7 +3,7 @@
   "name": "PaperMemes – Paper Trading Simulator",
   "version": "1.3.0",
   "description": "Simulez vos trades de meme coins Solana en paper trading sur Photon, GMGN, Bullx, Axiom & Padre.",
-  "permissions": ["storage", "alarms", "scripting", "activeTab", "notifications"],
+  "permissions": ["storage", "alarms", "scripting", "activeTab", "notifications", "identity"],
   "host_permissions": [
     "https://photon-sol.tinyastro.io/*",
     "https://gmgn.ai/*",
@@ -16,7 +16,12 @@
     "https://api.rugcheck.xyz/*",
     "https://api.dexscreener.com/*",
     "https://price.jup.ag/*",
-    "https://api.binance.com/*"
+    "https://api.binance.com/*",
+    "https://translate.googleapis.com/*",
+    "https://identitytoolkit.googleapis.com/*",
+    "https://securetoken.googleapis.com/*",
+    "https://firestore.googleapis.com/*",
+    "https://www.google-analytics.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
@@ -39,6 +44,17 @@
       "js": ["content/injector.js"],
       "css": ["assets/overlay.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://gmgn.ai/*",
+        "https://axiom.trade/*",
+        "https://padre.gg/*",
+        "https://trade.padre.gg/*"
+      ],
+      "js": ["content/chart-bridge.js"],
+      "world": "MAIN",
+      "run_at": "document_start"
     }
   ],
   "action": {
@@ -56,7 +72,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/*", "chunks/*"],
+      "resources": ["assets/*", "chunks/*", "content/chart-bridge.js"],
       "matches": [
         "https://photon-sol.tinyastro.io/*",
         "https://gmgn.ai/*",

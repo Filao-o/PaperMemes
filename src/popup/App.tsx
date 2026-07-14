@@ -3,7 +3,12 @@ import { Storage } from '../storage'
 import type { AppState, Trade } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, SolIcon } from './components/ui'
 import { TradeCard } from './components/JournalPanel'
+import { AccountSection } from './components/Account'
 import { t as tr, type Lang, LANG_LABELS } from '../i18n'
+import {
+  trackExtensionOpened, trackTabViewed, trackLanguageChanged,
+  trackWalletReset, trackPlatformSelected,
+} from '../analytics/track'
 
 const LANG_CYCLE: Lang[] = ['fr', 'en', 'es']
 
@@ -38,6 +43,7 @@ function ResetModal({ onClose, currency, solPrice, lang }: { onClose: () => void
 
   function doReset(keepHistory: boolean) {
     if (activeAmountSOL <= 0) return
+    trackWalletReset(keepHistory ? 'balance_only' : 'full')
     Storage.set({ balance: activeAmountSOL, activeTrade: null, ...(keepHistory ? {} : { closedTrades: [] }) })
     onClose()
   }
@@ -674,6 +680,11 @@ function SettingsModal({ state, lang, onClose, onResetClick }: {
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: 0 }}>✕</button>
         </div>
 
+        {/* Account (Firebase) */}
+        <AccountSection lang={lang} />
+
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.08)' }} />
+
         {/* Slippage & Fees */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
@@ -736,6 +747,7 @@ export function App() {
   const [filter, setFilter] = useState<Filter>('ALL')
 
   useEffect(() => {
+    trackExtensionOpened()
     Storage.get().then(setState)
     const cleanup = Storage.onChanged(changes => setState(prev => prev ? { ...prev, ...changes } : prev))
     const fetchPrice = () => {
@@ -756,7 +768,7 @@ export function App() {
   const lang = (state.language ?? 'fr') as Lang
 
   if (state.selectedPlatform === null) {
-    return <PlatformSelector onSelect={p => Storage.set({ selectedPlatform: p })} lang={lang} />
+    return <PlatformSelector onSelect={p => { trackPlatformSelected(p); Storage.set({ selectedPlatform: p }) }} lang={lang} />
   }
 
   const { balance, activeTrade, closedTrades, currency, solPrice } = state
@@ -809,7 +821,7 @@ export function App() {
           padding: '10px 14px', background: '#ffffff', borderBottom: '1px solid #e0e0e0',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ color: '#000000', fontSize: 18, lineHeight: 1 }}>≡</span>
+            <img src={chrome.runtime.getURL('assets/icons/icon48.png')} width={24} height={24} style={{ borderRadius: 6 }} alt="PaperMemes" />
             <span style={{ fontWeight: 800, fontSize: 14, color: '#000000', letterSpacing: -0.3 }}>PaperMemes</span>
             <span style={{ color: '#888888', fontSize: 10 }}>v1.5</span>
             <span style={{
@@ -830,7 +842,7 @@ export function App() {
             </button>
             {/* Language cycler */}
             <button
-              onClick={() => Storage.set({ language: LANG_CYCLE[(LANG_CYCLE.indexOf(lang) + 1) % LANG_CYCLE.length] })}
+              onClick={() => { const next = LANG_CYCLE[(LANG_CYCLE.indexOf(lang) + 1) % LANG_CYCLE.length]; trackLanguageChanged(next); Storage.set({ language: next }) }}
               title="Language"
               style={{
                 width: 34, height: 34, background: '#000000', border: '1px solid #333',
@@ -853,6 +865,9 @@ export function App() {
           </div>
         </div>
 
+        {/* ── Account status (login CTA when signed out, email+logout when signed in) ── */}
+        <AccountSection lang={lang} mode="banner" />
+
         {/* ── Wallet ── */}
         <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -860,10 +875,17 @@ export function App() {
               background: '#fff', color: '#111', fontWeight: 700, fontSize: 11,
               padding: '3px 10px', borderRadius: 20,
             }}>{tr(lang, 'wallet.label')}</span>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button onClick={() => setShowReset(true)} style={{
+                background: '#fff', border: 'none', borderRadius: 20, padding: '3px 12px',
+                color: '#111', fontWeight: 700, fontSize: 11, cursor: 'pointer', fontFamily: FONT,
+                letterSpacing: 0.3,
+              }}>↺ Reset</button>
             <CurrencyToggle
               value={currency}
               onChange={() => Storage.set({ currency: currency === 'SOL' ? 'USD' : 'SOL' })}
             />
+            </div>
           </div>
           <div style={{ fontSize: 30, fontWeight: 800, color: C.text, display: 'flex', alignItems: 'center' }}>
             {fmtBal()}

@@ -5,6 +5,12 @@ import type { AppState, Trade, CloseEvent, TokenInfo, RiskInfo } from '../types'
 import { C, fmtSOL, fmtMC, fmtPct, pnlColor, Tabs, Btn, Divider, SolIcon } from '../popup/components/ui'
 import { JournalPanel, TradeCard } from '../popup/components/JournalPanel'
 import { t as tr, type Lang, LANG_LABELS } from '../i18n'
+import {
+  trackTradeOpened, trackTradeClosed, trackPartialSell,
+  trackSellInit, trackTpTriggered, trackSlTriggered, trackBuyPresetUsed,
+} from '../analytics/track'
+
+const LANG_CYCLE: Lang[] = ['fr', 'en', 'es']
 
 // ─── Currency toggle ──────────────────────────────────────────────────────────
 
@@ -404,8 +410,19 @@ const ADAPTERS: Record<string, Adapter> = {
 
 // ─── Trade logic ──────────────────────────────────────────────────────────────
 
-function getLivePnL(trade: Trade, price: number): { sol: number; percent: number } {
-  const liveValue = trade.tokensHeld * price
+// Value the position from the market-cap move relative to entry rather than the
+// raw token price.  Market cap is read consistently (K/M/B suffixes), whereas
+// sub-cent memecoin prices (e.g. $0.0₄778) can misparse by orders of magnitude
+// and would corrupt PnL and, worse, the SOL paid out on close.  Both entryPrice
+// and entryMC are captured together at buy, so the ratio is scale-safe.
+// Falls back to the raw price only when MC data is missing.
+function effectivePrice(trade: Trade, price: number, mc: number | null | undefined): number {
+  if (mc && mc > 0 && trade.entryMC > 0) return trade.entryPrice * (mc / trade.entryMC)
+  return price
+}
+
+function getLivePnL(trade: Trade, price: number, mc?: number | null): { sol: number; percent: number } {
+  const liveValue = trade.tokensHeld * effectivePrice(trade, price, mc)
   const alreadyOut = trade.closeEvents.reduce((s, e) => s + e.solReturned, 0)
   const sol = liveValue + alreadyOut - trade.invested
   return { sol, percent: (sol / trade.invested) * 100 }
@@ -785,7 +802,9 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null)
   const [risk, setRisk] = useState<RiskInfo | null>(null)
   const [tab, setTab] = useState<'trade' | 'journal'>('trade')
-  const [showConfig, setShowConfig] = useState(false)
+  const [showConfigB, setShowConfigB] = useState(false)
+  const [showConfigC, setShowConfigC] = useState(false)
+  const [pendingNotes, setPendingNotes] = useState<Trade[]>([])
   const [showReset, setShowReset] = useState(false)
   const [priceStale, setPriceStale] = useState(false)
   const [priceDir, setPriceDir] = useState<'up' | 'down' | null>(null)
@@ -875,9 +894,19 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     return () => clearInterval(timer)
   }, [lang])
 
+
   useEffect(() => {
     Storage.get().then(setState)
-    Storage.onChanged(c => setState(prev => ({ ...prev, ...c })))
+    Storage.onChanged(c => {
+      setState(prev => {
+        if (c.closedTrades && prev.notesEnabled) {
+          const prevIds = new Set(prev.closedTrades.map(t => t.id))
+          const fresh = c.closedTrades.filter(t => !prevIds.has(t.id))
+          if (fresh.length > 0) setPendingNotes(pn => [...fresh, ...pn])
+        }
+        return { ...prev, ...c }
+      })
+    })
   }, [])
 
   // SOL price — via service worker (same source as popup)
@@ -1002,17 +1031,20 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
   }, [currentMint])
 
   function checkTpSl(price: number, mc: number, trade: Trade) {
-    const { percent: pnlPct } = getLivePnL(trade, price)
+    const { percent: pnlPct } = getLivePnL(trade, price, mc)
     if (trade.tp && pnlPct >= trade.tp) {
       doSell(100, price, mc, trade, stateRef.current)
+      trackTpTriggered(trade.terminal, pnlPct)
       const notifLang = (stateRef.current.language ?? 'fr') as Lang
       chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: tr(notifLang, 'notif.tp'), body: `${trade.tokenName} +${pnlPct.toFixed(1)}%` } })
     } else if (trade.tpMC && mc >= trade.tpMC) {
       doSell(100, price, mc, trade, stateRef.current)
+      trackTpTriggered(trade.terminal, pnlPct)
       const notifLang = (stateRef.current.language ?? 'fr') as Lang
       chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: tr(notifLang, 'notif.tp_mc'), body: `${trade.tokenName} MC ${fmtMC(mc)}` } })
     } else if (trade.sl && pnlPct <= trade.sl) {
       doSell(100, price, mc, trade, stateRef.current)
+      trackSlTriggered(trade.terminal, pnlPct)
       const notifLang = (stateRef.current.language ?? 'fr') as Lang
       chrome.runtime.sendMessage({ type: 'NOTIFY', payload: { title: tr(notifLang, 'notif.sl'), body: `${trade.tokenName} ${pnlPct.toFixed(1)}%` } })
     }
@@ -1026,6 +1058,7 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       showBuyWarn(tr(lang, 'w.insuf_balance'))
       return
     }
+    trackBuyPresetUsed(amount, currentTerminal)
     // Apply fees only — slippage is a tolerance setting, not a guaranteed cost
     const feeCoef = 1 - state.fees / 100
     const tokensPerSol = (1 / tokenInfo.price) * feeCoef
@@ -1045,6 +1078,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         entries: allEntries,
       }
       Storage.dcaBuy(updated, state.balance - amount)
+      // Show the TOTAL invested across all entries, not just this one.
+      if (hasChartLine(currentTerminal)) dispatchChartLine(updated.entryPrice, updated.invested)
     } else {
       const tokensHeld = amount * tokensPerSol
       const trade: Trade = {
@@ -1066,8 +1101,30 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
         pnlPercent: null,
       }
       Storage.openTrade(trade, state.balance - amount)
+      trackTradeOpened(currentTerminal, amount)
+      if (hasChartLine(currentTerminal)) dispatchChartLine(tokenInfo.price, trade.invested)
     }
   }
+
+  function dispatchChartLine(price: number, amount: number) {
+    window.dispatchEvent(new CustomEvent('papermemes:drawline', {
+      detail: { price, label: `Buy ${fmtSOL(amount)} SOL`, color: '#22c55e' },
+    }))
+  }
+
+  // Terminals whose chart supports the position line (handled by chart-bridge).
+  const hasChartLine = (t: string) => t === 'padre' || t === 'axiom' || t === 'gmgn'
+
+  // Restore the entry line when landing on a token that still has an open
+  // position.  The line is drawn on buy, but navigating away and back (SPA)
+  // clears it, so re-draw it whenever the current token has an active trade.
+  useEffect(() => {
+    const trade = state.activeTrade
+    if (!trade || !currentMint || trade.mintAddress !== currentMint) return
+    if (!hasChartLine(currentTerminal)) return
+    const id = window.setTimeout(() => dispatchChartLine(trade.entryPrice, trade.invested), 300)
+    return () => clearTimeout(id)
+  }, [currentMint, currentTerminal, state.activeTrade])
 
   function handleSell(percent: number) {
     if (!state.activeTrade || !tokenInfo) return
@@ -1081,19 +1138,22 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     const stillNeeded = trade.invested - alreadyOut
     if (stillNeeded <= 0) return
     const pct = Math.min((stillNeeded / tokenInfo.price / trade.tokensHeld) * 100, 100)
+    trackSellInit()
     doSell(pct, tokenInfo.price, tokenInfo.marketCap ?? 0, trade, state)
   }
 
   function doSell(percent: number, price: number, mc: number, trade: Trade, st: AppState) {
     const tokensSold = trade.tokensHeld * (percent / 100)
-    // Apply fees only — slippage is a tolerance setting, not a guaranteed cost
-    const solReturned = tokensSold * price * (1 - st.fees / 100)
+    // Value the sale from the MC move relative to entry (scale-safe), not the raw
+    // price.  Apply fees only — slippage is a tolerance setting, not a cost.
+    const eff = effectivePrice(trade, price, mc)
+    const solReturned = tokensSold * eff * (1 - st.fees / 100)
     const event: CloseEvent = {
       id: `report_${Date.now()}`,
       timestamp: Date.now(),
       sellPercent: percent,
       solReturned,
-      priceAtClose: price,
+      priceAtClose: eff,
       mcAtClose: mc,
     }
     const updated: Trade = {
@@ -1106,8 +1166,11 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       const totalOut = updated.closeEvents.reduce((s, e) => s + e.solReturned, 0)
       const pnlSOL = totalOut - trade.invested
       Storage.closeTrade({ ...updated, status: pnlSOL >= 0 ? 'won' : 'lost', closedAt: Date.now(), pnlSOL, pnlPercent: (pnlSOL / trade.invested) * 100 }, newBalance)
+      trackTradeClosed({ terminal: trade.terminal, status: pnlSOL >= 0 ? 'won' : 'lost', pnl_percent: (pnlSOL / trade.invested) * 100, duration_min: Math.round((Date.now() - trade.openedAt) / 60000) })
+      if (hasChartLine(trade.terminal)) window.dispatchEvent(new CustomEvent('papermemes:clearlines', { detail: { mintAddress: trade.mintAddress } }))
     } else {
       Storage.partialClose(updated, newBalance)
+      trackPartialSell(Math.round(percent) as 10 | 25 | 50 | 100)
     }
   }
 
@@ -1118,13 +1181,35 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
     setTimeout(() => setCopied(false), 1500)
   }
 
+  // Export the full extension state (trades, balance, presets, settings) as JSON
+  // so it can be analysed on a dedicated page or re-imported later.
+  function handleExport() {
+    Storage.get().then(s => {
+      // Never leak Firebase auth tokens into the exported file.
+      const { __pmAuth, ...clean } = s as any
+      const payload = { app: 'PaperMemes', schema: 1, exportedAt: new Date().toISOString(), ...clean }
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const d = new Date()
+      const p2 = (n: number) => String(n).padStart(2, '0')
+      const stamp = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}-${p2(d.getHours())}${p2(d.getMinutes())}`
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `papermemes-export-${stamp}.json`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+    })
+  }
+
   const { balance, activeTrade, closedTrades, currency, buyPresets, tpPresets, slPresets } = state
   const solPrice = solPriceLocal || state.solPrice
   const price = tokenInfo?.price ?? null
   const mc = tokenInfo?.marketCap ?? null
   const buyBlocked = !!(activeTrade && activeTrade.mintAddress !== currentMint)
-  const livePnL = activeTrade && price && !buyBlocked ? getLivePnL(activeTrade, price) : null
-  const liveValue = activeTrade && price && !buyBlocked ? activeTrade.tokensHeld * price : null
+  const livePnL = activeTrade && price && !buyBlocked ? getLivePnL(activeTrade, price, mc) : null
+  const liveValue = activeTrade && price && !buyBlocked ? activeTrade.tokensHeld * effectivePrice(activeTrade, price, mc) : null
 
   function fmtCurStr(sol: number) {
     return currency === 'USD' && solPrice > 0 ? `$${(sol * solPrice).toFixed(2)}` : `${fmtSOL(sol)}`
@@ -1320,27 +1405,23 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onMouseDown={e => e.stopPropagation()}>
               <button
-                onClick={() => setShowConfig(v => !v)}
-                title={tr(lang, 'w.settings')}
+                onClick={handleExport}
+                title={tr(lang, 'w.export')}
                 style={{
-                  width: 32, height: 32,
-                  background: showConfig ? C.green : DS.color.bg,
-                  border: 'none', borderRadius: 10, cursor: 'pointer',
-                  color: showConfig ? DS.color.bg : DS.color.textOn,
-                  fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s',
+                  padding: '4px 10px', borderRadius: 20, cursor: 'pointer', fontFamily: FONT,
+                  background: DS.color.surface, border: '1px solid rgba(0,0,0,0.18)',
+                  color: DS.color.textOff, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                  display: 'flex', alignItems: 'center', gap: 4,
                 }}
-              >⚙</button>
+              >⤓ JSON</button>
               <button
-                onClick={() => setShowReset(true)}
-                title={tr(lang, 'w.reset_wallet')}
+                onClick={() => { const next = LANG_CYCLE[(LANG_CYCLE.indexOf(lang) + 1) % LANG_CYCLE.length]; Storage.set({ language: next }) }}
                 style={{
-                  width: 32, height: 32,
-                  background: DS.color.bg, border: 'none', borderRadius: 8,
-                  cursor: 'pointer', color: DS.color.textOn, fontSize: 18,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '4px 10px', borderRadius: 20, cursor: 'pointer', fontFamily: FONT,
+                  background: DS.color.surface, border: '1px solid rgba(0,0,0,0.18)',
+                  color: DS.color.textOff, fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
                 }}
-              >↺</button>
+              >{LANG_LABELS[lang]}</button>
             </div>
           </div>
         )}
@@ -1376,20 +1457,6 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
           </div>
         </div>
 
-        {/* Config Panel */}
-        {showConfig && (
-          <div style={{ background: 'rgba(0,0,0,0)', borderTop: `1px solid ${C.border}`, padding: '9px 12px', fontFamily: FONT }}>
-            <ConfigPanel
-              buyPresets={buyPresets}
-              tpPresets={tpPresets}
-              slPresets={slPresets}
-              slippage={state.slippage}
-              fees={state.fees}
-              onSaved={() => setShowConfig(false)}
-              lang={lang}
-            />
-          </div>
-        )}
       </DraggableBlock>
 
       {/* Bloc B — Bloc Mid */}
@@ -1458,14 +1525,15 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             hasPrice={!!price} buyBlocked={buyBlocked}
             onBuy={handleBuy} onSell={handleSell} onSellInitials={handleSellInitials}
             fmtCurStr={fmtCurStr} currency={currency} solPrice={solPrice} price={price}
-            onOpenConfig={() => setShowConfig(v => !v)}
+            onOpenConfig={() => setShowConfigB(v => !v)}
             lang={lang} buyWarn={buyWarn}
           />
+          {showConfigB && <BuyPresetsEditor buyPresets={buyPresets} onSaved={() => setShowConfigB(false)} lang={lang} />}
         </div>
       </DraggableBlock>
 
       {/* Bloc C — TP/SL + Footer (seulement si trade tab et pas config) */}
-      {!showConfig && tab === 'trade' && (
+      {tab === 'trade' && (
         <DraggableBlock
           pos={positions.C}
           onPosChange={p => handleBlockMove('C', p)}
@@ -1486,19 +1554,23 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             }}>
               <span style={{ ...DS.type.heading, color: DS.color.textOff }}>{tr(lang, 'w.tp_sl')}</span>
               <button
-                onClick={() => setShowConfig(v => !v)}
+                onClick={() => setShowConfigC(v => !v)}
                 onMouseDown={e => e.stopPropagation()}
                 style={{
-                  width: 32, height: 32, background: DS.color.bg,
+                  width: 32, height: 32,
+                  background: showConfigC ? C.green : DS.color.bg,
                   border: 'none', borderRadius: 10, cursor: 'pointer',
-                  color: DS.color.textOn, fontSize: 18,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: showConfigC ? DS.color.bg : DS.color.textOn,
+                  fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s',
                 }}>⚙</button>
             </div>
           )}
         >
           <div style={{ background: DS.color.bg, fontFamily: FONT, color: C.text, padding: `${DS.pad.y}px ${DS.pad.x}px`, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {activeTrade ? (
+            {showConfigC ? (
+              <TpSlPresetsEditor tpPresets={tpPresets} slPresets={slPresets} onSaved={() => setShowConfigC(false)} lang={lang} />
+            ) : activeTrade ? (
               <>
                 {/* TP section */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1555,13 +1627,8 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
             )}
 
             {/* Footer */}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {risk?.isHighRisk && (
-                <div style={{ color: C.red, ...DS.type.annex }}>{tr(lang, 'w.risk_score', { score: risk.score })}</div>
-              )}
-              {risk?.topHolderPercent != null && risk.topHolderPercent > 20 && (
-                <div style={{ color: C.red, ...DS.type.annex }}>{tr(lang, 'w.top_holder', { pct: risk.topHolderPercent.toFixed(0) })}</div>
-              )}
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.10)', paddingTop: 8 }}>
               <div style={{ color: C.yellow, ...DS.type.annex }}>{tr(lang, 'w.tp_warning')}</div>
             </div>
           </div>
@@ -1569,7 +1636,109 @@ function Widget({ initialTerminal }: { initialTerminal: string }) {
       )}
 
       {showReset && <ResetModal onClose={() => setShowReset(false)} currency={currency} solPrice={solPrice} lang={lang} />}
+
+      {/* Note cards — bottom-left stack */}
+      {pendingNotes.length > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: 24, zIndex: 9999999,
+          display: 'flex', flexDirection: 'column-reverse', gap: 10,
+          pointerEvents: 'none',
+        }}>
+          {pendingNotes.map(trade => (
+            <div key={trade.id} style={{ pointerEvents: 'all' }}>
+              <NoteCard
+                trade={trade}
+                lang={lang}
+                solPrice={solPriceLocal}
+                onClose={() => setPendingNotes(pn => pn.filter(t => t.id !== trade.id))}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </>
+  )
+}
+
+// ─── Note Card ────────────────────────────────────────────────────────────────
+
+function NoteCard({ trade, lang, solPrice, onClose }: { trade: Trade; lang: Lang; solPrice: number; onClose: () => void }) {
+  const [text, setText] = useState(trade.note ?? '')
+  const [open, setOpen] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  const pnlPct = trade.pnlPercent ?? 0
+  const netSOL = trade.closeEvents.reduce((s, e) => s + e.solReturned, 0) - trade.invested
+  const isWin = pnlPct >= 0
+  const col = isWin ? C.green : C.red
+  const sign = isWin ? '+' : ''
+  const pnlStr = `${sign}${pnlPct.toFixed(1)}%`
+  const earnsStr = solPrice > 0
+    ? `${sign}${Math.round(netSOL * solPrice)}USD`
+    : `${sign}${fmtSOL(netSOL)}`
+
+  function handleSave() {
+    Storage.updateTradeNote(trade.id, text.trim())
+    setSaved(true)
+    setTimeout(() => { setSaved(false); onClose() }, 900)
+  }
+
+  return (
+    <div style={{
+      width: 250, background: '#111827', border: `1px solid ${isWin ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+      borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+      fontFamily: FONT, overflow: 'hidden',
+    }}>
+      {/* Header — click to expand */}
+      <div
+        onClick={() => setOpen(v => !v)}
+        style={{ padding: '10px 12px', cursor: 'pointer', background: isWin ? 'rgba(34,197,94,0.07)' : 'rgba(239,68,68,0.07)' }}
+      >
+        {/* Row 1: TokenName ——— Notes ✕ */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{trade.tokenName}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase' }}>Notes</span>
+            <button
+              onClick={e => { e.stopPropagation(); onClose() }}
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', fontSize: 13, cursor: 'pointer', lineHeight: 1, padding: '0 2px' }}
+            >✕</button>
+          </div>
+        </div>
+        {/* Row 2: +1.5%  •  +253USD */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 800, color: col }}>{pnlStr}</span>
+          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>•</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: col }}>{earnsStr}</span>
+        </div>
+      </div>
+
+      {/* Expandable note field */}
+      {open && (
+        <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <textarea
+            autoFocus
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder={tr(lang, 'journal.note_placeholder')}
+            rows={3}
+            style={{
+              width: '100%', boxSizing: 'border-box', resize: 'none',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)',
+              borderRadius: 7, color: '#fff', fontSize: 12, fontFamily: FONT,
+              padding: '7px 10px', outline: 'none', lineHeight: 1.5,
+            }}
+          />
+          <button onClick={handleSave} style={{
+            width: '100%', padding: '7px 0',
+            background: saved ? C.green : 'rgba(255,255,255,0.10)',
+            border: `1px solid ${saved ? C.green : 'rgba(255,255,255,0.15)'}`,
+            borderRadius: 7, color: saved ? '#000' : '#fff',
+            fontWeight: 700, fontSize: 11, cursor: 'pointer', fontFamily: FONT, transition: 'all 0.2s',
+          }}>{saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}</button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -1713,6 +1882,115 @@ function ConfigPanel({ buyPresets, tpPresets, slPresets, slippage, fees, onSaved
       }}>
         {saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}
       </button>
+    </div>
+  )
+}
+
+// ─── Buy Presets Editor (Block B config) ─────────────────────────────────────
+
+function BuyPresetsEditor({ buyPresets, onSaved, lang }: { buyPresets: number[]; onSaved?: () => void; lang: Lang }) {
+  const pad = (arr: number[], n: number) => arr.map(v => String(v)).concat(Array(n).fill('')).slice(0, n)
+  const [inputs, setInputs] = useState<string[]>(() => pad(buyPresets, 8))
+  const [saved, setSaved] = useState(false)
+
+  function gridInput(i: number, val: string) {
+    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return
+    setInputs(prev => { const n = [...prev]; n[i] = val; return n })
+  }
+
+  function handleSave() {
+    const parsed = inputs.map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0)
+    Storage.set({ buyPresets: parsed })
+    setSaved(true)
+    setTimeout(() => { setSaved(false); onSaved?.() }, 1000)
+  }
+
+  const iSt = (filled: boolean): React.CSSProperties => ({
+    width: '100%', boxSizing: 'border-box',
+    background: 'rgba(0,0,0,0)', border: `1px solid ${filled ? C.green : C.border}`,
+    borderRadius: 6, color: C.text, fontSize: FS.v3, fontWeight: 700,
+    padding: '7px 4px', textAlign: 'center', outline: 'none', fontFamily: 'inherit',
+  })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, borderTop: `1px solid ${C.border}`, paddingTop: 10, marginTop: 4 }}>
+      <div style={sL}>{tr(lang, 'cfg.quick_buy')}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+        {inputs.map((val, i) => (
+          <input key={i} type="text" inputMode="decimal" value={val} placeholder="—"
+            onChange={e => gridInput(i, e.target.value)} style={iSt(!!val)} />
+        ))}
+      </div>
+      <button onClick={handleSave} style={{
+        width: '100%', padding: '8px 0',
+        background: saved ? C.green : 'rgba(0,0,0,0)', border: `1px solid ${C.green}`,
+        borderRadius: 6, color: saved ? '#000' : C.green, fontWeight: 700, fontSize: FS.v3,
+        cursor: 'pointer', fontFamily: 'inherit',
+      }}>{saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}</button>
+    </div>
+  )
+}
+
+// ─── TP/SL Presets Editor (Block C config) ────────────────────────────────────
+
+function TpSlPresetsEditor({ tpPresets, slPresets, onSaved, lang }: { tpPresets: number[]; slPresets: number[]; onSaved?: () => void; lang: Lang }) {
+  const pad = (arr: number[], n: number) => arr.map(v => String(Math.abs(v))).concat(Array(n).fill('')).slice(0, n)
+  const [tpInputs, setTpInputs] = useState<string[]>(() => pad(tpPresets, 4))
+  const [slInputs, setSlInputs] = useState<string[]>(() => pad(slPresets, 4))
+  const [saved, setSaved] = useState(false)
+
+  function gridInput(i: number, val: string, setter: React.Dispatch<React.SetStateAction<string[]>>) {
+    if (val !== '' && !/^\d*\.?\d*$/.test(val)) return
+    setter(prev => { const n = [...prev]; n[i] = val; return n })
+  }
+
+  function handleSave() {
+    const tpP = tpInputs.map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0)
+    const slP = slInputs.map(v => parseFloat(v)).filter(v => !isNaN(v) && v > 0).map(v => -v)
+    Storage.set({ tpPresets: tpP, slPresets: slP })
+    setSaved(true)
+    setTimeout(() => { setSaved(false); onSaved?.() }, 1000)
+  }
+
+  const iSt = (filled: boolean, red?: boolean): React.CSSProperties => ({
+    width: '100%', boxSizing: 'border-box',
+    background: 'rgba(0,0,0,0)', border: `1px solid ${filled ? (red ? C.red : C.green) : C.border}`,
+    borderRadius: 6, color: C.text, fontSize: FS.v3, fontWeight: 700,
+    padding: '7px 4px', textAlign: 'center', outline: 'none', fontFamily: 'inherit',
+  })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div>
+        <div style={sL}>{tr(lang, 'cfg.tp_pct')}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          {tpInputs.map((val, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <input type="text" inputMode="decimal" value={val} placeholder="—"
+                onChange={e => gridInput(i, e.target.value, setTpInputs)} style={iSt(!!val)} />
+              {val && <span style={{ position: 'absolute', top: 2, right: 4, fontSize: 8, color: C.green }}>%</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div style={sL}>{tr(lang, 'cfg.sl_pct')}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6 }}>
+          {slInputs.map((val, i) => (
+            <div key={i} style={{ position: 'relative' }}>
+              <input type="text" inputMode="decimal" value={val} placeholder="—"
+                onChange={e => gridInput(i, e.target.value, setSlInputs)} style={iSt(!!val, true)} />
+              {val && <span style={{ position: 'absolute', top: 2, right: 4, fontSize: 8, color: C.red }}>%</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+      <button onClick={handleSave} style={{
+        width: '100%', padding: '8px 0',
+        background: saved ? C.green : 'rgba(0,0,0,0)', border: `1px solid ${C.green}`,
+        borderRadius: 6, color: saved ? '#000' : C.green, fontWeight: 700, fontSize: FS.v3,
+        cursor: 'pointer', fontFamily: 'inherit',
+      }}>{saved ? tr(lang, 'cfg.saved') : tr(lang, 'cfg.save')}</button>
     </div>
   )
 }
@@ -1954,6 +2232,7 @@ function WarningBanner({ tokenName, lang, onDismiss }: { tokenName: string; lang
 let widgetRoot: ReturnType<typeof createRoot> | null = null
 let warningRoot: ReturnType<typeof createRoot> | null = null
 let lastMint: string | null = null
+let mountInFlight = false
 
 function tryUnmountWarning() {
   const el = document.getElementById('papermemes-warning')
@@ -1994,6 +2273,16 @@ function injectFont() {
 }
 
 async function tryMount() {
+  if (mountInFlight) return
+  mountInFlight = true
+  try {
+    await _tryMount()
+  } finally {
+    mountInFlight = false
+  }
+}
+
+async function _tryMount() {
   const { terminal, mintAddress: rawMint } = detectTerminal()
 
   if (!terminal || !rawMint) {
@@ -2036,12 +2325,89 @@ function scheduleRetry() {
   }, 500)
 }
 
+// ── Auto-translate X/Twitter narrative previews (Padre + Axiom + GMGN) ────────
+// Runs site-wide (token pages AND the trenches/list view) since the React widget
+// only mounts on token pages.  Hovering a token's X link shows a hover preview of
+// the tweet; we translate the tweet body in place into the extension language via
+// the free Google Translate endpoint.  Body detection differs per site:
+//   • Padre — parent of the per-word <span class="fast-search-available"> inside
+//             an interactive MUI tooltip.
+//   • Axiom — <span class="text-[18px] text-wrap"> inside the fixed z-[9999] card
+//             (name is text-[16px], handle text-[15px], so text-[18px] is unique).
+//   • GMGN  — <span class="font-mono break-words whitespace-pre-wrap"> inside the
+//             tweet card (bg-[#15202B]).
+function setupTweetTranslation() {
+  if (!/(padre\.gg|axiom\.trade|gmgn\.ai)$/.test(window.location.hostname)) return
+
+  let target = 'fr'
+  Storage.get().then(s => { if (s?.language) target = s.language })
+  Storage.onChanged(c => { if (c.language) target = c.language })
+
+  const cache = new Map<string, string>()
+
+  async function translate(text: string): Promise<string> {
+    const key = target + '|' + text
+    const hit = cache.get(key)
+    if (hit !== undefined) return hit
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(target)}&dt=t&q=${encodeURIComponent(text)}`
+    const res = await fetch(url)
+    const data = await res.json()
+    const out = (data?.[0] ?? []).map((s: any) => s?.[0] ?? '').join('')
+    cache.set(key, out)
+    return out
+  }
+
+  function translateBody(body: HTMLElement) {
+    if (body.dataset.pmTr) return          // already handled
+    const original = (body.textContent ?? '').trim()
+    if (!original) return
+    body.dataset.pmTr = '1'
+    translate(original)
+      .then(t => { if (t && t !== original) body.textContent = t })
+      .catch(() => { delete body.dataset.pmTr })   // allow a later retry
+  }
+
+  function padreBody(node: HTMLElement): HTMLElement | null {
+    const word = node.matches?.('span.fast-search-available')
+      ? node
+      : node.querySelector?.('span.fast-search-available')
+    const body = word?.parentElement as HTMLElement | null
+    return body && body.closest('.MuiTooltip-popperInteractive') ? body : null
+  }
+
+  function axiomBody(node: HTMLElement): HTMLElement | null {
+    const sel = 'span.text-\\[18px\\]'
+    const body = (node.matches?.(sel) ? node : node.querySelector?.(sel)) as HTMLElement | null
+    return body && body.closest('.fixed.z-\\[9999\\]') ? body : null
+  }
+
+  function gmgnBody(node: HTMLElement): HTMLElement | null {
+    const sel = 'span.whitespace-pre-wrap.break-words'
+    const body = (node.matches?.(sel) ? node : node.querySelector?.(sel)) as HTMLElement | null
+    // Card class is bg-[#15202B]; the "#" must be escaped too or CSS reads it as an id.
+    return body && body.closest('.bg-\\[\\#15202B\\]') ? body : null
+  }
+
+  function scan(node: HTMLElement) {
+    const body = padreBody(node) || axiomBody(node) || gmgnBody(node)
+    // Let the render settle so the full tweet text is present before we read it.
+    if (body) window.setTimeout(() => translateBody(body), 60)
+  }
+
+  new MutationObserver(muts => {
+    for (const m of muts)
+      for (const n of m.addedNodes)
+        if (n instanceof HTMLElement) scan(n)
+  }).observe(document.body, { childList: true, subtree: true })
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => { tryMount(); setupUrlWatcher(); scheduleRetry() })
+  document.addEventListener('DOMContentLoaded', () => { tryMount(); setupUrlWatcher(); scheduleRetry(); setupTweetTranslation() })
 } else {
   tryMount()
   setupUrlWatcher()
   scheduleRetry()
+  setupTweetTranslation()
 }
 
 function setupUrlWatcher() {
