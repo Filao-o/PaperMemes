@@ -19,4 +19,4 @@ export const firebaseConfig = {
 // URIs":  chrome.identity.getRedirectURL()  →  https://<EXTENSION_ID>.chromiumapp.org/
 // (the extension ID is shown on chrome://extensions). Leave empty to disable
 // Google sign-in (email/password still works).
-export const googleClientId = ''
+export const googleClientId = '1093050907458-kerd08eascvsl0spmk53t394jg26kkm3.apps.googleusercontent.com'
