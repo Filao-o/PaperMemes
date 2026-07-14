@@ -21,9 +21,10 @@ const btn = (bg: string, fg: string): React.CSSProperties => ({
   padding: '9px 0', cursor: 'pointer', fontFamily: FONT, letterSpacing: 0.5, width: '100%',
 })
 
-export function AccountSection({ lang }: { lang: Lang }) {
+export function AccountSection({ lang, mode = 'full' }: { lang: Lang; mode?: 'full' | 'banner' }) {
   const [auth, setAuth] = useState<AuthState | null>(null)
-  const [mode, setMode] = useState<'in' | 'up'>('in')
+  const [ready, setReady] = useState(false)
+  const [authMode, setAuthMode] = useState<'in' | 'up'>('in')
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const [wallet, setWallet] = useState('')
@@ -32,7 +33,7 @@ export function AccountSection({ lang }: { lang: Lang }) {
   const [savedWallet, setSavedWallet] = useState(false)
 
   useEffect(() => {
-    getStoredAuth().then(a => { setAuth(a); setWallet(a?.walletAddress ?? '') })
+    getStoredAuth().then(a => { setAuth(a); setWallet(a?.walletAddress ?? ''); setReady(true) })
     const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
       if (area !== 'local' || !changes.__pmAuth) return
       const a = (changes.__pmAuth.newValue as AuthState) ?? null
@@ -45,7 +46,7 @@ export function AccountSection({ lang }: { lang: Lang }) {
   async function submit() {
     setErr(''); setBusy(true)
     try {
-      await (mode === 'in' ? signIn : signUp)(email.trim(), pw)
+      await (authMode === 'in' ? signIn : signUp)(email.trim(), pw)
       setEmail(''); setPw('')
       syncNow().catch(() => {})
     } catch (e: any) {
@@ -61,30 +62,81 @@ export function AccountSection({ lang }: { lang: Lang }) {
     syncNow().catch(() => {})
   }
 
+  // Shared login/signup form (used by both the settings section and the banner)
+  const loginForm = (
+    <>
+      <input style={input} type="email" placeholder={tr(lang, 'acc.email')} value={email}
+        onChange={e => setEmail(e.target.value)} autoComplete="username" />
+      <input style={input} type="password" placeholder={tr(lang, 'acc.pw')} value={pw}
+        onChange={e => setPw(e.target.value)} autoComplete="current-password"
+        onKeyDown={e => e.key === 'Enter' && submit()} />
+      {err && <div style={{ color: '#f87171', fontSize: 11 }}>{err}</div>}
+      <button disabled={busy || !email || !pw} onClick={submit} style={{ ...btn('#fff', '#000'), opacity: busy ? 0.6 : 1 }}>
+        {busy ? '…' : tr(lang, authMode === 'in' ? 'acc.signin' : 'acc.signup')}
+      </button>
+      <button onClick={() => { setErr(''); setAuthMode(authMode === 'in' ? 'up' : 'in') }}
+        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: 11, cursor: 'pointer', fontFamily: FONT }}>
+        {tr(lang, authMode === 'in' ? 'acc.toggle_up' : 'acc.toggle_in')}
+      </button>
+    </>
+  )
+
+  // ══════════════ BANNER (main popup view) ══════════════
+  if (mode === 'banner') {
+    if (!ready) return null
+
+    // Logged out → prominent call-to-action with the form inline
+    if (!auth) {
+      return (
+        <div style={{
+          margin: '10px 14px 0', padding: 12, borderRadius: 10,
+          background: 'rgba(34,197,94,0.08)', border: `1px solid ${GREEN}55`,
+          display: 'flex', flexDirection: 'column', gap: 8,
+        }}>
+          <div style={{ color: '#fff', fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>
+            {tr(lang, 'acc.cta')}
+          </div>
+          {loginForm}
+        </div>
+      )
+    }
+
+    // Logged in → compact status strip with email + sign out
+    return (
+      <div style={{
+        margin: '10px 14px 0', padding: '8px 12px', borderRadius: 10,
+        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+      }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: GREEN, flexShrink: 0 }} />
+          <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {auth.email}
+          </span>
+        </span>
+        <button onClick={() => signOut()} style={{
+          background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8,
+          color: '#f87171', fontSize: 10, fontWeight: 800, padding: '5px 10px', cursor: 'pointer',
+          fontFamily: FONT, letterSpacing: 0.3, flexShrink: 0,
+        }}>
+          {tr(lang, 'acc.signout')}
+        </button>
+      </div>
+    )
+  }
+
+  // ══════════════ FULL (settings modal) ══════════════
   const title = (
     <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: '#fff' }}>
       {tr(lang, 'acc.section')}
     </span>
   )
 
-  // ── Signed out: login / signup ──
   if (!auth) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {title}
-        <input style={input} type="email" placeholder={tr(lang, 'acc.email')} value={email}
-          onChange={e => setEmail(e.target.value)} autoComplete="username" />
-        <input style={input} type="password" placeholder={tr(lang, 'acc.pw')} value={pw}
-          onChange={e => setPw(e.target.value)} autoComplete="current-password"
-          onKeyDown={e => e.key === 'Enter' && submit()} />
-        {err && <div style={{ color: '#f87171', fontSize: 11 }}>{err}</div>}
-        <button disabled={busy || !email || !pw} onClick={submit} style={{ ...btn('#fff', '#000'), opacity: busy ? 0.6 : 1 }}>
-          {busy ? '…' : tr(lang, mode === 'in' ? 'acc.signin' : 'acc.signup')}
-        </button>
-        <button onClick={() => { setErr(''); setMode(mode === 'in' ? 'up' : 'in') }}
-          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.55)', fontSize: 11, cursor: 'pointer', fontFamily: FONT }}>
-          {tr(lang, mode === 'in' ? 'acc.toggle_up' : 'acc.toggle_in')}
-        </button>
+        {loginForm}
         <button disabled title={tr(lang, 'acc.google')}
           style={{ ...btn('rgba(255,255,255,0.08)', 'rgba(255,255,255,0.4)'), cursor: 'not-allowed' }}>
           {tr(lang, 'acc.google')}
@@ -93,7 +145,6 @@ export function AccountSection({ lang }: { lang: Lang }) {
     )
   }
 
-  // ── Signed in: account + wallet ──
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -859,6 +859,9 @@ export function App() {
           </div>
         </div>
 
+        {/* ── Account status (login CTA when signed out, email+logout when signed in) ── */}
+        <AccountSection lang={lang} mode="banner" />
+
         {/* ── Wallet ── */}
         <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.10)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
