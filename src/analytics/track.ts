@@ -9,9 +9,11 @@ const ENDPOINT       = `https://www.google-analytics.com/mp/collect?measurement_
 const DEBUG_ENDPOINT = `https://www.google-analytics.com/debug/mp/collect?measurement_id=${MEASUREMENT_ID}&api_secret=${API_SECRET}`
 const CLIENT_KEY     = '__pmGaClient'
 
-// ─── Client ID ───────────────────────────────────────────────────────────────
+// ─── Client ID + Session ID ───────────────────────────────────────────────────
 
 let _clientId: string | null = null
+// Session ID = timestamp (seconds) when this JS module first loaded — unique per popup open
+const _sessionId = Math.floor(Date.now() / 1000).toString()
 
 async function getClientId(): Promise<string> {
   if (_clientId) return _clientId
@@ -30,7 +32,7 @@ async function send(name: string, params: Record<string, string | number | boole
     const client_id = await getClientId()
     const body = JSON.stringify({
       client_id,
-      events: [{ name, params: { engagement_time_msec: 100, ...params } }],
+      events: [{ name, params: { engagement_time_msec: 100, session_id: _sessionId, ...params } }],
     })
     if (DEBUG) {
       const res = await fetch(DEBUG_ENDPOINT, { method: 'POST', body })
