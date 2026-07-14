@@ -4,7 +4,9 @@
 
 const MEASUREMENT_ID = 'G-7QQ41GV4FD'
 const API_SECRET     = 'Gv8niNyeR5CqKx3VOcx-4w'
+const DEBUG          = false  // mettre true localement pour voir les events dans la console
 const ENDPOINT       = `https://www.google-analytics.com/mp/collect?measurement_id=${MEASUREMENT_ID}&api_secret=${API_SECRET}`
+const DEBUG_ENDPOINT = `https://www.google-analytics.com/debug/mp/collect?measurement_id=${MEASUREMENT_ID}&api_secret=${API_SECRET}`
 const CLIENT_KEY     = '__pmGaClient'
 
 // ─── Client ID ───────────────────────────────────────────────────────────────
@@ -26,13 +28,17 @@ async function getClientId(): Promise<string> {
 async function send(name: string, params: Record<string, string | number | boolean> = {}): Promise<void> {
   try {
     const client_id = await getClientId()
-    await fetch(ENDPOINT, {
-      method: 'POST',
-      body: JSON.stringify({
-        client_id,
-        events: [{ name, params: { engagement_time_msec: 100, ...params } }],
-      }),
+    const body = JSON.stringify({
+      client_id,
+      events: [{ name, params: { engagement_time_msec: 100, ...params } }],
     })
+    if (DEBUG) {
+      const res = await fetch(DEBUG_ENDPOINT, { method: 'POST', body })
+      const json = await res.json()
+      console.log(`[PM Analytics] ${name}`, params, json)
+    } else {
+      await fetch(ENDPOINT, { method: 'POST', body })
+    }
   } catch {
     // never throw — tracking must never break the app
   }

@@ -20,7 +20,8 @@
     "https://translate.googleapis.com/*",
     "https://identitytoolkit.googleapis.com/*",
     "https://securetoken.googleapis.com/*",
-    "https://firestore.googleapis.com/*"
+    "https://firestore.googleapis.com/*",
+    "https://www.google-analytics.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
