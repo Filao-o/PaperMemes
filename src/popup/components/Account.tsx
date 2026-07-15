@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import {
-  getStoredAuth, signIn, signUp, signOut, signInWithGoogle, setWalletAddress, type AuthState,
+  getStoredAuth, signIn, signUp, signOut, signInWithGoogle, type AuthState,
 } from '../../firebase/auth'
 import { syncNow } from '../../firebase/sync'
 import { t as tr, type Lang } from '../../i18n'
@@ -39,14 +39,12 @@ export function AccountSection({ lang, mode = 'full' }: { lang: Lang; mode?: 'fu
   const [authMode, setAuthMode] = useState<'in' | 'up'>('in')
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
-  const [wallet, setWallet] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
-  const [savedWallet, setSavedWallet] = useState(false)
   const [modalOpen, setModalOpen] = useState(true)   // banner: full-screen login modal shown by default
 
   useEffect(() => {
-    getStoredAuth().then(a => { setAuth(a); setWallet(a?.walletAddress ?? ''); setReady(true) })
+    getStoredAuth().then(a => { setAuth(a); setReady(true) })
     const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
       if (area !== 'local' || !changes.__pmAuth) return
       const a = (changes.__pmAuth.newValue as AuthState) ?? null
@@ -81,12 +79,6 @@ export function AccountSection({ lang, mode = 'full' }: { lang: Lang; mode?: 'fu
     } finally {
       setBusy(false)
     }
-  }
-
-  async function saveWallet() {
-    await setWalletAddress(wallet.trim() || null)
-    setSavedWallet(true); setTimeout(() => setSavedWallet(false), 1500)
-    syncNow().catch(() => {})
   }
 
   const googleBtn = (
@@ -229,16 +221,6 @@ export function AccountSection({ lang, mode = 'full' }: { lang: Lang; mode?: 'fu
         </span>
       </div>
       <div style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, wordBreak: 'break-all' }}>{auth.email}</div>
-
-      <div>
-        <label style={label}>{tr(lang, 'acc.wallet')}</label>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <input style={input} placeholder="Ex: 7xKX…pump" value={wallet} onChange={e => setWallet(e.target.value)} />
-          <button onClick={saveWallet} style={{ ...btn(savedWallet ? GREEN : '#fff', '#000'), width: 'auto', padding: '0 12px' }}>
-            {savedWallet ? '✓' : tr(lang, 'acc.save_wallet')}
-          </button>
-        </div>
-      </div>
 
       <button onClick={() => { trackSignOut(); signOut() }} style={btn('rgba(239,68,68,0.12)', '#f87171')}>
         {tr(lang, 'acc.signout')}
